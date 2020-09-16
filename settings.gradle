@@ -1,0 +1,2 @@
+include ':sdk', ':javasample'
+rootProject.name='Authgear'
