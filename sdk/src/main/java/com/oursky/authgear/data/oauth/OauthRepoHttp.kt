@@ -1,0 +1,48 @@
+package com.oursky.authgear.data.oauth
+
+import com.oursky.authgear.UserInfo
+import com.oursky.authgear.data.HttpClient
+import com.oursky.authgear.oauth.*
+import java.net.URL
+
+class OauthRepoHttp : OauthRepo {
+    companion object {
+        @Suppress("unused")
+        private val TAG = OauthRepoHttp::class.java.simpleName
+    }
+    private var config: OIDCConfiguration? = null
+    // Variable assignment is atomic in kotlin so no need to guard
+    // If memory ordering becomes a problem, use AtomicReference (instead of synchronize)
+    override var endpoint: String? = null
+    override fun getOIDCConfiguration(): OIDCConfiguration {
+        require(endpoint != null) {
+            "Missing endpoint in oauth repository"
+        }
+        val endpoint = this.endpoint
+        val config = this.config
+        if (config != null) return config
+        // Double-checked locking
+        synchronized(this) {
+            val configAfterAcquire = this.config
+            if (configAfterAcquire != null) return configAfterAcquire
+            return HttpClient.getJson(URL(URL(endpoint), "/.well-known/openid-configuration"))
+        }
+    }
+    override fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse {
+        val config = getOIDCConfiguration()
+        val body = mutableMapOf<String, String>()
+        body["grant_type"] = request.grantType
+        body["client_id"] = request.clientId
+        request.redirectUri?.let { body["redirect_uri"] = it }
+        request.code?.let { body["code"] = it }
+        request.codeVerifier?.let { body["code_verifier"] = it }
+        request.refreshToken?.let { body["refresh_token"] = it }
+        request.jwt?.let { body["jwt"] = it }
+        return HttpClient.postFormRespJsonWithError<OIDCTokenResponse, OauthException>(URL(config.tokenEndpoint), body)
+    }
+    override fun oidcUserInfoRequest(accessToken: String): UserInfo {
+        val config = getOIDCConfiguration()
+        return HttpClient.getJson(URL(config.userInfoEndpoint),
+            mutableMapOf(Pair("authorization", "bearer $accessToken")))
+    }
+}

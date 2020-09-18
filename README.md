@@ -2,7 +2,6 @@
 
 ![License](https://img.shields.io/badge/license-Apache%202-blue)
 
-
 ## Usage
 
 Authgear requires at minimum Android API 21+.
@@ -20,3 +19,7 @@ TODO: Clarify whether we would have artifact so user can just add `implementatio
 ## Contributing
 
 Fork this repository and make sure PRs pass format and lint check.
+
+### Prerequisite
+
+Android Studio 4.0+ (For Java 8 library desugaring)
