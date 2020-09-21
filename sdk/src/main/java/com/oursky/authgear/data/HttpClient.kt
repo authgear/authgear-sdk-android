@@ -49,5 +49,19 @@ class HttpClient {
                 conn.disconnect()
             }
         }
+        fun postForm(url: URL, body: MutableMap<String, String>) {
+            val conn = url.openConnection() as HttpURLConnection
+            try {
+                conn.doOutput = true
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("content-type", "application/x-www-form-urlencoded")
+                conn.outputStream.use {
+                    it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+                }
+                conn.connect()
+            } finally {
+                conn.disconnect()
+            }
+        }
     }
 }

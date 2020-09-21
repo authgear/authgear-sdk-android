@@ -21,13 +21,24 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     private val scope = CoroutineScope(Dispatchers.IO)
     val clientId: String?
         get() = core.clientId
-    var onRefreshTokenExpiredListener: OnRefreshTokenExpiredListener?
+    val onRefreshTokenExpiredListener: OnRefreshTokenExpiredListener?
         get() {
-            return core.onRefreshTokenExpiredListener
+            return core.onRefreshTokenExpiredListener?.listener
         }
-        set(value) {
-            core.onRefreshTokenExpiredListener = value
+    val sessionState: SessionState
+        get() {
+            return core.sessionState
         }
+
+    @JvmOverloads
+    fun setOnRefreshTokenExpiredListener(
+        listener: OnRefreshTokenExpiredListener,
+        handler: Handler = Handler(
+                    Looper.getMainLooper()
+                )
+    ) {
+        core.onRefreshTokenExpiredListener = ListenerPair(listener, handler)
+    }
 
     fun authenticateAnonymously() {
         scope.launch {
@@ -44,12 +55,12 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         scope.launch {
             try {
                 val result = core.authorize(options)
-                handler.run {
+                handler.post {
                     onAuthorizeListener.onAuthorized(result)
                 }
             } catch (e: Throwable) {
                 Log.d(TAG, "$e")
-                handler.run {
+                handler.post {
                     onAuthorizeListener.onAuthorizationFailed(e)
                 }
             }
@@ -65,12 +76,12 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         scope.launch {
             try {
                 core.configure(options)
-                handler.run {
+                handler.post {
                     onConfigureListener.onConfigured()
                 }
             } catch (e: Throwable) {
                 Log.d(TAG, "$e")
-                handler.run {
+                handler.post {
                     onConfigureListener.onConfigurationFailed(e)
                 }
             }

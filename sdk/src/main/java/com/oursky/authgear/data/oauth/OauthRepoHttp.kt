@@ -40,6 +40,12 @@ class OauthRepoHttp : OauthRepo {
         request.jwt?.let { body["jwt"] = it }
         return HttpClient.postFormRespJsonWithError<OIDCTokenResponse, OauthException>(URL(config.tokenEndpoint), body)
     }
+    override fun oidcRevocationRequest(refreshToken: String) {
+        val config = getOIDCConfiguration()
+        val queries = mutableMapOf<String, String>()
+        queries["token"] = refreshToken
+        HttpClient.postForm(URL(config.revocationEndpoint), queries)
+    }
     override fun oidcUserInfoRequest(accessToken: String): UserInfo {
         val config = getOIDCConfiguration()
         return HttpClient.getJson(URL(config.userInfoEndpoint),

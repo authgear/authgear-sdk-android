@@ -2,6 +2,7 @@ package com.oursky.authgear
 
 import android.app.Application
 import android.net.Uri
+import android.os.Looper
 import android.util.Base64
 import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
@@ -17,8 +18,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * Listener are not synchronized. Do *NOT* set listener in multi-threaded scenario.
- * It is recommended that you setup all listeners upon program initialization/termination.
+ * Listeners should only be set on the main thread.
  */
 internal class AuthgearCore(
     private val application: Application,
@@ -72,7 +72,21 @@ internal class AuthgearCore(
     private var expireAt: Instant? = null
     var clientId: String? = null
         private set
-    var onRefreshTokenExpiredListener: OnRefreshTokenExpiredListener? = null
+    var onRefreshTokenExpiredListener: ListenerPair<OnRefreshTokenExpiredListener>? = null
+        set(value) {
+            requireIsMainThread()
+            field = value
+        }
+    var sessionState: SessionState = SessionState.Unknown
+        private set
+
+    private fun requireIsMainThread() {
+        require(Looper.myLooper() == Looper.getMainLooper()) {
+            "Listener should only be set on the main thread"
+        }
+    }
+
+    @Suppress("RedundantSuspendModifier")
     suspend fun authenticateAnonymously() {
     }
 
@@ -83,24 +97,40 @@ internal class AuthgearCore(
         return finishAuthorization(deepLink).state
     }
 
+    @Suppress("RedundantSuspendModifier")
     suspend fun configure(options: ConfigureOptions) {
         // TODO: This is not present in js sdk. Verify if this is needed.
         if (isInitialized) return
+        isInitialized = true
         val refreshToken = tokenRepo.getRefreshToken(name)
         clientId = options.clientId
         oauthRepo.endpoint = options.endpoint
         this.refreshToken = refreshToken
         if (shouldRefreshAccessToken()) {
             refreshAccessToken()
+        } else {
+            sessionState = SessionState.NoSession
         }
     }
 
-    suspend fun logout() {
+    @Suppress("RedundantSuspendModifier")
+    suspend fun logout(force: Boolean? = null) {
+        try {
+            val refreshToken = tokenRepo.getRefreshToken(name) ?: ""
+            oauthRepo.oidcRevocationRequest(refreshToken)
+        } catch (e: Exception) {
+            if (force != true) {
+                throw e
+            }
+        }
+        clearSession()
     }
 
+    @Suppress("RedundantSuspendModifier")
     suspend fun handleDeepLink() {
     }
 
+    @Suppress("RedundantSuspendModifier")
     suspend fun promoteAnonymousUser() {
     }
 
@@ -172,7 +202,7 @@ internal class AuthgearCore(
         return false
     }
 
-    private suspend fun refreshAccessToken() {
+    private fun refreshAccessToken() {
         val clientId = this.clientId
         require(clientId != null) {
             "Missing Client ID"
@@ -182,6 +212,7 @@ internal class AuthgearCore(
             // Somehow we are asked to refresh access token but we don't have the refresh token.
             // Something went wrong, clear session.
             clearSession()
+            return
         }
         val tokenResponse: OIDCTokenResponse?
         try {
@@ -194,7 +225,9 @@ internal class AuthgearCore(
             )
         } catch (e: Exception) {
             if (e is OauthException && e.error == "invalid_grant") {
-                onRefreshTokenExpiredListener?.onExpired()
+                onRefreshTokenExpiredListener?.let {
+                    it.handler.post { it.listener.onExpired() }
+                }
                 clearSession()
                 return
             }
@@ -205,12 +238,10 @@ internal class AuthgearCore(
 
     private fun saveToken(tokenResponse: OIDCTokenResponse) {
         accessToken = tokenResponse.accessToken
+        sessionState = SessionState.LoggedIn
         val refreshToken = tokenResponse.refreshToken
         this.refreshToken = refreshToken
         expireAt = Instant.now() + Duration.ofMillis(tokenResponse.expiresIn)
-        if (refreshToken != null) {
-            tokenRepo.setRefreshToken(name, refreshToken)
-        }
     }
 
     private fun clearSession() {
@@ -218,6 +249,7 @@ internal class AuthgearCore(
         accessToken = null
         refreshToken = null
         expireAt = null
+        sessionState = SessionState.NoSession
     }
 
     private suspend fun openAuthorizeUrl(redirectUrl: String, authorizeUrl: String): String {
