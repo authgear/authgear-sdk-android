@@ -8,4 +8,5 @@ internal interface TokenRepo {
     fun getOIDCCodeVerifier(namespace: String): String?
     fun getAnonymousKeyId(namespace: String): String?
     fun setAnonymousKeyId(namespace: String, keyId: String)
+    fun deleteAnonymousKeyId(namespace: String)
 }

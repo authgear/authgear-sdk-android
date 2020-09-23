@@ -12,9 +12,12 @@ import androidx.lifecycle.Observer;
 
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthorizeOptions;
+import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthorizeListener;
 import com.oursky.authgear.OnLogoutListener;
+import com.oursky.authgear.OnPromoteAnonymousUserListener;
+import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.UserInfo;
 
@@ -59,7 +62,9 @@ public class MainViewModel extends AndroidViewModel {
         return mIsLoggedIn;
     }
 
-    public LiveData<Boolean> isLoading() { return mIsLoading; }
+    public LiveData<Boolean> isLoading() {
+        return mIsLoading;
+    }
 
     public void authenticateAnonymously() {
         if (mIsLoading.getValue()) return;
@@ -127,6 +132,20 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public void promoteAnonymousUser() {
-        mAuthgear.promoteAnonymousUser();
+        if (mIsLoading.getValue()) return;
+        mIsLoading.setValue(true);
+        mAuthgear.promoteAnonymousUser(new PromoteOptions("com.myapp://host/path", null, null), new OnPromoteAnonymousUserListener() {
+            @Override
+            public void onPromoted(@NonNull AuthorizeResult result) {
+                updateSessionState();
+                mIsLoading.setValue(false);
+            }
+
+            @Override
+            public void onPromotionFailed(@NonNull Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+            }
+        });
     }
 }

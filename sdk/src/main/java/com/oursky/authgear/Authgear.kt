@@ -9,6 +9,7 @@ import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.lang.Exception
 
 class Authgear @JvmOverloads constructor(application: Application, name: String? = null) {
     companion object {
@@ -17,7 +18,13 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     }
 
     private val core =
-        AuthgearCore(application, TokenRepoEncryptedSharedPref(application), OauthRepoHttp(), KeyRepoKeystore(), name)
+        AuthgearCore(
+            application,
+            TokenRepoEncryptedSharedPref(application),
+            OauthRepoHttp(),
+            KeyRepoKeystore(),
+            name
+        )
     private val scope = CoroutineScope(Dispatchers.IO)
     val clientId: String?
         get() = core.clientId
@@ -34,8 +41,8 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     fun setOnRefreshTokenExpiredListener(
         listener: OnRefreshTokenExpiredListener,
         handler: Handler = Handler(
-                    Looper.getMainLooper()
-                )
+            Looper.getMainLooper()
+        )
     ) {
         core.onRefreshTokenExpiredListener = ListenerPair(listener, handler)
     }
@@ -44,7 +51,8 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     fun authenticateAnonymously(
         onAuthenticateAnonymouslyListener: OnAuthenticateAnonymouslyListener,
         handler: Handler = Handler(
-                Looper.getMainLooper())
+            Looper.getMainLooper()
+        )
     ) {
         scope.launch {
             try {
@@ -104,7 +112,10 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     }
 
     @JvmOverloads
-    fun logout(onLogoutListener: OnLogoutListener, handler: Handler = Handler(Looper.getMainLooper())) {
+    fun logout(
+        onLogoutListener: OnLogoutListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
         scope.launch {
             try {
                 core.logout()
@@ -126,9 +137,26 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         }
     }
 
-    fun promoteAnonymousUser() {
+    @JvmOverloads
+    fun promoteAnonymousUser(
+        options: PromoteOptions,
+        onPromoteAnonymousUserListener: OnPromoteAnonymousUserListener,
+        handler: Handler = Handler(
+            Looper.getMainLooper()
+        )
+    ) {
         scope.launch {
-            core.promoteAnonymousUser()
+            try {
+                val result = core.promoteAnonymousUser(options)
+                handler.post {
+                    onPromoteAnonymousUserListener.onPromoted(result)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    onPromoteAnonymousUserListener.onPromotionFailed(e)
+                }
+            }
         }
     }
 }

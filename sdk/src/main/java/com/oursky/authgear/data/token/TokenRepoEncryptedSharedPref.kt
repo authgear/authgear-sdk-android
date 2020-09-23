@@ -71,6 +71,14 @@ internal class TokenRepoEncryptedSharedPref(private val applicationContext: Cont
         }
     }
 
+    override fun deleteAnonymousKeyId(namespace: String) {
+        synchronized(this) {
+            getPref(namespace).edit()
+                .remove(AnonymousKeyId)
+                .commit()
+        }
+    }
+
     private fun getPref(namespace: String): SharedPreferences {
         return EncryptedSharedPreferences.create(
             applicationContext, namespace, masterKey,

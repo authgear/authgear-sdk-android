@@ -24,4 +24,7 @@ internal class TokenRepoInMemory : TokenRepo {
 
     override fun setAnonymousKeyId(namespace: String, keyId: String) {
     }
+
+    override fun deleteAnonymousKeyId(namespace: String) {
+    }
 }

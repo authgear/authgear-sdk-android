@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import android.os.Looper
 import android.util.Base64
+import com.oursky.authgear.data.key.JwkResponse
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
@@ -15,6 +16,8 @@ import com.oursky.authgear.oauth.OauthException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.lang.IllegalStateException
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -35,7 +38,6 @@ internal class AuthgearCore(
     name: String? = null
 ) {
     data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
-    data class AuthorizeResult(val userInfo: UserInfo, val state: String?)
     companion object {
         @Suppress("unused")
         private val TAG = AuthgearCore::class.java.simpleName
@@ -104,32 +106,20 @@ internal class AuthgearCore(
         val keyId = tokenRepo.getAnonymousKeyId(name)
         val key = keyRepo.getAnonymousKey(keyId)
         val now = Instant.now().epochSecond
-        val header = mutableMapOf<String, JsonElement>()
-        header["typ"] = JsonPrimitive("vnd.authgear.anonymous-request")
-        header["kid"] = JsonPrimitive(key.kid)
-        header["alg"] = JsonPrimitive(key.alg)
-        key.jwk?.let { jwk ->
-            header["jwk"] = JsonObject(mutableMapOf<String, JsonElement>().also {
-                it["kid"] = JsonPrimitive(jwk.kid)
-                it["kty"] = JsonPrimitive(jwk.kty)
-                it["n"] = JsonPrimitive(jwk.n)
-                it["e"] = JsonPrimitive(jwk.e)
-            })
-        }
+        val header = key.toHeader()
         val payload = mutableMapOf<String, String>()
         payload["iat"] = now.toString()
         payload["exp"] = (now + 60).toString()
         payload["challenge"] = token
         payload["action"] = "auth"
-        val jwtData = prepareJwtData(header, payload)
-        val sig = keyRepo.signAnonymousToken(key.kid, jwtData)
-        val jwt = "$jwtData.$sig"
+        val jwt = getJwt(key.kid, header, payload)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
-            grantType = "urn:authgear:params:oauth:grant-type:anonymous-request",
+                grantType = "urn:authgear:params:oauth:grant-type:anonymous-request",
                 clientId = clientId,
                 jwt = jwt
-        ))
+            )
+        )
         val userInfo = oauthRepo.oidcUserInfoRequest(
             tokenResponse.accessToken
         )
@@ -178,8 +168,65 @@ internal class AuthgearCore(
     suspend fun handleDeepLink() {
     }
 
-    @Suppress("RedundantSuspendModifier")
-    suspend fun promoteAnonymousUser() {
+    @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
+    suspend fun promoteAnonymousUser(options: PromoteOptions): AuthorizeResult {
+        val keyId = tokenRepo.getAnonymousKeyId(name)
+            ?: throw IllegalStateException("Anonymous user credentials not found")
+        val key = keyRepo.getAnonymousKey(keyId)
+        val token = oauthRepo.oauthChallenge("anonymous_request").token
+        val now = Instant.now().epochSecond
+        val header = key.toHeader()
+        val payload = mutableMapOf<String, String>()
+        payload["iat"] = now.toString()
+        payload["exp"] = (now + 60).toString()
+        payload["challenge"] = token
+        payload["action"] = "promote"
+        val jwt = getJwt(key.kid, header, payload)
+        val loginHint = "https://authgear.com/login_hint?type=anonymous&jwt=${
+            URLEncoder.encode(
+                jwt,
+                StandardCharsets.UTF_8.toString()
+            )
+        }"
+        val authorizeUrl = authorizeEndpoint(
+            AuthorizeOptions(
+                redirectUri = options.redirectUri,
+                prompt = "login",
+                loginHint = loginHint,
+                state = options.state,
+                uiLocales = options.uiLocales
+            )
+        )
+        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
+        val result = finishAuthorization(deepLink)
+        tokenRepo.deleteAnonymousKeyId(name)
+        return result
+    }
+
+    private fun JwkResponse.toHeader(): JsonObject {
+        val header = mutableMapOf<String, JsonElement>()
+        header["typ"] = JsonPrimitive("vnd.authgear.anonymous-request")
+        header["kid"] = JsonPrimitive(kid)
+        header["alg"] = JsonPrimitive(alg)
+        jwk?.let { jwk ->
+            header["jwk"] = JsonObject(mutableMapOf<String, JsonElement>().also {
+                it["kid"] = JsonPrimitive(jwk.kid)
+                it["kty"] = JsonPrimitive(jwk.kty)
+                it["n"] = JsonPrimitive(jwk.n)
+                it["e"] = JsonPrimitive(jwk.e)
+            })
+        }
+        return JsonObject(header)
+    }
+
+    private fun getJwt(
+        kid: String,
+        header: Map<String, JsonElement>,
+        payload: Map<String, String>
+    ): String {
+        val jwtData = prepareJwtData(header, payload)
+        val sig = keyRepo.signAnonymousToken(kid, jwtData)
+        return "$jwtData.$sig"
     }
 
     private fun authorizeEndpoint(options: AuthorizeOptions): String {
