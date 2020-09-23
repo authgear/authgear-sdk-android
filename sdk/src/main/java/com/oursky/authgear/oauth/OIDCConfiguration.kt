@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class OIDCConfiguration(
+internal data class OIDCConfiguration(
     @SerialName("authorization_endpoint")
     val authorizationEndpoint: String,
     @SerialName("token_endpoint")

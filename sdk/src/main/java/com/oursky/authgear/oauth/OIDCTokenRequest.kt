@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class OIDCTokenRequest(
+internal data class OIDCTokenRequest(
     // TODO: Make it an enum
     // Research if kotlinx has better support of enum now
     @SerialName("grant_type")

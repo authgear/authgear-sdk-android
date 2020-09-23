@@ -7,39 +7,75 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 // This repository is synchronous so it's ok to use commit instead of apply.
+// Note that encrypted shared preference not thread safe and we do not know whether editing the same shared pref is
+// thread-safe so while per-field lock is more desirable this is not feasible for now.
 @SuppressLint("ApplySharedPref")
 internal class TokenRepoEncryptedSharedPref(private val applicationContext: Context) : TokenRepo {
     companion object {
         const val Verifier = "verifier"
         const val RefreshToken = "refreshToken"
+        const val AnonymousKeyId = "anonymousKeyId"
     }
+
     private val masterKey = MasterKey.Builder(applicationContext)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
+
     override fun setOIDCCodeVerifier(namespace: String, verifier: String) {
-        getPref(namespace).edit()
-            .putString(Verifier, verifier)
-            .commit()
+        synchronized(this) {
+            getPref(namespace).edit()
+                .putString(Verifier, verifier)
+                .commit()
+        }
     }
+
     override fun getOIDCCodeVerifier(namespace: String): String? {
-        return getPref(namespace).getString(Verifier, null)
+        synchronized(this) {
+            return getPref(namespace).getString(Verifier, null)
+        }
     }
+
     override fun setRefreshToken(namespace: String, refreshToken: String) {
-        getPref(namespace).edit()
-            .putString(RefreshToken, refreshToken)
-            .commit()
+        synchronized(this) {
+            getPref(namespace).edit()
+                .putString(RefreshToken, refreshToken)
+                .commit()
+        }
     }
+
     override fun getRefreshToken(namespace: String): String? {
-        return getPref(namespace).getString(RefreshToken, null)
+        synchronized(this) {
+            return getPref(namespace).getString(RefreshToken, null)
+        }
     }
+
     override fun deleteRefreshToken(namespace: String) {
-        getPref(namespace).edit()
-            .remove(RefreshToken)
-            .commit()
+        synchronized(this) {
+            getPref(namespace).edit()
+                .remove(RefreshToken)
+                .commit()
+        }
     }
+
+    override fun getAnonymousKeyId(namespace: String): String? {
+        synchronized(this) {
+            return getPref(namespace).getString(AnonymousKeyId, null)
+        }
+    }
+
+    override fun setAnonymousKeyId(namespace: String, keyId: String) {
+        synchronized(this) {
+            getPref(namespace).edit()
+                .putString(AnonymousKeyId, keyId)
+                .commit()
+        }
+    }
+
     private fun getPref(namespace: String): SharedPreferences {
-        return EncryptedSharedPreferences.create(applicationContext, namespace, masterKey,
+        return EncryptedSharedPreferences.create(
+            applicationContext, namespace, masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
     }
 }

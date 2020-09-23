@@ -4,10 +4,17 @@ import android.app.Application
 import android.net.Uri
 import android.os.Looper
 import android.util.Base64
+import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
+import com.oursky.authgear.jwt.prepareJwtData
 import com.oursky.authgear.net.toQueryParameter
-import com.oursky.authgear.oauth.*
+import com.oursky.authgear.oauth.OIDCTokenRequest
+import com.oursky.authgear.oauth.OIDCTokenResponse
+import com.oursky.authgear.oauth.OauthException
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -24,6 +31,7 @@ internal class AuthgearCore(
     private val application: Application,
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
+    private val keyRepo: KeyRepo,
     name: String? = null
 ) {
     data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
@@ -87,7 +95,47 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun authenticateAnonymously() {
+    suspend fun authenticateAnonymously(): UserInfo {
+        val clientId = this.clientId
+        require(clientId != null) {
+            "Missing client ID"
+        }
+        val token = oauthRepo.oauthChallenge("anonymous_request").token
+        val keyId = tokenRepo.getAnonymousKeyId(name)
+        val key = keyRepo.getAnonymousKey(keyId)
+        val now = Instant.now().epochSecond
+        val header = mutableMapOf<String, JsonElement>()
+        header["typ"] = JsonPrimitive("vnd.authgear.anonymous-request")
+        header["kid"] = JsonPrimitive(key.kid)
+        header["alg"] = JsonPrimitive(key.alg)
+        key.jwk?.let { jwk ->
+            header["jwk"] = JsonObject(mutableMapOf<String, JsonElement>().also {
+                it["kid"] = JsonPrimitive(jwk.kid)
+                it["kty"] = JsonPrimitive(jwk.kty)
+                it["n"] = JsonPrimitive(jwk.n)
+                it["e"] = JsonPrimitive(jwk.e)
+            })
+        }
+        val payload = mutableMapOf<String, String>()
+        payload["iat"] = now.toString()
+        payload["exp"] = (now + 60).toString()
+        payload["challenge"] = token
+        payload["action"] = "auth"
+        val jwtData = prepareJwtData(header, payload)
+        val sig = keyRepo.signAnonymousToken(key.kid, jwtData)
+        val jwt = "$jwtData.$sig"
+        val tokenResponse = oauthRepo.oidcTokenRequest(
+            OIDCTokenRequest(
+            grantType = "urn:authgear:params:oauth:grant-type:anonymous-request",
+                clientId = clientId,
+                jwt = jwt
+        ))
+        val userInfo = oauthRepo.oidcUserInfoRequest(
+            tokenResponse.accessToken
+        )
+        saveToken(tokenResponse)
+        tokenRepo.setAnonymousKeyId(name, key.kid)
+        return userInfo
     }
 
     suspend fun authorize(options: AuthorizeOptions): String? {
@@ -242,6 +290,9 @@ internal class AuthgearCore(
         val refreshToken = tokenResponse.refreshToken
         this.refreshToken = refreshToken
         expireAt = Instant.now() + Duration.ofMillis(tokenResponse.expiresIn)
+        if (refreshToken != null) {
+            tokenRepo.setRefreshToken(name, refreshToken)
+        }
     }
 
     private fun clearSession() {

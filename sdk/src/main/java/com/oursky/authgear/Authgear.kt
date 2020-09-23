@@ -3,7 +3,7 @@ package com.oursky.authgear
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +17,7 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     }
 
     private val core =
-        AuthgearCore(application, TokenRepoEncryptedSharedPref(application), OauthRepoHttp(), name)
+        AuthgearCore(application, TokenRepoEncryptedSharedPref(application), OauthRepoHttp(), KeyRepoKeystore(), name)
     private val scope = CoroutineScope(Dispatchers.IO)
     val clientId: String?
         get() = core.clientId
@@ -40,9 +40,24 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         core.onRefreshTokenExpiredListener = ListenerPair(listener, handler)
     }
 
-    fun authenticateAnonymously() {
+    @JvmOverloads
+    fun authenticateAnonymously(
+        onAuthenticateAnonymouslyListener: OnAuthenticateAnonymouslyListener,
+        handler: Handler = Handler(
+                Looper.getMainLooper())
+    ) {
         scope.launch {
-            core.authenticateAnonymously()
+            try {
+                val userInfo = core.authenticateAnonymously()
+                handler.post {
+                    onAuthenticateAnonymouslyListener.onAuthenticated(userInfo)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    onAuthenticateAnonymouslyListener.onAuthenticationFailed(e)
+                }
+            }
         }
     }
 
@@ -59,7 +74,7 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
                     onAuthorizeListener.onAuthorized(result)
                 }
             } catch (e: Throwable) {
-                Log.d(TAG, "$e")
+                e.printStackTrace()
                 handler.post {
                     onAuthorizeListener.onAuthorizationFailed(e)
                 }
@@ -80,7 +95,7 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
                     onConfigureListener.onConfigured()
                 }
             } catch (e: Throwable) {
-                Log.d(TAG, "$e")
+                e.printStackTrace()
                 handler.post {
                     onConfigureListener.onConfigurationFailed(e)
                 }
@@ -88,9 +103,20 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         }
     }
 
-    fun logout() {
+    @JvmOverloads
+    fun logout(onLogoutListener: OnLogoutListener, handler: Handler = Handler(Looper.getMainLooper())) {
         scope.launch {
-            core.logout()
+            try {
+                core.logout()
+                handler.post {
+                    onLogoutListener.onLogout()
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    onLogoutListener.onLogoutFailed(e)
+                }
+            }
         }
     }
 

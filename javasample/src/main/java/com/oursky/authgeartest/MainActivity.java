@@ -8,11 +8,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
+@SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
-    private View mConfiguring;
+    private TextView mLoading;
     private View mButtonWrapper;
     private View mLogout;
     private View mAuthorize;
+    private View mAuthenticateAnonymously;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,23 +32,32 @@ public class MainActivity extends AppCompatActivity {
         final MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         findViewById(R.id.authenticateAnonymously).setOnClickListener(view -> viewModel.authenticateAnonymously());
 
-        mConfiguring = findViewById(R.id.configuring);
+        mLoading = findViewById(R.id.loading);
         mButtonWrapper = findViewById(R.id.button_wrapper);
         mLogout = findViewById(R.id.logout);
         mAuthorize = findViewById(R.id.authorize);
+        mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mLogout.setOnClickListener(view -> viewModel.logout());
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
         mainApp.isConfigured().observe(this, isConfigured -> {
-            mButtonWrapper.setVisibility(isConfigured ? View.VISIBLE : View.GONE);
-            mConfiguring.setVisibility(isConfigured ? View.GONE : View.VISIBLE);
+            updateButtonVisibility(isConfigured, viewModel.isLoading().getValue());
+            mLoading.setText(isConfigured ? "Loading..." : "Configuring...");
         });
         viewModel.isLoggedIn().observe(this, isLoggedIn -> {
             mLogout.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
             mAuthorize.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+            mAuthenticateAnonymously.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
         });
+        viewModel.isLoading().observe(this, isLoading -> updateButtonVisibility(mainApp.isConfigured().getValue(), isLoading));
 
         findViewById(R.id.handleDeepLink).setOnClickListener(view -> viewModel.handleDeepLink());
 
         findViewById(R.id.promoteAnonymousUser).setOnClickListener(view -> viewModel.promoteAnonymousUser());
+    }
+
+    private void updateButtonVisibility(boolean isConfigured, boolean isLoading) {
+        final boolean showLoading = !isConfigured || isLoading;
+        mLoading.setVisibility(showLoading? View.VISIBLE : View.GONE);
+        mButtonWrapper.setVisibility(showLoading ? View.GONE : View.VISIBLE);
     }
 }

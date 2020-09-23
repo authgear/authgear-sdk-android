@@ -12,13 +12,18 @@ import androidx.lifecycle.Observer;
 
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthorizeOptions;
+import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthorizeListener;
+import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.SessionState;
+import com.oursky.authgear.UserInfo;
 
+@SuppressWarnings("ConstantConditions")
 public class MainViewModel extends AndroidViewModel {
     private static final String TAG = MainViewModel.class.getSimpleName();
     private Authgear mAuthgear;
     private MutableLiveData<Boolean> mIsLoggedIn;
+    private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     // TODO: Is configured can be false since configuration can fail, need to manually retry.
     // If is configured is false currently the session state returned would be wrong - the refresh
     // token is there but any error during access token refresh would pause the whole process.
@@ -32,7 +37,10 @@ public class MainViewModel extends AndroidViewModel {
         MainApplication app = getApplication();
         mAuthgear = app.getAuthgear();
         mIsLoggedIn = new MutableLiveData<>(mAuthgear.getSessionState() == SessionState.LoggedIn);
-        mAuthgear.setOnRefreshTokenExpiredListener(() -> Log.d(TAG, "Token expired"));
+        mAuthgear.setOnRefreshTokenExpiredListener(() -> {
+            Log.d(TAG, "Token expired");
+            updateSessionState();
+        });
         app.isConfigured().observeForever(mIsConfiguredObserver);
     }
 
@@ -51,11 +59,29 @@ public class MainViewModel extends AndroidViewModel {
         return mIsLoggedIn;
     }
 
+    public LiveData<Boolean> isLoading() { return mIsLoading; }
+
     public void authenticateAnonymously() {
-        mAuthgear.authenticateAnonymously();
+        if (mIsLoading.getValue()) return;
+        mIsLoading.setValue(true);
+        mAuthgear.authenticateAnonymously(new OnAuthenticateAnonymouslyListener() {
+            @Override
+            public void onAuthenticated(@NonNull UserInfo userInfo) {
+                updateSessionState();
+                mIsLoading.setValue(false);
+            }
+
+            @Override
+            public void onAuthenticationFailed(@NonNull Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+            }
+        });
     }
 
     public void authorize() {
+        if (mIsLoading.getValue()) return;
+        mIsLoading.setValue(true);
         mAuthgear.authorize(new AuthorizeOptions(
                 "com.myapp://host/path",
                 null,
@@ -67,17 +93,33 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthorized(@Nullable String state) {
                 Log.d(TAG, state == null ? "No state" : state);
                 updateSessionState();
+                mIsLoading.setValue(false);
             }
 
             @Override
             public void onAuthorizationFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
             }
         });
     }
 
     public void logout() {
-        mAuthgear.logout();
+        if (mIsLoading.getValue()) return;
+        mIsLoading.setValue(true);
+        mAuthgear.logout(new OnLogoutListener() {
+            @Override
+            public void onLogout() {
+                updateSessionState();
+                mIsLoading.setValue(false);
+            }
+
+            @Override
+            public void onLogoutFailed(@NonNull Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+            }
+        });
     }
 
     public void handleDeepLink() {

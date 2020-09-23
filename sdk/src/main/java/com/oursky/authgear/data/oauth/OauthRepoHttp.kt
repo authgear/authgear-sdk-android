@@ -5,12 +5,14 @@ import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.oauth.*
 import java.net.URL
 
-class OauthRepoHttp : OauthRepo {
+internal class OauthRepoHttp : OauthRepo {
     companion object {
         @Suppress("unused")
         private val TAG = OauthRepoHttp::class.java.simpleName
     }
+
     private var config: OIDCConfiguration? = null
+
     // Variable assignment is atomic in kotlin so no need to guard
     // If memory ordering becomes a problem, use AtomicReference (instead of synchronize)
     override var endpoint: String? = null
@@ -28,6 +30,7 @@ class OauthRepoHttp : OauthRepo {
             return HttpClient.getJson(URL(URL(endpoint), "/.well-known/openid-configuration"))
         }
     }
+
     override fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse {
         val config = getOIDCConfiguration()
         val body = mutableMapOf<String, String>()
@@ -38,17 +41,32 @@ class OauthRepoHttp : OauthRepo {
         request.codeVerifier?.let { body["code_verifier"] = it }
         request.refreshToken?.let { body["refresh_token"] = it }
         request.jwt?.let { body["jwt"] = it }
-        return HttpClient.postFormRespJsonWithError<OIDCTokenResponse, OauthException>(URL(config.tokenEndpoint), body)
+        return HttpClient.postFormRespJsonWithError<OIDCTokenResponse, OauthException>(
+            URL(config.tokenEndpoint),
+            body
+        )
     }
+
     override fun oidcRevocationRequest(refreshToken: String) {
         val config = getOIDCConfiguration()
         val queries = mutableMapOf<String, String>()
         queries["token"] = refreshToken
         HttpClient.postForm(URL(config.revocationEndpoint), queries)
     }
+
     override fun oidcUserInfoRequest(accessToken: String): UserInfo {
         val config = getOIDCConfiguration()
-        return HttpClient.getJson(URL(config.userInfoEndpoint),
-            mutableMapOf(Pair("authorization", "bearer $accessToken")))
+        return HttpClient.getJson(
+            URL(config.userInfoEndpoint),
+            mutableMapOf(Pair("authorization", "bearer $accessToken"))
+        )
+    }
+
+    override fun oauthChallenge(purpose: String): ChallengeResponse {
+        val body = mutableMapOf<String, String>()
+        body["purpose"] = purpose
+        val response: ChallengeResponseResult =
+            HttpClient.postJsonRespJson(URL(URL(endpoint), "/oauth2/challenge"), body)
+        return response.result
     }
 }
