@@ -1,5 +1,6 @@
 package com.oursky.authgeartest;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -8,6 +9,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.snackbar.Snackbar;
+import com.oursky.authgear.UserInfo;
+
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
     private TextView mLoading;
@@ -15,6 +19,9 @@ public class MainActivity extends AppCompatActivity {
     private View mLogout;
     private View mAuthorize;
     private View mAuthenticateAnonymously;
+    private View mUserInfoWrapper;
+    private TextView mUserInfoIsAnonymous;
+    private boolean mHasBindError = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,15 +37,22 @@ public class MainActivity extends AppCompatActivity {
 
         final MainApplication mainApp = (MainApplication) getApplication();
         final MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
-        findViewById(R.id.authenticateAnonymously).setOnClickListener(view -> viewModel.authenticateAnonymously());
 
         mLoading = findViewById(R.id.loading);
         mButtonWrapper = findViewById(R.id.button_wrapper);
         mLogout = findViewById(R.id.logout);
         mAuthorize = findViewById(R.id.authorize);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
+        mUserInfoWrapper = findViewById(R.id.user_info_wrapper);
+        mUserInfoIsAnonymous = findViewById(R.id.is_anonymous);
+
         mLogout.setOnClickListener(view -> viewModel.logout());
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
+        mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
+        findViewById(R.id.handleDeepLink).setOnClickListener(view -> viewModel.handleDeepLink());
+        findViewById(R.id.promoteAnonymousUser).setOnClickListener(view -> viewModel.promoteAnonymousUser());
+        findViewById(R.id.fetchUserInfo).setOnClickListener(view -> viewModel.fetchUserInfo());
+
         mainApp.isConfigured().observe(this, isConfigured -> {
             updateButtonVisibility(isConfigured, viewModel.isLoading().getValue());
             mLoading.setText(isConfigured ? "Loading..." : "Configuring...");
@@ -49,15 +63,30 @@ public class MainActivity extends AppCompatActivity {
             mAuthenticateAnonymously.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
         });
         viewModel.isLoading().observe(this, isLoading -> updateButtonVisibility(mainApp.isConfigured().getValue(), isLoading));
-
-        findViewById(R.id.handleDeepLink).setOnClickListener(view -> viewModel.handleDeepLink());
-
-        findViewById(R.id.promoteAnonymousUser).setOnClickListener(view -> viewModel.promoteAnonymousUser());
+        viewModel.userInfo().observe(this, this::updateUserInfo);
+        viewModel.error().observe(this, e -> {
+            if (!mHasBindError) {
+                mHasBindError = true;
+                return;
+            }
+            if (e == null) return;
+            Snackbar.make(findViewById(android.R.id.content), e.toString(), Snackbar.LENGTH_SHORT);
+        });
     }
 
     private void updateButtonVisibility(boolean isConfigured, boolean isLoading) {
         final boolean showLoading = !isConfigured || isLoading;
         mLoading.setVisibility(showLoading? View.VISIBLE : View.GONE);
         mButtonWrapper.setVisibility(showLoading ? View.GONE : View.VISIBLE);
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void updateUserInfo(UserInfo userInfo) {
+        if (userInfo == null) {
+            mUserInfoWrapper.setVisibility(View.GONE);
+        } else {
+            mUserInfoWrapper.setVisibility(View.VISIBLE);
+            mUserInfoIsAnonymous.setText("" + userInfo.isAnonymous());
+        }
     }
 }

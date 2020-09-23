@@ -203,6 +203,11 @@ internal class AuthgearCore(
         return result
     }
 
+    @Suppress("RedundantSuspendModifier")
+    suspend fun fetchUserInfo(): UserInfo {
+        return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
+    }
+
     private fun JwkResponse.toHeader(): JsonObject {
         val header = mutableMapOf<String, JsonElement>()
         header["typ"] = JsonPrimitive("vnd.authgear.anonymous-request")

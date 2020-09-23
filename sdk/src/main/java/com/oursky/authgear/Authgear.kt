@@ -159,4 +159,25 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
             }
         }
     }
+
+    @JvmOverloads
+    fun fetchUserInfo(
+        onFetchUserInfoListener: OnFetchUserInfoListener,
+        handler: Handler = Handler(
+                Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val userInfo = core.fetchUserInfo()
+                handler.post {
+                    onFetchUserInfoListener.onFetchedUserInfo(userInfo)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    onFetchUserInfoListener.onFetchingUserInfoFailed(e)
+                }
+            }
+        }
+    }
 }

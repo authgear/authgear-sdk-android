@@ -65,6 +65,30 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"/>
 
+            <LinearLayout
+                android:id="@+id/user_info_wrapper"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="Is Anonymous"
+                    android:fontFamily="sans-serif-medium"
+                    tools:ignore="HardcodedText"/>
+
+                <TextView
+                    android:id="@+id/is_anonymous"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"/>
+
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/loading"
                 android:layout_width="match_parent"
@@ -124,6 +148,15 @@
                     android:layout_marginBottom="16dp"
                     android:layout_gravity="center_horizontal"
                     android:text="Promote anonymous user"
+                    tools:ignore="HardcodedText" />
+
+                <Button
+                    android:id="@+id/fetchUserInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Fetch user info"
                     tools:ignore="HardcodedText" />
 
             </LinearLayout>

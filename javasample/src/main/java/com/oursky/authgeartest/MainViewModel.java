@@ -15,6 +15,7 @@ import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthorizeListener;
+import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.PromoteOptions;
@@ -27,6 +28,8 @@ public class MainViewModel extends AndroidViewModel {
     private Authgear mAuthgear;
     private MutableLiveData<Boolean> mIsLoggedIn;
     private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
+    private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
+    private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
     // TODO: Is configured can be false since configuration can fail, need to manually retry.
     // If is configured is false currently the session state returned would be wrong - the refresh
     // token is there but any error during access token refresh would pause the whole process.
@@ -66,6 +69,14 @@ public class MainViewModel extends AndroidViewModel {
         return mIsLoading;
     }
 
+    public LiveData<UserInfo> userInfo() {
+        return mUserInfo;
+    }
+
+    public LiveData<Throwable> error() {
+        return mError;
+    }
+
     public void authenticateAnonymously() {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
@@ -80,6 +91,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthenticationFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
+                mError.setValue(throwable);
             }
         });
     }
@@ -105,6 +117,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthorizationFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
+                mError.setValue(throwable);
             }
         });
     }
@@ -117,12 +130,14 @@ public class MainViewModel extends AndroidViewModel {
             public void onLogout() {
                 updateSessionState();
                 mIsLoading.setValue(false);
+                mUserInfo.setValue(null);
             }
 
             @Override
             public void onLogoutFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
+                mError.setValue(throwable);
             }
         });
     }
@@ -138,6 +153,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
                 updateSessionState();
+                mUserInfo.setValue(result.getUserInfo());
                 mIsLoading.setValue(false);
             }
 
@@ -145,6 +161,22 @@ public class MainViewModel extends AndroidViewModel {
             public void onPromotionFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
+                mError.setValue(throwable);
+            }
+        });
+    }
+
+    public void fetchUserInfo() {
+        mAuthgear.fetchUserInfo(new OnFetchUserInfoListener() {
+            @Override
+            public void onFetchedUserInfo(@NonNull UserInfo userInfo) {
+                mUserInfo.setValue(userInfo);
+            }
+
+            @Override
+            public void onFetchingUserInfoFailed(@NonNull Throwable throwable) {
+                mUserInfo.setValue(null);
+                mError.setValue(throwable);
             }
         });
     }
