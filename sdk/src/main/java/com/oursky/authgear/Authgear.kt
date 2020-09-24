@@ -17,7 +17,7 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         private val TAG = Authgear::class.java.simpleName
     }
 
-    private val core =
+    internal val core =
         AuthgearCore(
             application,
             TokenRepoEncryptedSharedPref(application),
