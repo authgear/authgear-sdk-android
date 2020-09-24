@@ -3,13 +3,12 @@ package com.oursky.authgear
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.MainThread
+import androidx.annotation.WorkerThread
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.lang.Exception
+import kotlinx.coroutines.*
 
 class Authgear @JvmOverloads constructor(application: Application, name: String? = null) {
     companion object {
@@ -36,23 +35,25 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         get() {
             return core.sessionState
         }
+    val accessToken: String?
+        get() {
+            return core.accessToken
+        }
 
+    @MainThread
     @JvmOverloads
     fun setOnRefreshTokenExpiredListener(
         listener: OnRefreshTokenExpiredListener,
-        handler: Handler = Handler(
-            Looper.getMainLooper()
-        )
+        handler: Handler = Handler(Looper.getMainLooper())
     ) {
         core.onRefreshTokenExpiredListener = ListenerPair(listener, handler)
     }
 
+    @MainThread
     @JvmOverloads
     fun authenticateAnonymously(
         onAuthenticateAnonymouslyListener: OnAuthenticateAnonymouslyListener,
-        handler: Handler = Handler(
-            Looper.getMainLooper()
-        )
+        handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
@@ -69,6 +70,7 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         }
     }
 
+    @MainThread
     @JvmOverloads
     fun authorize(
         options: AuthorizeOptions,
@@ -90,6 +92,7 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         }
     }
 
+    @MainThread
     @JvmOverloads
     fun configure(
         options: ConfigureOptions,
@@ -111,6 +114,7 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         }
     }
 
+    @MainThread
     @JvmOverloads
     fun logout(
         onLogoutListener: OnLogoutListener,
@@ -131,19 +135,51 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         }
     }
 
+    /**
+     * Refresh access token synchronously if needed. Do *NOT* call this on the main thread.
+     */
+    @WorkerThread
+    fun refreshAccessTokenIfNeededSync(): String? {
+        return runBlocking {
+            withContext(scope.coroutineContext) {
+                core.refreshAccessTokenIfNeeded()
+            }
+        }
+    }
+
+    @MainThread
+    @JvmOverloads
+    fun refreshAccessTokenIfNeeded(
+        onRefreshAccessTokenIfNeededListener: OnRefreshAccessTokenIfNeededListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val token = core.refreshAccessTokenIfNeeded()
+                handler.post {
+                    onRefreshAccessTokenIfNeededListener.onFinished(token)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    onRefreshAccessTokenIfNeededListener.onFailed(e)
+                }
+            }
+        }
+    }
+
     fun handleDeepLink() {
         scope.launch {
             core.handleDeepLink()
         }
     }
 
+    @MainThread
     @JvmOverloads
     fun promoteAnonymousUser(
         options: PromoteOptions,
         onPromoteAnonymousUserListener: OnPromoteAnonymousUserListener,
-        handler: Handler = Handler(
-            Looper.getMainLooper()
-        )
+        handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
@@ -160,11 +196,11 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
         }
     }
 
+    @MainThread
     @JvmOverloads
     fun fetchUserInfo(
         onFetchUserInfoListener: OnFetchUserInfoListener,
-        handler: Handler = Handler(
-                Looper.getMainLooper())
+        handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {

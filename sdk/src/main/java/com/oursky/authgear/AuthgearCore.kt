@@ -78,7 +78,8 @@ internal class AuthgearCore(
     private val name = name ?: "default"
     private var isInitialized = false
     private var refreshToken: String? = null
-    private var accessToken: String? = null
+    var accessToken: String? = null
+        private set
     private var expireAt: Instant? = null
     var clientId: String? = null
         private set
@@ -208,6 +209,13 @@ internal class AuthgearCore(
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
     }
 
+    suspend fun refreshAccessTokenIfNeeded(): String? {
+        if (shouldRefreshAccessToken()) {
+            refreshAccessToken()
+        }
+        return accessToken
+    }
+
     private fun JwkResponse.toHeader(): JsonObject {
         val header = mutableMapOf<String, JsonElement>()
         header["typ"] = JsonPrimitive("vnd.authgear.anonymous-request")
@@ -302,7 +310,8 @@ internal class AuthgearCore(
         return false
     }
 
-    private fun refreshAccessToken() {
+    @Suppress("RedundantSuspendModifier")
+    private suspend fun refreshAccessToken() {
         val clientId = this.clientId
         require(clientId != null) {
             "Missing Client ID"

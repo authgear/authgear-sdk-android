@@ -21,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
     private View mAuthenticateAnonymously;
     private View mUserInfoWrapper;
     private TextView mUserInfoIsAnonymous;
+    private View mAccessTokenWrapper;
+    private TextView mAccessToken;
     private boolean mHasBindError = false;
 
     @Override
@@ -45,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mUserInfoWrapper = findViewById(R.id.user_info_wrapper);
         mUserInfoIsAnonymous = findViewById(R.id.is_anonymous);
+        mAccessTokenWrapper = findViewById(R.id.access_token_wrapper);
+        mAccessToken = findViewById(R.id.access_token);
 
         mLogout.setOnClickListener(view -> viewModel.logout());
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
@@ -64,6 +68,10 @@ public class MainActivity extends AppCompatActivity {
         });
         viewModel.isLoading().observe(this, isLoading -> updateButtonVisibility(mainApp.isConfigured().getValue(), isLoading));
         viewModel.userInfo().observe(this, this::updateUserInfo);
+        viewModel.accessToken().observe(this, accessToken -> {
+            mAccessTokenWrapper.setVisibility(accessToken == null ? View.GONE : View.VISIBLE);
+            mAccessToken.setText(accessToken);
+        });
         viewModel.error().observe(this, e -> {
             if (!mHasBindError) {
                 mHasBindError = true;

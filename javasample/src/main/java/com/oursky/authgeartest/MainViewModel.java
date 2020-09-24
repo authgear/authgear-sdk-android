@@ -29,6 +29,7 @@ public class MainViewModel extends AndroidViewModel {
     private MutableLiveData<Boolean> mIsLoggedIn;
     private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
+    private MutableLiveData<String> mAccessToken = new MutableLiveData<>(null);
     private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
     // TODO: Is configured can be false since configuration can fail, need to manually retry.
     // If is configured is false currently the session state returned would be wrong - the refresh
@@ -59,6 +60,7 @@ public class MainViewModel extends AndroidViewModel {
 
     private void updateSessionState() {
         mIsLoggedIn.setValue(mAuthgear.getSessionState() == SessionState.LoggedIn);
+        mAccessToken.setValue(mAuthgear.getAccessToken());
     }
 
     public LiveData<Boolean> isLoggedIn() {
@@ -72,6 +74,8 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<UserInfo> userInfo() {
         return mUserInfo;
     }
+
+    public LiveData<String> accessToken() { return mAccessToken; }
 
     public LiveData<Throwable> error() {
         return mError;

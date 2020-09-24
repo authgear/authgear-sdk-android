@@ -6,6 +6,10 @@ suspend fun Authgear.configure(options: ConfigureOptions) {
     return core.configure(options)
 }
 
+suspend fun Authgear.refreshTokenIfNeeded(): String? {
+    return core.refreshAccessTokenIfNeeded()
+}
+
 suspend fun Authgear.authorize(options: AuthorizeOptions): String? {
     return core.authorize(options)
 }
