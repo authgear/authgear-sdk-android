@@ -1,6 +1,6 @@
 package com.oursky.authgear
 
-data class PromoteOptions(
+data class PromoteOptions @JvmOverloads constructor(
     /**
      * Redirection URI to which the response will be sent after authorization.
      */
