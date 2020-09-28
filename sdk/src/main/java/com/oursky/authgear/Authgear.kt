@@ -10,7 +10,7 @@ import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
 import kotlinx.coroutines.*
 
-class Authgear @JvmOverloads constructor(application: Application, name: String? = null) {
+class Authgear @JvmOverloads constructor(application: Application, clientId: String, authgearEndpoint: String, name: String? = null) {
     companion object {
         @Suppress("unused")
         private val TAG = Authgear::class.java.simpleName
@@ -19,14 +19,18 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     internal val core =
         AuthgearCore(
             application,
+            clientId,
+            authgearEndpoint,
             TokenRepoEncryptedSharedPref(application),
             OauthRepoHttp(),
             KeyRepoKeystore(),
             name
         )
     private val scope = CoroutineScope(Dispatchers.IO)
-    val clientId: String?
-        get() = core.clientId
+    val clientId: String
+        get() {
+            return core.clientId
+        }
     val onRefreshTokenExpiredListener: OnRefreshTokenExpiredListener?
         get() {
             return core.onRefreshTokenExpiredListener?.listener
@@ -95,13 +99,12 @@ class Authgear @JvmOverloads constructor(application: Application, name: String?
     @MainThread
     @JvmOverloads
     fun configure(
-        options: ConfigureOptions,
         onConfigureListener: OnConfigureListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
-                core.configure(options)
+                core.configure()
                 handler.post {
                     onConfigureListener.onConfigured()
                 }

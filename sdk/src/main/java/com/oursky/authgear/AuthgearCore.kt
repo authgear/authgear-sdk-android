@@ -32,6 +32,8 @@ import kotlin.coroutines.suspendCoroutine
  */
 internal class AuthgearCore(
     private val application: Application,
+    val clientId: String,
+    authgearEndpoint: String,
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
@@ -75,14 +77,16 @@ internal class AuthgearCore(
         val challenge: String
     )
 
+    init {
+        oauthRepo.endpoint = authgearEndpoint
+    }
+
     private val name = name ?: "default"
     private var isInitialized = false
     private var refreshToken: String? = null
     var accessToken: String? = null
         private set
     private var expireAt: Instant? = null
-    var clientId: String? = null
-        private set
     var onRefreshTokenExpiredListener: ListenerPair<OnRefreshTokenExpiredListener>? = null
         set(value) {
             requireIsMainThread()
@@ -97,12 +101,15 @@ internal class AuthgearCore(
         }
     }
 
+    private fun requireIsInitialized() {
+        require(isInitialized) {
+            "Authgear is not configured. Did you forget to call configure?"
+        }
+    }
+
     @Suppress("RedundantSuspendModifier")
     suspend fun authenticateAnonymously(): UserInfo {
-        val clientId = this.clientId
-        require(clientId != null) {
-            "Missing client ID"
-        }
+        requireIsInitialized()
         val token = oauthRepo.oauthChallenge("anonymous_request").token
         val keyId = tokenRepo.getAnonymousKeyId(name)
         val key = keyRepo.getAnonymousKey(keyId)
@@ -129,21 +136,20 @@ internal class AuthgearCore(
         return userInfo
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun authorize(options: AuthorizeOptions): String? {
-        @Suppress("BlockingMethodInNonBlockingContext")
+        requireIsInitialized()
         val authorizeUrl = authorizeEndpoint(options)
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink).state
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun configure(options: ConfigureOptions) {
+    suspend fun configure() {
         // TODO: This is not present in js sdk. Verify if this is needed.
         if (isInitialized) return
         isInitialized = true
         val refreshToken = tokenRepo.getRefreshToken(name)
-        clientId = options.clientId
-        oauthRepo.endpoint = options.endpoint
         this.refreshToken = refreshToken
         if (shouldRefreshAccessToken()) {
             refreshAccessToken()
@@ -154,6 +160,7 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier")
     suspend fun logout(force: Boolean? = null) {
+        requireIsInitialized()
         try {
             val refreshToken = tokenRepo.getRefreshToken(name) ?: ""
             oauthRepo.oidcRevocationRequest(refreshToken)
@@ -171,6 +178,7 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
     suspend fun promoteAnonymousUser(options: PromoteOptions): AuthorizeResult {
+        requireIsInitialized()
         val keyId = tokenRepo.getAnonymousKeyId(name)
             ?: throw IllegalStateException("Anonymous user credentials not found")
         val key = keyRepo.getAnonymousKey(keyId)
@@ -206,10 +214,12 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier")
     suspend fun fetchUserInfo(): UserInfo {
+        requireIsInitialized()
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
     }
 
     suspend fun refreshAccessTokenIfNeeded(): String? {
+        requireIsInitialized()
         if (shouldRefreshAccessToken()) {
             refreshAccessToken()
         }
@@ -243,10 +253,6 @@ internal class AuthgearCore(
     }
 
     private fun authorizeEndpoint(options: AuthorizeOptions): String {
-        val clientId = this.clientId
-        require(clientId != null) {
-            "Missing client ID"
-        }
         val config = oauthRepo.getOIDCConfiguration()
         val queries = mutableMapOf<String, String>()
         val codeVerifier = setupVerifier()
@@ -312,10 +318,6 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier")
     private suspend fun refreshAccessToken() {
-        val clientId = this.clientId
-        require(clientId != null) {
-            "Missing Client ID"
-        }
         val refreshToken = tokenRepo.getRefreshToken(name)
         if (refreshToken == null) {
             // Somehow we are asked to refresh access token but we don't have the refresh token.
@@ -382,10 +384,6 @@ internal class AuthgearCore(
     }
 
     private fun finishAuthorization(deepLink: String): AuthorizeResult {
-        val clientId = this.clientId
-        require(clientId != null) {
-            "Missing Client ID"
-        }
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val error = uri.getQueryParameter("error")

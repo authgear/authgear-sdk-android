@@ -2,8 +2,8 @@
 
 package com.oursky.authgear
 
-suspend fun Authgear.configure(options: ConfigureOptions) {
-    return core.configure(options)
+suspend fun Authgear.configure() {
+    return core.configure()
 }
 
 suspend fun Authgear.refreshTokenIfNeeded(): String? {
