@@ -75,7 +75,9 @@ public class MainViewModel extends AndroidViewModel {
         return mUserInfo;
     }
 
-    public LiveData<String> accessToken() { return mAccessToken; }
+    public LiveData<String> accessToken() {
+        return mAccessToken;
+    }
 
     public LiveData<Throwable> error() {
         return mError;
@@ -103,13 +105,7 @@ public class MainViewModel extends AndroidViewModel {
     public void authorize() {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
-        mAuthgear.authorize(new AuthorizeOptions(
-                "com.myapp://host/path",
-                null,
-                null,
-                null,
-                null
-        ), new OnAuthorizeListener() {
+        mAuthgear.authorize(new AuthorizeOptions("com.myapp://host/path"), new OnAuthorizeListener() {
             @Override
             public void onAuthorized(@Nullable String state) {
                 Log.d(TAG, state == null ? "No state" : state);

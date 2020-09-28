@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import android.os.Looper
 import android.util.Base64
+import android.util.Log
 import com.oursky.authgear.data.key.JwkResponse
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
@@ -280,7 +281,9 @@ internal class AuthgearCore(
         options.uiLocales?.let {
             queries["ui_locales"] = it.joinToString(separator = " ")
         }
-        return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
+        return "${config.authorizationEndpoint}?${queries.toQueryParameter()}".also {
+            Log.d(TAG, "url=$it")
+        }
     }
 
     private fun setupVerifier(): Verifier {

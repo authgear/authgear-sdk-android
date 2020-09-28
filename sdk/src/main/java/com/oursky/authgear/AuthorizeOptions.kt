@@ -1,6 +1,6 @@
 package com.oursky.authgear
 
-data class AuthorizeOptions(
+data class AuthorizeOptions @JvmOverloads constructor(
     /**
      * Redirection URI to which the response will be sent after authorization.
      */
@@ -12,7 +12,7 @@ data class AuthorizeOptions(
     /**
      * OIDC prompt parameter.
      */
-    val prompt: String? = null,
+    val prompt: String? = "login",
     /**
      * OIDC login hint parameter
      */
