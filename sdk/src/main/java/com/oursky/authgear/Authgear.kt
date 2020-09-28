@@ -99,12 +99,13 @@ class Authgear @JvmOverloads constructor(application: Application, clientId: Str
     @MainThread
     @JvmOverloads
     fun configure(
+        skipRefreshAccessToken: Boolean = false,
         onConfigureListener: OnConfigureListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
-                core.configure()
+                core.configure(skipRefreshAccessToken)
                 handler.post {
                     onConfigureListener.onConfigured()
                 }
