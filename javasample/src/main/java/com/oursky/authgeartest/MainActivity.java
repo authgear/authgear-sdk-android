@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         mLogout.setOnClickListener(view -> viewModel.logout());
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
-        findViewById(R.id.handleDeepLink).setOnClickListener(view -> viewModel.handleDeepLink());
+        findViewById(R.id.open_settings).setOnClickListener(view -> viewModel.openSettings());
         findViewById(R.id.promoteAnonymousUser).setOnClickListener(view -> viewModel.promoteAnonymousUser());
         findViewById(R.id.fetchUserInfo).setOnClickListener(view -> viewModel.fetchUserInfo());
 

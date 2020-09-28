@@ -1,10 +1,10 @@
 package com.oursky.authgear
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
 import android.os.Looper
 import android.util.Base64
-import android.util.Log
 import com.oursky.authgear.data.key.JwkResponse
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
@@ -17,7 +17,7 @@ import com.oursky.authgear.oauth.OauthException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import java.lang.IllegalStateException
+import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -34,7 +34,7 @@ import kotlin.coroutines.suspendCoroutine
 internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
-    authgearEndpoint: String,
+    private val authgearEndpoint: String,
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
@@ -178,8 +178,18 @@ internal class AuthgearCore(
         clearSession()
     }
 
-    @Suppress("RedundantSuspendModifier")
-    suspend fun handleDeepLink() {
+    fun openUrl(path: String) {
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse(URL(URL(authgearEndpoint), path).toString())
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        application.startActivity(intent)
+    }
+
+    fun open(page: Page) {
+        openUrl(when (page) {
+            Page.Settings -> "/settings"
+            Page.Identity -> "/settings/identities"
+        })
     }
 
     @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
@@ -281,9 +291,7 @@ internal class AuthgearCore(
         options.uiLocales?.let {
             queries["ui_locales"] = it.joinToString(separator = " ")
         }
-        return "${config.authorizationEndpoint}?${queries.toQueryParameter()}".also {
-            Log.d(TAG, "url=$it")
-        }
+        return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
     }
 
     private fun setupVerifier(): Verifier {

@@ -18,6 +18,7 @@ import com.oursky.authgear.OnAuthorizeListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
+import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.UserInfo;
@@ -142,8 +143,8 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void handleDeepLink() {
-        mAuthgear.handleDeepLink();
+    public void openSettings() {
+        mAuthgear.open(Page.Settings);
     }
 
     public void promoteAnonymousUser() {

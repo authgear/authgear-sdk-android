@@ -172,10 +172,12 @@ class Authgear @JvmOverloads constructor(application: Application, clientId: Str
         }
     }
 
-    fun handleDeepLink() {
-        scope.launch {
-            core.handleDeepLink()
-        }
+    fun openUrl(path: String) {
+        core.openUrl(path)
+    }
+
+    fun open(page: Page) {
+        core.open(page)
     }
 
     @MainThread

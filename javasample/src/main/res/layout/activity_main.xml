@@ -157,12 +157,12 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
-                    android:id="@+id/handleDeepLink"
+                    android:id="@+id/open_settings"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:layout_gravity="center_horizontal"
-                    android:text="Handle deep link"
+                    android:text="Open settings"
                     tools:ignore="HardcodedText" />
 
                 <Button
