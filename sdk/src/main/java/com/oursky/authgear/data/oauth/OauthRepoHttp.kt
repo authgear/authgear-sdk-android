@@ -27,7 +27,9 @@ internal class OauthRepoHttp : OauthRepo {
         synchronized(this) {
             val configAfterAcquire = this.config
             if (configAfterAcquire != null) return configAfterAcquire
-            return HttpClient.getJson(URL(URL(endpoint), "/.well-known/openid-configuration"))
+            val newConfig: OIDCConfiguration = HttpClient.getJson(URL(URL(endpoint), "/.well-known/openid-configuration"))
+            this.config = newConfig
+            return newConfig
         }
     }
 
