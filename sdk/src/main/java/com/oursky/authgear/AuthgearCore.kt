@@ -14,6 +14,10 @@ import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OIDCTokenResponse
 import com.oursky.authgear.oauth.OauthException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -24,6 +28,7 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -40,7 +45,6 @@ internal class AuthgearCore(
     private val keyRepo: KeyRepo,
     name: String? = null
 ) {
-    data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
     companion object {
         @Suppress("unused")
         private val TAG = AuthgearCore::class.java.simpleName
@@ -73,6 +77,8 @@ internal class AuthgearCore(
         }
     }
 
+    data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
+
     data class Verifier(
         val verifier: String,
         val challenge: String
@@ -95,6 +101,7 @@ internal class AuthgearCore(
         }
     var sessionState: SessionState = SessionState.Unknown
         private set
+    private val refreshAccessTokenJob = AtomicReference<Job>(null)
 
     private fun requireIsMainThread() {
         require(Looper.myLooper() == Looper.getMainLooper()) {
@@ -186,10 +193,12 @@ internal class AuthgearCore(
     }
 
     fun open(page: Page) {
-        openUrl(when (page) {
-            Page.Settings -> "/settings"
-            Page.Identity -> "/settings/identities"
-        })
+        openUrl(
+            when (page) {
+                Page.Settings -> "/settings"
+                Page.Identity -> "/settings/identities"
+            }
+        )
     }
 
     @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
@@ -334,6 +343,27 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier")
     private suspend fun refreshAccessToken() {
+        coroutineScope {
+            val job = async(start = CoroutineStart.LAZY) {
+                doRefreshAccessToken()
+            }
+            if (refreshAccessTokenJob.compareAndSet(null, job)) {
+                job.start()
+            } else {
+                // Another thread already started refreshing access token. Try to await.
+                val existingJob = refreshAccessTokenJob.get()
+                if (existingJob == null) {
+                    // The job had finished.
+                    return@coroutineScope
+                } else {
+                    job.await()
+                }
+            }
+        }
+    }
+
+    @Suppress("RedundantSuspendModifier")
+    private suspend fun doRefreshAccessToken() {
         val refreshToken = tokenRepo.getRefreshToken(name)
         if (refreshToken == null) {
             // Somehow we are asked to refresh access token but we don't have the refresh token.
