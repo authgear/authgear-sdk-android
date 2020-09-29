@@ -348,15 +348,17 @@ internal class AuthgearCore(
                 doRefreshAccessToken()
             }
             if (refreshAccessTokenJob.compareAndSet(null, job)) {
-                job.start()
+                job.await()
+                refreshAccessTokenJob.set(null)
             } else {
+                job.cancel()
                 // Another thread already started refreshing access token. Try to await.
                 val existingJob = refreshAccessTokenJob.get()
                 if (existingJob == null) {
                     // The job had finished.
                     return@coroutineScope
                 } else {
-                    job.await()
+                    existingJob.join()
                 }
             }
         }

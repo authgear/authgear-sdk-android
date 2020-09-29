@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -20,7 +21,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AuthgearInterceptorTest {
     @Test
-    fun useAppContext() {
+    fun insertAuthorizationHeader() {
         val application =
             InstrumentationRegistry.getInstrumentation().context.applicationContext as Application
         val authgear = Authgear(application, "clientId", "http://localhost:3000")
@@ -32,7 +33,11 @@ class AuthgearInterceptorTest {
         val accessToken = authgear.accessToken
         val testInterceptor = Interceptor {
             val bearerToken = it.request().header("authorization")
-            assert(bearerToken != null && bearerToken == "bearer $accessToken")
+            assertEquals(
+                "Failed to insert authorization header, value",
+                "bearer $accessToken",
+                bearerToken
+            )
             it.proceed(it.request())
         }
         val client = OkHttpClient.Builder()
