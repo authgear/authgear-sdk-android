@@ -1,5 +1,8 @@
 package com.oursky.authgear
 
+/**
+ * Authorization options.
+ */
 data class AuthorizeOptions @JvmOverloads constructor(
     /**
      * Redirection URI to which the response will be sent after authorization.
@@ -10,7 +13,11 @@ data class AuthorizeOptions @JvmOverloads constructor(
      */
     val state: String? = null,
     /**
-     * OIDC prompt parameter.
+     * OIDC prompt parameter. Default value is `login` so that re-login after logout does not obtain
+     * the refresh token automatically if the cookies in the external browser persist.
+     *
+     * It is recommended that you do not modify this parameter unless you are familiar with the OIDC
+     * spec.
      */
     val prompt: String? = "login",
     /**
