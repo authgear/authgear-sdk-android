@@ -13,7 +13,7 @@ import java.security.Signature
 import java.security.interfaces.RSAPublicKey
 import java.util.*
 
-class KeyRepoKeystore : KeyRepo {
+internal class KeyRepoKeystore : KeyRepo {
     @RequiresApi(api = Build.VERSION_CODES.M)
     override fun getAnonymousKey(kid: String?, isUrlSafe: Boolean): JwkResponse {
         val resolvedKid = kid ?: UUID.randomUUID().toString()
