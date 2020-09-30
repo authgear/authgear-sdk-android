@@ -269,6 +269,7 @@ internal class AuthgearCore(
     }
 
     private fun updateSessionState(state: SessionState, reason: SessionStateChangeReason) {
+        // TODO: Add re-entry detection
         sessionState = state
         onSessionStateChangedListeners.forEach {
             it.handler.post {
@@ -419,11 +420,13 @@ internal class AuthgearCore(
     }
 
     private fun saveToken(tokenResponse: OIDCTokenResponse, reason: SessionStateChangeReason) {
-        accessToken = tokenResponse.accessToken
-        updateSessionState(SessionState.LoggedIn, reason)
-        val refreshToken = tokenResponse.refreshToken
-        this.refreshToken = refreshToken
-        expireAt = Instant.now() + Duration.ofMillis(tokenResponse.expiresIn)
+        synchronized(this) {
+            accessToken = tokenResponse.accessToken
+            refreshToken = tokenResponse.refreshToken
+            expireAt = Instant.now() + Duration.ofMillis(tokenResponse.expiresIn)
+            updateSessionState(SessionState.LoggedIn, reason)
+        }
+        val refreshToken = this.refreshToken
         if (refreshToken != null) {
             tokenRepo.setRefreshToken(name, refreshToken)
         }
@@ -431,10 +434,12 @@ internal class AuthgearCore(
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
         tokenRepo.deleteRefreshToken(name)
-        accessToken = null
-        refreshToken = null
-        expireAt = null
-        updateSessionState(SessionState.NoSession, changeReason)
+        synchronized(this) {
+            accessToken = null
+            refreshToken = null
+            expireAt = null
+            updateSessionState(SessionState.NoSession, changeReason)
+        }
     }
 
     private suspend fun openAuthorizeUrl(redirectUrl: String, authorizeUrl: String): String {
