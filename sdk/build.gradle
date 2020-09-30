@@ -6,6 +6,8 @@ apply plugin: 'kotlinx-serialization'
 
 apply plugin: 'kotlin-android-extensions'
 
+apply plugin: 'org.jetbrains.dokka'
+
 android {
     compileSdkVersion 30
     buildToolsVersion "29.0.2"
