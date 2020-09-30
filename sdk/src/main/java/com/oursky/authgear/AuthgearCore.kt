@@ -3,8 +3,10 @@ package com.oursky.authgear
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
 import android.os.Looper
 import android.util.Base64
+import androidx.annotation.MainThread
 import com.oursky.authgear.data.key.JwkResponse
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
@@ -28,6 +30,7 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.Duration
 import java.time.Instant
+import java.util.Collections.synchronizedList
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -94,14 +97,11 @@ internal class AuthgearCore(
     var accessToken: String? = null
         private set
     private var expireAt: Instant? = null
-    var onRefreshTokenExpiredListener: ListenerPair<OnRefreshTokenExpiredListener>? = null
-        set(value) {
-            requireIsMainThread()
-            field = value
-        }
     var sessionState: SessionState = SessionState.Unknown
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
+    private val onSessionStateChangedListeners =
+        synchronizedList(mutableListOf<ListenerPair<OnSessionStateChangedListener>>())
 
     private fun requireIsMainThread() {
         require(Looper.myLooper() == Looper.getMainLooper()) {
@@ -139,7 +139,7 @@ internal class AuthgearCore(
         val userInfo = oauthRepo.oidcUserInfoRequest(
             tokenResponse.accessToken
         )
-        saveToken(tokenResponse)
+        saveToken(tokenResponse, SessionStateChangeReason.Authorized)
         tokenRepo.setAnonymousKeyId(name, key.kid)
         return userInfo
     }
@@ -162,12 +162,12 @@ internal class AuthgearCore(
         if (shouldRefreshAccessToken()) {
             if (skipRefreshAccessToken) {
                 // Consider user as logged in if refresh token is available
-                sessionState = SessionState.LoggedIn
+                updateSessionState(SessionState.LoggedIn, SessionStateChangeReason.FoundToken)
             } else {
                 refreshAccessToken()
             }
         } else {
-            sessionState = SessionState.NoSession
+            updateSessionState(SessionState.NoSession, SessionStateChangeReason.NoToken)
         }
     }
 
@@ -182,7 +182,7 @@ internal class AuthgearCore(
                 throw e
             }
         }
-        clearSession()
+        clearSession(SessionStateChangeReason.Logout)
     }
 
     fun openUrl(path: String) {
@@ -249,6 +249,32 @@ internal class AuthgearCore(
             refreshAccessToken()
         }
         return accessToken
+    }
+
+    @MainThread
+    fun addOnSessionStateChangedListener(
+        listener: OnSessionStateChangedListener,
+        handler: Handler = Handler(
+                    Looper.getMainLooper()
+                )
+    ) {
+        requireIsMainThread()
+        onSessionStateChangedListeners.add(ListenerPair(listener, handler))
+    }
+
+    @MainThread
+    fun removeOnSessionStateChangedListener(listener: OnSessionStateChangedListener) {
+        requireIsMainThread()
+        onSessionStateChangedListeners.removeIf { it.listener == listener }
+    }
+
+    private fun updateSessionState(state: SessionState, reason: SessionStateChangeReason) {
+        sessionState = state
+        onSessionStateChangedListeners.forEach {
+            it.handler.post {
+                it.listener.onSessionStateChanged(state, reason)
+            }
+        }
     }
 
     private fun JwkResponse.toHeader(): JsonObject {
@@ -370,7 +396,7 @@ internal class AuthgearCore(
         if (refreshToken == null) {
             // Somehow we are asked to refresh access token but we don't have the refresh token.
             // Something went wrong, clear session.
-            clearSession()
+            clearSession(SessionStateChangeReason.NoToken)
             return
         }
         val tokenResponse: OIDCTokenResponse?
@@ -384,20 +410,17 @@ internal class AuthgearCore(
             )
         } catch (e: Exception) {
             if (e is OauthException && e.error == "invalid_grant") {
-                onRefreshTokenExpiredListener?.let {
-                    it.handler.post { it.listener.onExpired() }
-                }
-                clearSession()
+                clearSession(SessionStateChangeReason.Expired)
                 return
             }
             throw e
         }
-        saveToken(tokenResponse)
+        saveToken(tokenResponse, SessionStateChangeReason.FoundToken)
     }
 
-    private fun saveToken(tokenResponse: OIDCTokenResponse) {
+    private fun saveToken(tokenResponse: OIDCTokenResponse, reason: SessionStateChangeReason) {
         accessToken = tokenResponse.accessToken
-        sessionState = SessionState.LoggedIn
+        updateSessionState(SessionState.LoggedIn, reason)
         val refreshToken = tokenResponse.refreshToken
         this.refreshToken = refreshToken
         expireAt = Instant.now() + Duration.ofMillis(tokenResponse.expiresIn)
@@ -406,12 +429,12 @@ internal class AuthgearCore(
         }
     }
 
-    private fun clearSession() {
+    private fun clearSession(changeReason: SessionStateChangeReason) {
         tokenRepo.deleteRefreshToken(name)
         accessToken = null
         refreshToken = null
         expireAt = null
-        sessionState = SessionState.NoSession
+        updateSessionState(SessionState.NoSession, changeReason)
     }
 
     private suspend fun openAuthorizeUrl(redirectUrl: String, authorizeUrl: String): String {
@@ -451,7 +474,7 @@ internal class AuthgearCore(
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken)
-        saveToken(tokenResponse)
+        saveToken(tokenResponse, SessionStateChangeReason.Authorized)
         return AuthorizeResult(userInfo, uri.getQueryParameter("state"))
     }
 }

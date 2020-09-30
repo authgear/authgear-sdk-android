@@ -54,11 +54,6 @@ constructor(
             return core.clientId
         }
 
-    val onRefreshTokenExpiredListener: OnRefreshTokenExpiredListener?
-        get() {
-            return core.onRefreshTokenExpiredListener?.listener
-        }
-
     /**
      * Current session state. See [SessionState].
      */
@@ -76,17 +71,24 @@ constructor(
         }
 
     /**
-     * Set the listener called when refresh token had expired.
+     * Set the listener called when session state is changed.
      * @param listener The listener.
      * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
     @JvmOverloads
-    fun setOnRefreshTokenExpiredListener(
-        listener: OnRefreshTokenExpiredListener,
-        handler: Handler = Handler(Looper.getMainLooper())
+    fun addOnSessionStateChangedListener(
+        listener: OnSessionStateChangedListener,
+        handler: Handler = Handler(
+                    Looper.getMainLooper()
+                )
     ) {
-        core.onRefreshTokenExpiredListener = ListenerPair(listener, handler)
+        core.addOnSessionStateChangedListener(listener, handler)
+    }
+
+    @MainThread
+    fun removeOnSessionStateChangedListener(listener: OnSessionStateChangedListener) {
+        core.removeOnSessionStateChangedListener(listener)
     }
 
     /**

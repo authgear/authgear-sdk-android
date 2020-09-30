@@ -45,8 +45,8 @@ public class MainViewModel extends AndroidViewModel {
         MainApplication app = getApplication();
         mAuthgear = app.getAuthgear();
         mIsLoggedIn = new MutableLiveData<>(mAuthgear.getSessionState() == SessionState.LoggedIn);
-        mAuthgear.setOnRefreshTokenExpiredListener(() -> {
-            Log.d(TAG, "Token expired");
+        mAuthgear.addOnSessionStateChangedListener((state, reason) -> {
+            Log.d(TAG, "Session state=" + state + " reason=" + reason);
             updateSessionState();
         });
         app.isConfigured().observeForever(mIsConfiguredObserver);
@@ -90,7 +90,6 @@ public class MainViewModel extends AndroidViewModel {
         mAuthgear.authenticateAnonymously(new OnAuthenticateAnonymouslyListener() {
             @Override
             public void onAuthenticated(@NonNull UserInfo userInfo) {
-                updateSessionState();
                 mIsLoading.setValue(false);
             }
 
@@ -110,7 +109,6 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onAuthorized(@Nullable String state) {
                 Log.d(TAG, state == null ? "No state" : state);
-                updateSessionState();
                 mIsLoading.setValue(false);
             }
 
@@ -129,7 +127,6 @@ public class MainViewModel extends AndroidViewModel {
         mAuthgear.logout(new OnLogoutListener() {
             @Override
             public void onLogout() {
-                updateSessionState();
                 mIsLoading.setValue(false);
                 mUserInfo.setValue(null);
             }
@@ -153,7 +150,6 @@ public class MainViewModel extends AndroidViewModel {
         mAuthgear.promoteAnonymousUser(new PromoteOptions("com.myapp://host/path", null, null), new OnPromoteAnonymousUserListener() {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
-                updateSessionState();
                 mUserInfo.setValue(result.getUserInfo());
                 mIsLoading.setValue(false);
             }
