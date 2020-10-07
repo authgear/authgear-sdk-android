@@ -314,7 +314,7 @@ internal class AuthgearCore(
         queries["code_challenge_method"] = "S256"
         queries["code_challenge"] = codeVerifier.challenge
         queries["client_id"] = clientId
-        queries["redirect_url"] = options.redirectUri
+        queries["redirect_uri"] = options.redirectUri
         options.state?.let {
             queries["state"] = it
         }
