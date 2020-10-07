@@ -19,7 +19,7 @@ suspend fun Authgear.refreshTokenIfNeeded(): String? {
 /**
  * @see [Authgear.authorize].
  */
-suspend fun Authgear.authorize(options: AuthorizeOptions): String? {
+suspend fun Authgear.authorize(options: AuthorizeOptions): AuthorizeResult {
     return core.authorize(options)
 }
 

@@ -145,11 +145,11 @@ internal class AuthgearCore(
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    suspend fun authorize(options: AuthorizeOptions): String? {
+    suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
         requireIsInitialized()
         val authorizeUrl = authorizeEndpoint(options)
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
-        return finishAuthorization(deepLink).state
+        return finishAuthorization(deepLink)
     }
 
     @Suppress("RedundantSuspendModifier")
