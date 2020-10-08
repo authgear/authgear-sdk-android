@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
+import android.util.Log
 import androidx.annotation.MainThread
 import com.oursky.authgear.data.key.JwkResponse
 import com.oursky.authgear.data.key.KeyRepo
@@ -51,6 +52,19 @@ internal class AuthgearCore(
     companion object {
         @Suppress("unused")
         private val TAG = AuthgearCore::class.java.simpleName
+
+        /**
+         * To prevent user from using expired access token, we have to check in advance
+         * whether it had expired and refresh it accordingly in [refreshAccessTokenIfNeeded]. If we
+         * use the expiry time in [OIDCTokenResponse] directly to check for expiry, it is possible
+         * that the access token had passed the check but ends up being expired when it arrives at
+         * the server due to slow traffic or unfair scheduler.
+         *
+         * To compat this, we should consider the access token expired earlier than the expiry time
+         * calculated using [OIDCTokenResponse.expiresIn]. Current implementation uses
+         * [ExpireInPercentage] of [OIDCTokenResponse.expiresIn] to calculate the expiry time.
+         */
+        private const val ExpireInPercentage = 0.9
 
         /**
          * A map used to keep track of which deep link is being handled by which container.
@@ -423,7 +437,7 @@ internal class AuthgearCore(
         synchronized(this) {
             accessToken = tokenResponse.accessToken
             refreshToken = tokenResponse.refreshToken
-            expireAt = Instant.now() + Duration.ofMillis(tokenResponse.expiresIn)
+            expireAt = Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
             updateSessionState(SessionState.LoggedIn, reason)
         }
         val refreshToken = this.refreshToken
