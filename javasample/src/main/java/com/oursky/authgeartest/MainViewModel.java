@@ -107,7 +107,8 @@ public class MainViewModel extends AndroidViewModel {
         mIsLoading.setValue(true);
         mAuthgear.authorize(new AuthorizeOptions("com.myapp://host/path"), new OnAuthorizeListener() {
             @Override
-            public void onAuthorized(@Nullable String state) {
+            public void onAuthorized(@Nullable AuthorizeResult result) {
+                String state = result.getState();
                 Log.d(TAG, state == null ? "No state" : state);
                 mIsLoading.setValue(false);
             }
