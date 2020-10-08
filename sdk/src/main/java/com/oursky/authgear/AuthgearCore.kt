@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
-import android.util.Log
 import androidx.annotation.MainThread
 import com.oursky.authgear.data.key.JwkResponse
 import com.oursky.authgear.data.key.KeyRepo
@@ -376,8 +375,6 @@ internal class AuthgearCore(
         if (accessToken == null) return true
         val expireAt = this.expireAt ?: return true
         val now = Instant.now()
-        // TODO: This would lead to 401 since the token might be expired after this is ran. Add threshold?
-        // NOTE: The threshold is *NOT* present in js sdk
         if (expireAt.isBefore(now)) return true
         return false
     }
