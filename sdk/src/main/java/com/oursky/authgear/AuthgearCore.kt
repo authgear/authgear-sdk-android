@@ -40,6 +40,7 @@ import kotlin.coroutines.suspendCoroutine
  * Listeners should only be set on the main thread.
  */
 internal class AuthgearCore(
+    private val authgear: Authgear,
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
@@ -286,7 +287,7 @@ internal class AuthgearCore(
         sessionState = state
         onSessionStateChangedListeners.forEach {
             it.handler.post {
-                it.listener.onSessionStateChanged(state, reason)
+                it.listener.onSessionStateChanged(authgear, reason)
             }
         }
     }

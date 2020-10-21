@@ -36,6 +36,7 @@ constructor(
 
     internal val core =
         AuthgearCore(
+            this,
             application,
             clientId,
             authgearEndpoint,
