@@ -108,7 +108,7 @@ class AuthgearTest {
         }
     }
 
-    @Test(timeout = RefreshTokenWaitMs * 10)
+    @Test(timeout = RefreshTokenWaitMs * 15)
     fun refreshAccessTokenWorkMultipleTimes() {
         runBlocking {
             authgearCore.configure(skipRefreshAccessToken = true)
