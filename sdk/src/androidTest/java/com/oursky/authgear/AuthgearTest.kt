@@ -38,7 +38,7 @@ class AuthgearTest {
         }
 
         override fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse {
-            if (request.grantType == "refresh_token") {
+            if (request.grantType == GrantType.REFRESH_TOKEN) {
                 refreshedCount.accumulateAndGet(1) { a, b ->
                     a + b
                 }

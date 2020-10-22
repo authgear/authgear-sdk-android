@@ -36,7 +36,7 @@ internal class OauthRepoHttp : OauthRepo {
     override fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse {
         val config = getOIDCConfiguration()
         val body = mutableMapOf<String, String>()
-        body["grant_type"] = request.grantType
+        body["grant_type"] = request.grantType.raw
         body["client_id"] = request.clientId
         request.redirectUri?.let { body["redirect_uri"] = it }
         request.code?.let { body["code"] = it }

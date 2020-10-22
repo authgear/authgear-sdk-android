@@ -1,14 +1,13 @@
 package com.oursky.authgear.oauth
 
+import com.oursky.authgear.GrantType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class OIDCTokenRequest(
-    // TODO: Make it an enum
-    // Research if kotlinx has better support of enum now
     @SerialName("grant_type")
-    val grantType: String,
+    val grantType: GrantType,
     @SerialName("client_id")
     val clientId: String,
     @SerialName("redirect_uri")
