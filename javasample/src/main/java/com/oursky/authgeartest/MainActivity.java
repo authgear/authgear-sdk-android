@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateButtonVisibility(boolean isConfigured, boolean isLoading) {
         final boolean showLoading = !isConfigured || isLoading;
-        mLoading.setVisibility(showLoading? View.VISIBLE : View.GONE);
+        mLoading.setVisibility(showLoading ? View.VISIBLE : View.GONE);
         mButtonWrapper.setVisibility(showLoading ? View.GONE : View.VISIBLE);
     }
 

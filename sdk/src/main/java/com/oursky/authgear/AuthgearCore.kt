@@ -269,8 +269,8 @@ internal class AuthgearCore(
     fun addOnSessionStateChangedListener(
         listener: OnSessionStateChangedListener,
         handler: Handler = Handler(
-                    Looper.getMainLooper()
-                )
+            Looper.getMainLooper()
+        )
     ) {
         requireIsMainThread()
         onSessionStateChangedListeners.add(ListenerPair(listener, handler))
@@ -435,7 +435,8 @@ internal class AuthgearCore(
         synchronized(this) {
             accessToken = tokenResponse.accessToken
             refreshToken = tokenResponse.refreshToken
-            expireAt = Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+            expireAt =
+                Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
             updateSessionState(SessionState.LoggedIn, reason)
         }
         val refreshToken = this.refreshToken

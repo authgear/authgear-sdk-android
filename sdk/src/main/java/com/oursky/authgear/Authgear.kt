@@ -89,8 +89,8 @@ constructor(
     fun addOnSessionStateChangedListener(
         listener: OnSessionStateChangedListener,
         handler: Handler = Handler(
-                    Looper.getMainLooper()
-                )
+            Looper.getMainLooper()
+        )
     ) {
         core.addOnSessionStateChangedListener(listener, handler)
     }
