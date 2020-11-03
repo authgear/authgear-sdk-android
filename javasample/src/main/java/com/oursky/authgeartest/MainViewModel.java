@@ -1,5 +1,6 @@
 package com.oursky.authgeartest;
 
+import android.app.Activity;
 import android.app.Application;
 import android.util.Log;
 
@@ -141,8 +142,8 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void openSettings() {
-        mAuthgear.open(Page.Settings);
+    public void openSettings(Activity activity) {
+        mAuthgear.open(activity, Page.Settings);
     }
 
     public void promoteAnonymousUser() {
