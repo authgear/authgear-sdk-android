@@ -1,5 +1,6 @@
 package com.oursky.authgear
 
+import android.app.Activity
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
@@ -269,16 +270,22 @@ constructor(
 
     /**
      * Open the specific path on the authgear server.
+     *
+     * @param activity Activity for starting Chrome custom tab activity.
+     * @param page Page in Authgear Web UI.
      */
-    fun openUrl(path: String) {
-        core.openUrl(path)
+    fun openUrl(activity: Activity, path: String) {
+        core.openUrl(activity, path)
     }
 
     /**
-     * Open the specific [Page] in external browser.
+     * Open the specific [Page] in Chrome custom tab.
+     *
+     * @param activity Activity for starting Chrome custom tab activity.
+     * @param page Page in Authgear Web UI.
      */
-    fun open(page: Page) {
-        core.open(page)
+    fun open(activity: Activity, page: Page) {
+        core.open(activity, page)
     }
 
     /**
