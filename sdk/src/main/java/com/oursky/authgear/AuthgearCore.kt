@@ -144,7 +144,7 @@ internal class AuthgearCore(
         val jwt = getJwt(key.kid, header, payload)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
-                grantType = "urn:authgear:params:oauth:grant-type:anonymous-request",
+                grantType = GrantType.ANONYMOUS,
                 clientId = clientId,
                 jwt = jwt
             )
@@ -415,7 +415,7 @@ internal class AuthgearCore(
         try {
             tokenResponse = oauthRepo.oidcTokenRequest(
                 OIDCTokenRequest(
-                    grantType = "refresh_token",
+                    grantType = GrantType.REFRESH_TOKEN,
                     clientId = clientId,
                     refreshToken = refreshToken
                 )
@@ -482,7 +482,7 @@ internal class AuthgearCore(
         val codeVerifier = tokenRepo.getOIDCCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
-                grantType = "authorization_code",
+                grantType = GrantType.AUTHORIZATION_CODE,
                 code = code,
                 redirectUri = redirectUri,
                 clientId = clientId,

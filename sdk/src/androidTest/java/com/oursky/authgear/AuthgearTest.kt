@@ -10,6 +10,9 @@ import com.oursky.authgear.oauth.OIDCConfiguration
 import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OIDCTokenResponse
 import kotlinx.coroutines.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -38,7 +41,7 @@ class AuthgearTest {
         }
 
         override fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse {
-            if (request.grantType == "refresh_token") {
+            if (request.grantType == GrantType.REFRESH_TOKEN) {
                 refreshedCount.accumulateAndGet(1) { a, b ->
                     a + b
                 }
@@ -105,7 +108,7 @@ class AuthgearTest {
         }
     }
 
-    @Test(timeout = RefreshTokenWaitMs * 10)
+    @Test(timeout = RefreshTokenWaitMs * 15)
     fun refreshAccessTokenWorkMultipleTimes() {
         runBlocking {
             authgearCore.configure(skipRefreshAccessToken = true)
@@ -119,5 +122,28 @@ class AuthgearTest {
                 oauthMock.getRefreshedCount()
             )
         }
+    }
+
+    @Test
+    fun serializeGrantType() {
+        val testOIDCTokenRequest = OIDCTokenRequest(
+            grantType = GrantType.ANONYMOUS,
+            clientId = "test"
+        )
+        val encoded = Json.encodeToString(
+            testOIDCTokenRequest
+        )
+        assertEquals(
+            "Encoded OIDCTokenRequest does not match with expected JSON string",
+            encoded,
+            "{\"grant_type\":\"urn:authgear:params:oauth:grant-type:anonymous-request\"," +
+                    "\"client_id\":\"test\",\"redirect_uri\":null,\"code\":null,\"code_verifier\":null,\"refresh_token\":null,\"jwt\":null}"
+        )
+        val decoded: OIDCTokenRequest = Json.decodeFromString(encoded)
+        assertEquals(
+            "Expect serializing and deserializing with recover the same object",
+            decoded,
+            testOIDCTokenRequest
+        )
     }
 }
