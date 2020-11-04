@@ -167,8 +167,6 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier")
     suspend fun configure(skipRefreshAccessToken: Boolean = false) {
-        // TODO: This is not present in js sdk. Verify if this is needed.
-        if (isInitialized) return
         isInitialized = true
         val refreshToken = tokenRepo.getRefreshToken(name)
         this.refreshToken = refreshToken
