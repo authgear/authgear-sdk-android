@@ -45,8 +45,8 @@ public class MainViewModel extends AndroidViewModel {
         MainApplication app = getApplication();
         mAuthgear = app.getAuthgear();
         mIsLoggedIn = new MutableLiveData<>(mAuthgear.getSessionState() == SessionState.LoggedIn);
-        mAuthgear.addOnSessionStateChangedListener((state, reason) -> {
-            Log.d(TAG, "Session state=" + state + " reason=" + reason);
+        mAuthgear.addOnSessionStateChangedListener((authgear, reason) -> {
+            Log.d(TAG, "Session state=" + authgear.getSessionState() + " reason=" + reason);
             updateSessionState();
         });
         app.isConfigured().observeForever(mIsConfiguredObserver);

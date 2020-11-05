@@ -64,13 +64,20 @@ class AuthgearTest {
 
     private lateinit var oauthMock: OauthRepoMock
     private lateinit var authgearCore: AuthgearCore
+    private lateinit var authgearNotUsed: Authgear
 
     @Before
     fun setup() {
         val application =
             InstrumentationRegistry.getInstrumentation().context.applicationContext as Application
         oauthMock = OauthRepoMock()
+        authgearNotUsed = Authgear(
+            application,
+            ClientId,
+            "EndpointNotUsed"
+        )
         authgearCore = AuthgearCore(
+            authgearNotUsed,
             application,
             ClientId,
             "EndpointNotUsed",
