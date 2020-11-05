@@ -1,13 +1,11 @@
 package com.oursky.authgear
 
-import android.app.Activity
 import android.app.Application
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import androidx.annotation.MainThread
-import androidx.browser.customtabs.CustomTabsIntent
 import com.oursky.authgear.data.key.JwkResponse
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
@@ -199,15 +197,15 @@ internal class AuthgearCore(
     }
 
     @MainThread
-    fun openUrl(activity: Activity, path: String) {
-        val uri = Uri.parse(URL(URL(authgearEndpoint), path).toString())
-        val customTabsIntent = CustomTabsIntent.Builder().build()
-        customTabsIntent.launchUrl(activity, uri)
+    fun openUrl(path: String) {
+        val url = URL(URL(authgearEndpoint), path).toString()
+        application.startActivity(
+            CustomTabActivity.createCustomTabIntent(application, url)
+        )
     }
 
-    fun open(activity: Activity, page: Page) {
+    fun open(page: Page) {
         openUrl(
-            activity,
             when (page) {
                 Page.Settings -> "/settings"
                 Page.Identity -> "/settings/identities"

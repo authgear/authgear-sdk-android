@@ -142,8 +142,8 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void openSettings(Activity activity) {
-        mAuthgear.open(activity, Page.Settings);
+    public void openSettings() {
+        mAuthgear.open(Page.Settings);
     }
 
     public void promoteAnonymousUser() {
