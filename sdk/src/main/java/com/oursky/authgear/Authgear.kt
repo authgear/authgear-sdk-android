@@ -88,8 +88,8 @@ constructor(
     fun addOnSessionStateChangedListener(
         listener: OnSessionStateChangedListener,
         handler: Handler = Handler(
-                    Looper.getMainLooper()
-                )
+            Looper.getMainLooper()
+        )
     ) {
         core.addOnSessionStateChangedListener(listener, handler)
     }
@@ -269,13 +269,17 @@ constructor(
 
     /**
      * Open the specific path on the authgear server.
+     *
+     * @param path Path to be opened in Chrome custom tab activity
      */
     fun openUrl(path: String) {
         core.openUrl(path)
     }
 
     /**
-     * Open the specific [Page] in external browser.
+     * Open the specific [Page] in Chrome custom tab.
+     *
+     * @param page Page in Authgear Web UI.
      */
     fun open(page: Page) {
         core.open(page)

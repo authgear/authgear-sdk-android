@@ -1,5 +1,6 @@
 package com.oursky.authgeartest;
 
+import android.app.Activity;
 import android.app.Application;
 import android.util.Log;
 

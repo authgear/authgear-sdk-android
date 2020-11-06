@@ -1,7 +1,6 @@
 package com.oursky.authgear
 
 import android.app.Application
-import android.content.Intent
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -197,11 +196,12 @@ internal class AuthgearCore(
         clearSession(SessionStateChangeReason.Logout)
     }
 
+    @MainThread
     fun openUrl(path: String) {
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.data = Uri.parse(URL(URL(authgearEndpoint), path).toString())
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        application.startActivity(intent)
+        val url = URL(URL(authgearEndpoint), path).toString()
+        application.startActivity(
+            CustomTabActivity.createCustomTabIntent(application, url)
+        )
     }
 
     fun open(page: Page) {
@@ -267,8 +267,8 @@ internal class AuthgearCore(
     fun addOnSessionStateChangedListener(
         listener: OnSessionStateChangedListener,
         handler: Handler = Handler(
-                    Looper.getMainLooper()
-                )
+            Looper.getMainLooper()
+        )
     ) {
         requireIsMainThread()
         onSessionStateChangedListeners.add(ListenerPair(listener, handler))
@@ -433,7 +433,8 @@ internal class AuthgearCore(
         synchronized(this) {
             accessToken = tokenResponse.accessToken
             refreshToken = tokenResponse.refreshToken
-            expireAt = Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+            expireAt =
+                Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
             updateSessionState(SessionState.LoggedIn, reason)
         }
         val refreshToken = this.refreshToken
