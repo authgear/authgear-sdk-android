@@ -29,114 +29,115 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp"
+            android:paddingVertical="24dp"
+            android:paddingHorizontal="16dp"
             android:orientation="vertical">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:text="Client ID"
-                android:fontFamily="sans-serif-medium"
-                tools:ignore="HardcodedText"/>
-
-            <TextView
-                android:id="@+id/config_client_id"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:text="Endpoint"
-                android:fontFamily="sans-serif-medium"
-                tools:ignore="HardcodedText"/>
-
-            <TextView
-                android:id="@+id/config_endpoint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"/>
-
             <LinearLayout
-                android:id="@+id/user_info_wrapper"
+                android:id="@+id/authgearConfigurationForm"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/authgearConfigurationDesc"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp"
-                    android:text="Is Anonymous"
-                    android:fontFamily="sans-serif-medium"
-                    tools:ignore="HardcodedText"/>
+                    android:layout_marginBottom="16dp"
+                    android:text="Enter Client ID and Endpoint, and then click Configure to initialize the SDK."
+                />
 
-                <TextView
-                    android:id="@+id/is_anonymous"
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/clientIdField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/clientIdLabel"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="Client ID"
+                        tools:ignore="HardcodedText" />
+
+                    <EditText
+                        android:id="@+id/clientIdInput"
+                        android:layout_height="wrap_content"
+                        android:layout_width="0dp"
+                        android:hint="Enter Client ID"
+                        app:layout_constraintStart_toEndOf="@+id/clientIdLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:inputType="text"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/endpointField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp"/>
+                    >
+
+                    <TextView
+                        android:id="@+id/endpointLabel"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="Endpoint"
+                        tools:ignore="HardcodedText" />
+
+                    <EditText
+                        android:id="@+id/endpointInput"
+                        android:layout_height="wrap_content"
+                        android:layout_width="0dp"
+                        android:hint="Enter Endpoint"
+                        app:layout_constraintStart_toEndOf="@+id/endpointLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:inputType="text"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <Button
+                    android:id="@+id/configure"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Configure" />
 
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/access_token_wrapper"
+            <TextView
+                android:id="@+id/authgearActionDesc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp"
-                    android:text="Access Token"
-                    android:fontFamily="sans-serif-medium"
-                    tools:ignore="HardcodedText"/>
-
-                <TextView
-                    android:id="@+id/access_token"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp"/>
-
-            </LinearLayout>
+                android:layout_marginBottom="32dp"
+                android:text="After that, click one of the following buttons to try different features."
+                tools:ignore="HardcodedText" />
 
             <TextView
                 android:id="@+id/loading"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
+                android:layout_marginBottom="32dp"
                 android:gravity="center_horizontal"
                 android:text="Configuring..."
                 tools:ignore="HardcodedText" />
 
             <LinearLayout
-                android:id="@+id/button_wrapper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:orientation="vertical">
-
-                <Button
-                    android:id="@+id/authenticateAnonymously"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:layout_gravity="center_horizontal"
-                    android:text="Authenticate anonymously"
-                    tools:ignore="HardcodedText" />
 
                 <Button
                     android:id="@+id/authorize"
@@ -148,21 +149,12 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
-                    android:id="@+id/logout"
+                    android:id="@+id/authenticateAnonymously"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:layout_gravity="center_horizontal"
-                    android:text="Logout"
-                    tools:ignore="HardcodedText" />
-
-                <Button
-                    android:id="@+id/open_settings"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:layout_gravity="center_horizontal"
-                    android:text="Open settings"
+                    android:text="Authenticate anonymously"
                     tools:ignore="HardcodedText" />
 
                 <Button
@@ -175,12 +167,30 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
+                    android:id="@+id/openSettings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Open settings"
+                    tools:ignore="HardcodedText" />
+
+                <Button
                     android:id="@+id/fetchUserInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:layout_gravity="center_horizontal"
                     android:text="Fetch user info"
+                    tools:ignore="HardcodedText" />
+
+                <Button
+                    android:id="@+id/logout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Logout"
                     tools:ignore="HardcodedText" />
 
             </LinearLayout>

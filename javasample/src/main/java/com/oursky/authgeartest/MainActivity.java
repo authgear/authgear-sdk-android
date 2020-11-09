@@ -1,29 +1,28 @@
 package com.oursky.authgeartest;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.snackbar.Snackbar;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
+    private EditText mClientId;
+    private EditText mEndpoint;
     private TextView mLoading;
-    private View mButtonWrapper;
-    private View mLogout;
     private View mAuthorize;
     private View mAuthenticateAnonymously;
-    private View mUserInfoWrapper;
-    private TextView mUserInfoIsAnonymous;
-    private View mAccessTokenWrapper;
-    private TextView mAccessToken;
-    private boolean mHasBindError = false;
+    private View mPromoteAnonymousUser;
+    private View mOpenSettings;
+    private View mFetchUserInfo;
+    private View mLogout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,69 +31,88 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        TextView configClientId = findViewById(R.id.config_client_id);
-        configClientId.setText(BuildConfig.LOCAL_AUTHGEAR_CLIENT_ID);
-        TextView configEndpoint = findViewById(R.id.config_endpoint);
-        configEndpoint.setText(BuildConfig.LOCAL_AUTHGEAR_ENDPOINT);
-
-        final MainApplication mainApp = (MainApplication) getApplication();
         final MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
 
+        mClientId = findViewById(R.id.clientIdInput);
+        mEndpoint = findViewById(R.id.endpointInput);
         mLoading = findViewById(R.id.loading);
-        mButtonWrapper = findViewById(R.id.button_wrapper);
-        mLogout = findViewById(R.id.logout);
         mAuthorize = findViewById(R.id.authorize);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
-        mUserInfoWrapper = findViewById(R.id.user_info_wrapper);
-        mUserInfoIsAnonymous = findViewById(R.id.is_anonymous);
-        mAccessTokenWrapper = findViewById(R.id.access_token_wrapper);
-        mAccessToken = findViewById(R.id.access_token);
+        mPromoteAnonymousUser = findViewById(R.id.promoteAnonymousUser);
+        mOpenSettings = findViewById(R.id.openSettings);
+        mFetchUserInfo = findViewById(R.id.fetchUserInfo);
+        mLogout = findViewById(R.id.logout);
 
-        mLogout.setOnClickListener(view -> viewModel.logout());
+        findViewById(R.id.configure).setOnClickListener(view -> viewModel.configure(mClientId.getText().toString(), mEndpoint.getText().toString()));
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
-        findViewById(R.id.open_settings).setOnClickListener(view -> viewModel.openSettings());
-        findViewById(R.id.promoteAnonymousUser).setOnClickListener(view -> viewModel.promoteAnonymousUser());
-        findViewById(R.id.fetchUserInfo).setOnClickListener(view -> viewModel.fetchUserInfo());
+        mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
+        mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
+        mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
+        mLogout.setOnClickListener(view -> viewModel.logout());
 
-        mainApp.isConfigured().observe(this, isConfigured -> {
-            updateButtonVisibility(isConfigured, viewModel.isLoading().getValue());
+        mClientId.setText(viewModel.clientID().getValue());
+        mEndpoint.setText(viewModel.endpoint().getValue());
+
+        viewModel.isConfigured().observe(this, isConfigured -> {
+            updateButtonDisabledState(
+                    isConfigured,
+                    viewModel.isLoading().getValue(),
+                    viewModel.isLoggedIn().getValue(),
+                    viewModel.userInfo().getValue()
+            );
             mLoading.setText(isConfigured ? "Loading..." : "Configuring...");
         });
-        viewModel.isLoggedIn().observe(this, isLoggedIn -> {
-            mLogout.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
-            mAuthorize.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
-            mAuthenticateAnonymously.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+
+        viewModel.isLoggedIn().observe(this, isLoggedIn -> updateButtonDisabledState(
+                viewModel.isConfigured().getValue(),
+                viewModel.isLoading().getValue(),
+                isLoggedIn,
+                viewModel.userInfo().getValue()
+        ));
+
+        viewModel.isLoading().observe(this, isLoading -> updateButtonDisabledState(
+                viewModel.isConfigured().getValue(),
+                isLoading,
+                viewModel.isLoggedIn().getValue(),
+                viewModel.userInfo().getValue()
+        ));
+
+        viewModel.userInfo().observe(this, userInfo -> {
+            if (userInfo == null) return;
+            updateButtonDisabledState(
+                    viewModel.isConfigured().getValue(),
+                    viewModel.isLoading().getValue(),
+                    viewModel.isLoggedIn().getValue(),
+                    userInfo
+            );
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Got UserInfo");
+            builder.setMessage(userInfo.toString());
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+            });
+            builder.create().show();
         });
-        viewModel.isLoading().observe(this, isLoading -> updateButtonVisibility(mainApp.isConfigured().getValue(), isLoading));
-        viewModel.userInfo().observe(this, this::updateUserInfo);
-        viewModel.accessToken().observe(this, accessToken -> {
-            mAccessTokenWrapper.setVisibility(accessToken == null ? View.GONE : View.VISIBLE);
-            mAccessToken.setText(accessToken);
-        });
+
         viewModel.error().observe(this, e -> {
-            if (!mHasBindError) {
-                mHasBindError = true;
-                return;
-            }
             if (e == null) return;
-            Snackbar.make(findViewById(android.R.id.content), e.toString(), Snackbar.LENGTH_SHORT);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Error");
+            builder.setMessage(e.toString());
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+            });
+            builder.create().show();
         });
     }
 
-    private void updateButtonVisibility(boolean isConfigured, boolean isLoading) {
-        final boolean showLoading = !isConfigured || isLoading;
-        mLoading.setVisibility(showLoading ? View.VISIBLE : View.GONE);
-        mButtonWrapper.setVisibility(showLoading ? View.GONE : View.VISIBLE);
-    }
-
-    @SuppressLint("SetTextI18n")
-    private void updateUserInfo(UserInfo userInfo) {
-        if (userInfo == null) {
-            mUserInfoWrapper.setVisibility(View.GONE);
-        } else {
-            mUserInfoWrapper.setVisibility(View.VISIBLE);
-            mUserInfoIsAnonymous.setText("" + userInfo.isAnonymous());
-        }
+    private void updateButtonDisabledState(boolean isConfigured, boolean isLoading, boolean isLoggedIn, UserInfo userInfo) {
+        boolean isAnonymous = userInfo != null && userInfo.isAnonymous();
+        mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
+        mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
+        mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
+        mOpenSettings.setEnabled(!isLoading && isConfigured);
+        mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
+        mLogout.setEnabled(!isLoading && isConfigured && isLoggedIn);
     }
 }
