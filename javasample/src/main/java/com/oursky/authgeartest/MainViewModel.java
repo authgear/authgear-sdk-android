@@ -35,6 +35,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Boolean> mIsLoggedIn = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
+    final private MutableLiveData<String> mSuccessDialogMessage = new MutableLiveData<>(null);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
 
     public MainViewModel(Application application) {
@@ -58,6 +59,7 @@ public class MainViewModel extends AndroidViewModel {
     private void initializeScreenState() {
         mIsLoggedIn.setValue(false);
         mUserInfo.setValue(null);
+        mSuccessDialogMessage.setValue(null);
         mError.setValue(null);
     }
 
@@ -85,6 +87,10 @@ public class MainViewModel extends AndroidViewModel {
         return mUserInfo;
     }
 
+    public LiveData<String> successDialogMessage() {
+        return mSuccessDialogMessage;
+    }
+
     public LiveData<Throwable> error() {
         return mError;
     }
@@ -104,6 +110,7 @@ public class MainViewModel extends AndroidViewModel {
         mAuthgear.configure(false, new OnConfigureListener() {
             @Override
             public void onConfigured() {
+                mSuccessDialogMessage.setValue("Configured Authgear successfully");
                 mIsLoading.setValue(false);
             }
 
@@ -132,6 +139,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthorized(@Nullable AuthorizeResult result) {
                 String state = result.getState();
                 Log.d(TAG, state == null ? "No state" : state);
+                mSuccessDialogMessage.setValue("Logged in successfully");
                 mIsLoading.setValue(false);
             }
 
@@ -151,6 +159,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onAuthenticated(@NonNull UserInfo userInfo) {
                 mUserInfo.setValue(userInfo);
+                mSuccessDialogMessage.setValue("Logged in anonymously");
                 mIsLoading.setValue(false);
             }
 
@@ -171,6 +180,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onLogout() {
                 mIsLoading.setValue(false);
                 mUserInfo.setValue(null);
+                mSuccessDialogMessage.setValue("Logged out successfully");
             }
 
             @Override
@@ -194,6 +204,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
                 mUserInfo.setValue(result.getUserInfo());
+                mSuccessDialogMessage.setValue("Successfully promoted anonymous user");
                 mIsLoading.setValue(false);
             }
 

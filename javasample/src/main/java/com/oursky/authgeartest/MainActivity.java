@@ -94,6 +94,16 @@ public class MainActivity extends AppCompatActivity {
             builder.create().show();
         });
 
+        viewModel.successDialogMessage().observe(this, message -> {
+            if (message == null || message == "") return;
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Success");
+            builder.setMessage(message);
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+            });
+            builder.create().show();
+        });
+
         viewModel.error().observe(this, e -> {
             if (e == null) return;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
