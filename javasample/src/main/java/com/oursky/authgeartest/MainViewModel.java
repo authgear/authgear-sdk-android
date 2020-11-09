@@ -134,7 +134,7 @@ public class MainViewModel extends AndroidViewModel {
     public void authorize() {
         if (mAuthgear == null || mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
-        mAuthgear.authorize(new AuthorizeOptions("com.myapp://host/path"), new OnAuthorizeListener() {
+        mAuthgear.authorize(new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI), new OnAuthorizeListener() {
             @Override
             public void onAuthorized(@Nullable AuthorizeResult result) {
                 String state = result.getState();
@@ -200,7 +200,7 @@ public class MainViewModel extends AndroidViewModel {
     public void promoteAnonymousUser() {
         if (mAuthgear == null || mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
-        mAuthgear.promoteAnonymousUser(new PromoteOptions("com.myapp://host/path", null, null), new OnPromoteAnonymousUserListener() {
+        mAuthgear.promoteAnonymousUser(new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI, null, null), new OnPromoteAnonymousUserListener() {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
                 mUserInfo.setValue(result.getUserInfo());
