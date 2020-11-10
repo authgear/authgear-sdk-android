@@ -1,6 +1,7 @@
 # Authgear SDK for Android
 
 ![License](https://img.shields.io/badge/license-Apache%202-blue)
+[![Build status](https://build.appcenter.ms/v0.1/apps/e7070171-ecdd-46aa-81fe-7f383c7de47f/branches/main/badge)](https://appcenter.ms)
 
 ## Usage
 
