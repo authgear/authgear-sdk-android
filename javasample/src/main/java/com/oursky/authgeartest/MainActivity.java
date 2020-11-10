@@ -55,37 +55,17 @@ public class MainActivity extends AppCompatActivity {
         mEndpoint.setText(viewModel.endpoint().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
-            updateButtonDisabledState(
-                    isConfigured,
-                    viewModel.isLoading().getValue(),
-                    viewModel.isLoggedIn().getValue(),
-                    viewModel.userInfo().getValue()
-            );
+            updateButtonDisabledState(viewModel);
             mLoading.setText(isConfigured ? "Loading..." : "Configuring...");
         });
 
-        viewModel.isLoggedIn().observe(this, isLoggedIn -> updateButtonDisabledState(
-                viewModel.isConfigured().getValue(),
-                viewModel.isLoading().getValue(),
-                isLoggedIn,
-                viewModel.userInfo().getValue()
-        ));
+        viewModel.isLoggedIn().observe(this, isLoggedIn -> updateButtonDisabledState(viewModel));
 
-        viewModel.isLoading().observe(this, isLoading -> updateButtonDisabledState(
-                viewModel.isConfigured().getValue(),
-                isLoading,
-                viewModel.isLoggedIn().getValue(),
-                viewModel.userInfo().getValue()
-        ));
+        viewModel.isLoading().observe(this, isLoading -> updateButtonDisabledState(viewModel));
 
         viewModel.userInfo().observe(this, userInfo -> {
             if (userInfo == null) return;
-            updateButtonDisabledState(
-                    viewModel.isConfigured().getValue(),
-                    viewModel.isLoading().getValue(),
-                    viewModel.isLoggedIn().getValue(),
-                    userInfo
-            );
+            updateButtonDisabledState(viewModel);
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Got UserInfo");
             builder.setMessage(userInfo.toString());
@@ -115,7 +95,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void updateButtonDisabledState(boolean isConfigured, boolean isLoading, boolean isLoggedIn, UserInfo userInfo) {
+    private void updateButtonDisabledState(MainViewModel viewModel) {
+        UserInfo userInfo = viewModel.userInfo().getValue();
+        boolean isLoading = viewModel.isLoading().getValue();
+        boolean isConfigured = viewModel.isConfigured().getValue();
+        boolean isLoggedIn = viewModel.isLoggedIn().getValue();
         boolean isAnonymous = userInfo != null && userInfo.isAnonymous();
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
