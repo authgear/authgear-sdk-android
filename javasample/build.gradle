@@ -19,9 +19,6 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "LOCAL_AUTHGEAR_CLIENT_ID", "\"${localProperties.getProperty('local.authgear.clientId')}\"")
-        buildConfigField("String", "LOCAL_AUTHGEAR_ENDPOINT", "\"${localProperties.getProperty('local.authgear.endpoint')}\"")
     }
     buildTypes {
         release {
