@@ -122,7 +122,7 @@ public class MainViewModel extends AndroidViewModel {
             }
         });
 
-        mAuthgear.addOnSessionStateChangedListener((authgear, reason) -> {
+        mAuthgear.setDelegate((authgear, reason) -> {
             Log.d(TAG, "Session state=" + authgear.getSessionState() + " reason=" + reason);
             updateSessionState();
         });
