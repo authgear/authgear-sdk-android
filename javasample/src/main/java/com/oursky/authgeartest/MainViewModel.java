@@ -52,7 +52,7 @@ public class MainViewModel extends AndroidViewModel {
 
     private void updateSessionState() {
         if (mAuthgear == null) return;
-        mIsLoggedIn.setValue(mAuthgear.getSessionState() == SessionState.LoggedIn);
+        mIsLoggedIn.setValue(mAuthgear.getSessionState() == SessionState.AUTHENTICATED);
     }
 
     // clear screen state when user configure Authgear for more than once

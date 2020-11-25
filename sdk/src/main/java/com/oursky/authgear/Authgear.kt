@@ -71,33 +71,13 @@ constructor(
             return core.accessToken
         }
 
-    /**
-     * Add a listener to be called when session state is changed.
-     *
-     * The listener must be removed explicitly with [removeOnSessionStateChangedListener] if
-     * the listener is no longer needed to prevent memory leak.
-     *
-     * For example, if the listener is an anonymous listener in an activity, the listener must be
-     * removed in `onDestroy`. If the listener is an anonymous listener in a view model, the
-     * listener must be removed in `onCleared`.
-     * @param listener The listener.
-     * @param handler The handler of the thread on which the listener is called.
-     */
-    @MainThread
-    @JvmOverloads
-    fun addOnSessionStateChangedListener(
-        listener: OnSessionStateChangedListener,
-        handler: Handler = Handler(
-            Looper.getMainLooper()
-        )
-    ) {
-        core.addOnSessionStateChangedListener(listener, handler)
-    }
-
-    @MainThread
-    fun removeOnSessionStateChangedListener(listener: OnSessionStateChangedListener) {
-        core.removeOnSessionStateChangedListener(listener)
-    }
+    var delegate: AuthgearDelegate?
+        get() {
+            return core.delegate
+        }
+        set(value) {
+            core.delegate = value
+        }
 
     /**
      * Authenticate anonymously by generating a dummy user. The dummy user persist until the app is uninstalled.

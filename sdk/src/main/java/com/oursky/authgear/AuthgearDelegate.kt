@@ -1,5 +1,5 @@
 package com.oursky.authgear
 
-interface OnSessionStateChangedListener {
+interface AuthgearDelegate {
     fun onSessionStateChanged(container: Authgear, reason: SessionStateChangeReason)
 }
