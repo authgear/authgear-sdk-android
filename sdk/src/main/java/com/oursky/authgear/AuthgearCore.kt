@@ -12,8 +12,8 @@ import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
 import com.oursky.authgear.jwt.prepareJwtData
 import com.oursky.authgear.net.toQueryParameter
-import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OIDCTokenResponse
+import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OauthException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -29,7 +29,6 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.Duration
 import java.time.Instant
-import java.util.Collections.synchronizedList
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -110,17 +109,10 @@ internal class AuthgearCore(
     var accessToken: String? = null
         private set
     private var expireAt: Instant? = null
-    var sessionState: SessionState = SessionState.Unknown
+    var sessionState: SessionState = SessionState.UNKNOWN
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
-    private val onSessionStateChangedListeners =
-        synchronizedList(mutableListOf<ListenerPair<OnSessionStateChangedListener>>())
-
-    private fun requireIsMainThread() {
-        require(Looper.myLooper() == Looper.getMainLooper()) {
-            "Listener should only be set on the main thread"
-        }
-    }
+    var delegate: AuthgearDelegate? = null
 
     private fun requireIsInitialized() {
         require(isInitialized) {
@@ -152,7 +144,7 @@ internal class AuthgearCore(
         val userInfo = oauthRepo.oidcUserInfoRequest(
             tokenResponse.accessToken
         )
-        saveToken(tokenResponse, SessionStateChangeReason.Authorized)
+        saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         tokenRepo.setAnonymousKeyId(name, key.kid)
         return userInfo
     }
@@ -173,12 +165,12 @@ internal class AuthgearCore(
         if (shouldRefreshAccessToken()) {
             if (skipRefreshAccessToken) {
                 // Consider user as logged in if refresh token is available
-                updateSessionState(SessionState.LoggedIn, SessionStateChangeReason.FoundToken)
+                updateSessionState(SessionState.AUTHENTICATED, SessionStateChangeReason.FOUND_TOKEN)
             } else {
                 refreshAccessToken()
             }
         } else {
-            updateSessionState(SessionState.NoSession, SessionStateChangeReason.NoToken)
+            updateSessionState(SessionState.NO_SESSION, SessionStateChangeReason.NO_TOKEN)
         }
     }
 
@@ -193,7 +185,7 @@ internal class AuthgearCore(
                 throw e
             }
         }
-        clearSession(SessionStateChangeReason.Logout)
+        clearSession(SessionStateChangeReason.LOGOUT)
     }
 
     @MainThread
@@ -263,30 +255,12 @@ internal class AuthgearCore(
         return accessToken
     }
 
-    @MainThread
-    fun addOnSessionStateChangedListener(
-        listener: OnSessionStateChangedListener,
-        handler: Handler = Handler(
-            Looper.getMainLooper()
-        )
-    ) {
-        requireIsMainThread()
-        onSessionStateChangedListeners.add(ListenerPair(listener, handler))
-    }
-
-    @MainThread
-    fun removeOnSessionStateChangedListener(listener: OnSessionStateChangedListener) {
-        requireIsMainThread()
-        onSessionStateChangedListeners.removeIf { it.listener == listener }
-    }
-
     private fun updateSessionState(state: SessionState, reason: SessionStateChangeReason) {
         // TODO: Add re-entry detection
         sessionState = state
-        onSessionStateChangedListeners.forEach {
-            it.handler.post {
-                it.listener.onSessionStateChanged(authgear, reason)
-            }
+        val handler = Handler(Looper.getMainLooper())
+        handler.post {
+            this.delegate?.onSessionStateChanged(this.authgear, reason)
         }
     }
 
@@ -407,7 +381,7 @@ internal class AuthgearCore(
         if (refreshToken == null) {
             // Somehow we are asked to refresh access token but we don't have the refresh token.
             // Something went wrong, clear session.
-            clearSession(SessionStateChangeReason.NoToken)
+            clearSession(SessionStateChangeReason.NO_TOKEN)
             return
         }
         val tokenResponse: OIDCTokenResponse?
@@ -421,12 +395,12 @@ internal class AuthgearCore(
             )
         } catch (e: Exception) {
             if (e is OauthException && e.error == "invalid_grant") {
-                clearSession(SessionStateChangeReason.Expired)
+                clearSession(SessionStateChangeReason.INVALID)
                 return
             }
             throw e
         }
-        saveToken(tokenResponse, SessionStateChangeReason.FoundToken)
+        saveToken(tokenResponse, SessionStateChangeReason.FOUND_TOKEN)
     }
 
     private fun saveToken(tokenResponse: OIDCTokenResponse, reason: SessionStateChangeReason) {
@@ -435,7 +409,7 @@ internal class AuthgearCore(
             refreshToken = tokenResponse.refreshToken
             expireAt =
                 Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
-            updateSessionState(SessionState.LoggedIn, reason)
+            updateSessionState(SessionState.AUTHENTICATED, reason)
         }
         val refreshToken = this.refreshToken
         if (refreshToken != null) {
@@ -449,7 +423,7 @@ internal class AuthgearCore(
             accessToken = null
             refreshToken = null
             expireAt = null
-            updateSessionState(SessionState.NoSession, changeReason)
+            updateSessionState(SessionState.NO_SESSION, changeReason)
         }
     }
 
@@ -490,7 +464,7 @@ internal class AuthgearCore(
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken)
-        saveToken(tokenResponse, SessionStateChangeReason.Authorized)
+        saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         return AuthorizeResult(userInfo, uri.getQueryParameter("state"))
     }
 }
