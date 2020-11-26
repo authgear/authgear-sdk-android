@@ -114,12 +114,6 @@ internal class AuthgearCore(
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
 
-    private fun requireIsMainThread() {
-        require(Looper.myLooper() == Looper.getMainLooper()) {
-            "Listener should only be set on the main thread"
-        }
-    }
-
     private fun requireIsInitialized() {
         require(isInitialized) {
             "Authgear is not configured. Did you forget to call configure?"

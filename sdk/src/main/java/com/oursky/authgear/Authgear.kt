@@ -51,6 +51,7 @@ constructor(
      * Oauth client ID.
      */
     val clientId: String
+        @MainThread
         get() {
             return core.clientId
         }
@@ -59,6 +60,7 @@ constructor(
      * Current session state. See [SessionState].
      */
     val sessionState: SessionState
+        @MainThread
         get() {
             return core.sessionState
         }
@@ -67,14 +69,17 @@ constructor(
      * Current access token.
      */
     val accessToken: String?
+        @MainThread
         get() {
             return core.accessToken
         }
 
     var delegate: AuthgearDelegate?
+        @MainThread
         get() {
             return core.delegate
         }
+        @MainThread
         set(value) {
             core.delegate = value
         }
@@ -252,6 +257,7 @@ constructor(
      *
      * @param path Path to be opened in Chrome custom tab activity
      */
+    @MainThread
     fun openUrl(path: String) {
         core.openUrl(path)
     }
@@ -261,6 +267,7 @@ constructor(
      *
      * @param page Page in Authgear Web UI.
      */
+    @MainThread
     fun open(page: Page) {
         core.open(page)
     }
