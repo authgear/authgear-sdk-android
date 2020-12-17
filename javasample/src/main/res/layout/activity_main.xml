@@ -109,6 +109,14 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+                <CheckBox
+                    android:id="@+id/isThirdPartyClientInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Is Third-party Client"
+                    tools:ignore="HardcodedText" />
+
                 <Button
                     android:id="@+id/configure"
                     android:layout_width="wrap_content"

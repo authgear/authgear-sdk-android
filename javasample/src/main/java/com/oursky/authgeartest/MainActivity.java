@@ -2,6 +2,7 @@ package com.oursky.authgeartest;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -16,6 +17,7 @@ import com.oursky.authgear.UserInfo;
 public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
+    private CheckBox mIsThirdPartyClient;
     private TextView mLoading;
     private View mAuthorize;
     private View mAuthenticateAnonymously;
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
+        mIsThirdPartyClient = findViewById(R.id.isThirdPartyClientInput);
         mLoading = findViewById(R.id.loading);
         mAuthorize = findViewById(R.id.authorize);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
@@ -43,7 +46,13 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mLogout = findViewById(R.id.logout);
 
-        findViewById(R.id.configure).setOnClickListener(view -> viewModel.configure(mClientId.getText().toString(), mEndpoint.getText().toString()));
+        findViewById(R.id.configure).setOnClickListener(
+            view -> viewModel.configure(
+                mClientId.getText().toString(),
+                mEndpoint.getText().toString(),
+                mIsThirdPartyClient.isChecked()
+            )
+        );
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
@@ -53,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
+        mIsThirdPartyClient.setChecked(viewModel.isThirdPartyClient().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
