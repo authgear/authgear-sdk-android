@@ -1,6 +1,7 @@
 package com.oursky.authgear.data.oauth
 
 import com.oursky.authgear.UserInfo
+import com.oursky.authgear.oauth.AppSessionTokenResponse
 import com.oursky.authgear.oauth.ChallengeResponse
 import com.oursky.authgear.oauth.OIDCConfiguration
 import com.oursky.authgear.oauth.OIDCTokenRequest
@@ -16,4 +17,5 @@ internal interface OauthRepo {
     fun oidcRevocationRequest(refreshToken: String)
     fun oidcUserInfoRequest(accessToken: String): UserInfo
     fun oauthChallenge(purpose: String): ChallengeResponse
+    fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse
 }

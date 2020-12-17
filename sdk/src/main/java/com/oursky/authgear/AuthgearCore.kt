@@ -191,9 +191,28 @@ internal class AuthgearCore(
 
     @MainThread
     fun openUrl(path: String) {
+        requireIsInitialized()
+
+        val refreshToken = tokenRepo.getRefreshToken(name)
+            ?: throw IllegalStateException("Refresh token not found")
+        val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+
         val url = URL(URL(authgearEndpoint), path).toString()
+
+        val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
+            URLEncoder.encode(token, StandardCharsets.UTF_8.toString())
+        }"
+        val authorizeUrl = authorizeEndpoint(
+            AuthorizeOptions(
+                redirectUri = url.toString(),
+                prompt = "none",
+                responseType = "none",
+                loginHint = loginHint
+            )
+        )
+
         application.startActivity(
-            CustomTabActivity.createCustomTabIntent(application, url)
+            WebViewActivity.createIntent(application, Uri.parse(authorizeUrl))
         )
     }
 
