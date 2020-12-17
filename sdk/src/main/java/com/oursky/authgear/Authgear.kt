@@ -27,7 +27,8 @@ constructor(
     application: Application,
     clientId: String,
     authgearEndpoint: String,
-    name: String? = null
+    name: String? = null,
+    isThirdPartyClient: Boolean = false
 ) {
     companion object {
         @Suppress("unused")
@@ -43,7 +44,8 @@ constructor(
             TokenRepoEncryptedSharedPref(application),
             OauthRepoHttp(),
             KeyRepoKeystore(),
-            name
+            name,
+            isThirdPartyClient
         )
     private val scope = CoroutineScope(Dispatchers.IO)
 

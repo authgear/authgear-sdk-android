@@ -13,6 +13,10 @@ data class AuthorizeOptions @JvmOverloads constructor(
      */
     val state: String? = null,
     /**
+     * OIDC response type parameter.
+     */
+    val responseType: String? = "code",
+    /**
      * OIDC prompt parameter. Default value is `login` so that re-login after logout does not obtain
      * the refresh token automatically if the cookies in the external browser persist.
      *
