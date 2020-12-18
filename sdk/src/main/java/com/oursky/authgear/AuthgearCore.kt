@@ -45,7 +45,8 @@ internal class AuthgearCore(
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
-    name: String? = null
+    name: String? = null,
+    private val isThirdPartyClient: Boolean
 ) {
     companion object {
         @Suppress("unused")
@@ -190,9 +191,28 @@ internal class AuthgearCore(
 
     @MainThread
     fun openUrl(path: String) {
+        requireIsInitialized()
+
+        val refreshToken = tokenRepo.getRefreshToken(name)
+            ?: throw IllegalStateException("Refresh token not found")
+        val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+
         val url = URL(URL(authgearEndpoint), path).toString()
+
+        val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
+            URLEncoder.encode(token, StandardCharsets.UTF_8.toString())
+        }"
+        val authorizeUrl = authorizeEndpoint(
+            AuthorizeOptions(
+                redirectUri = url.toString(),
+                prompt = "none",
+                responseType = "none",
+                loginHint = loginHint
+            )
+        )
+
         application.startActivity(
-            CustomTabActivity.createCustomTabIntent(application, url)
+            WebViewActivity.createIntent(application, Uri.parse(authorizeUrl))
         )
     }
 
@@ -293,12 +313,23 @@ internal class AuthgearCore(
     private fun authorizeEndpoint(options: AuthorizeOptions): String {
         val config = oauthRepo.getOIDCConfiguration()
         val queries = mutableMapOf<String, String>()
-        val codeVerifier = setupVerifier()
-        tokenRepo.setOIDCCodeVerifier(name, codeVerifier.verifier)
-        queries["response_type"] = "code"
-        queries["scope"] = "openid offline_access https://authgear.com/scopes/full-access"
-        queries["code_challenge_method"] = "S256"
-        queries["code_challenge"] = codeVerifier.challenge
+
+        val responseType = options.responseType ?: "code"
+        queries["response_type"] = responseType
+
+        if (responseType == "code") {
+            val codeVerifier = setupVerifier()
+            tokenRepo.setOIDCCodeVerifier(name, codeVerifier.verifier)
+            queries["code_challenge_method"] = "S256"
+            queries["code_challenge"] = codeVerifier.challenge
+        }
+
+        if (this.isThirdPartyClient) {
+            queries["scope"] = "openid offline_access"
+        } else {
+            queries["scope"] = "openid offline_access https://authgear.com/scopes/full-access"
+        }
+
         queries["client_id"] = clientId
         queries["redirect_uri"] = options.redirectUri
         options.state?.let {

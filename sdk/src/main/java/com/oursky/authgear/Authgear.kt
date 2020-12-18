@@ -27,7 +27,8 @@ constructor(
     application: Application,
     clientId: String,
     authgearEndpoint: String,
-    name: String? = null
+    name: String? = null,
+    isThirdPartyClient: Boolean = false
 ) {
     companion object {
         @Suppress("unused")
@@ -43,7 +44,8 @@ constructor(
             TokenRepoEncryptedSharedPref(application),
             OauthRepoHttp(),
             KeyRepoKeystore(),
-            name
+            name,
+            isThirdPartyClient
         )
     private val scope = CoroutineScope(Dispatchers.IO)
 
@@ -255,21 +257,51 @@ constructor(
     /**
      * Open the specific path on the authgear server.
      *
-     * @param path Path to be opened in Chrome custom tab activity
+     * @param path Path to be opened in web view
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
-    fun openUrl(path: String) {
-        core.openUrl(path)
+    @JvmOverloads
+    fun openUrl(path: String, listener: OnOpenURLListener? = null, handler: Handler = Handler(Looper.getMainLooper())) {
+        scope.launch {
+            try {
+                core.openUrl(path)
+                handler.post {
+                    listener?.onOpened()
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener?.onFailed(e)
+                }
+            }
+        }
     }
 
     /**
-     * Open the specific [Page] in Chrome custom tab.
+     * Open the specific [Page] in web view.
      *
      * @param page Page in Authgear Web UI.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
-    fun open(page: Page) {
-        core.open(page)
+    @JvmOverloads
+    fun open(page: Page, listener: OnOpenURLListener? = null, handler: Handler = Handler(Looper.getMainLooper())) {
+        scope.launch {
+            try {
+                core.open(page)
+                handler.post {
+                    listener?.onOpened()
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener?.onFailed(e)
+                }
+            }
+        }
     }
 
     /**

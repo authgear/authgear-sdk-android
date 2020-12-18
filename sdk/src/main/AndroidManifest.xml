@@ -5,6 +5,9 @@
         <activity android:name=".OauthActivity"
             android:exported="false"
             android:launchMode="singleTask" />
+        <activity android:name=".WebViewActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
         <activity android:name=".CustomTabActivity"
             android:exported="false"
             android:launchMode="singleTask" />

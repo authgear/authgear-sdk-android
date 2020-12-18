@@ -71,4 +71,12 @@ internal class OauthRepoHttp : OauthRepo {
             HttpClient.postJsonRespJson(URL(URL(endpoint), "/oauth2/challenge"), body)
         return response.result
     }
+
+    override fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse {
+        val body = mutableMapOf<String, String>()
+        body["refresh_token"] = refreshToken
+        val response: AppSessionTokenResponseResult =
+            HttpClient.postJsonRespJson(URL(URL(endpoint), "/oauth2/app_session_token"), body)
+        return response.result
+    }
 }
