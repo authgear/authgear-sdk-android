@@ -17,7 +17,7 @@ import com.oursky.authgear.UserInfo;
 public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
-    private CheckBox mIsThirdPartyClient;
+    private CheckBox mIsThirdParty;
     private TextView mLoading;
     private View mAuthorize;
     private View mAuthenticateAnonymously;
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
-        mIsThirdPartyClient = findViewById(R.id.isThirdPartyClientInput);
+        mIsThirdParty = findViewById(R.id.isThirdPartyInput);
         mLoading = findViewById(R.id.loading);
         mAuthorize = findViewById(R.id.authorize);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
             view -> viewModel.configure(
                 mClientId.getText().toString(),
                 mEndpoint.getText().toString(),
-                mIsThirdPartyClient.isChecked()
+                mIsThirdParty.isChecked()
             )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
-        mIsThirdPartyClient.setChecked(viewModel.isThirdPartyClient().getValue());
+        mIsThirdParty.setChecked(viewModel.isThirdParty().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
