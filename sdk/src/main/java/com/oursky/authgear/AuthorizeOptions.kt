@@ -31,5 +31,9 @@ data class AuthorizeOptions @JvmOverloads constructor(
     /**
      * UI locale tags
      */
-    val uiLocales: List<String>? = null
+    val uiLocales: List<String>? = null,
+    /**
+     * WebSocket channel id
+     */
+    val wsChannelID: String? = null
 )

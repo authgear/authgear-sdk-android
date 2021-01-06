@@ -9,6 +9,7 @@ import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
 import kotlinx.coroutines.*
+import java.util.*
 
 /**
  * An authgear instance represents a user session. If you need multiple user sessions, simply instantiate multiple authgear instances.
@@ -26,7 +27,7 @@ class Authgear @JvmOverloads
 constructor(
     application: Application,
     clientId: String,
-    authgearEndpoint: String,
+    val authgearEndpoint: String,
     name: String? = null,
     isThirdParty: Boolean = false
 ) {
@@ -125,9 +126,13 @@ constructor(
         onAuthorizeListener: OnAuthorizeListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
+        val wsClient = WebSocketEventClient(authgearEndpoint)
+        val wsChannelID = UUID.randomUUID().toString()
         scope.launch {
             try {
-                val result = core.authorize(options)
+                wsClient.connect(wsChannelID)
+                var o = options.copy(wsChannelID = wsChannelID)
+                val result = core.authorize(o)
                 handler.post {
                     onAuthorizeListener.onAuthorized(result)
                 }
@@ -137,6 +142,7 @@ constructor(
                     onAuthorizeListener.onAuthorizationFailed(e)
                 }
             }
+            wsClient.disconnect()
         }
     }
 

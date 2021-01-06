@@ -344,6 +344,10 @@ internal class AuthgearCore(
         options.uiLocales?.let {
             queries["ui_locales"] = it.joinToString(separator = " ")
         }
+        options.wsChannelID?.let {
+            queries["x_ws_channel_id"] = it
+        }
+        queries["x_sdk"] = "android"
         return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
     }
 
