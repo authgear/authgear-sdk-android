@@ -52,6 +52,7 @@ dependencies {
     implementation "androidx.browser:browser:1.2.0"
     implementation "androidx.appcompat:appcompat:1.2.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0"
+    implementation "org.java-websocket:Java-WebSocket:1.5.1"
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.0.10'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
