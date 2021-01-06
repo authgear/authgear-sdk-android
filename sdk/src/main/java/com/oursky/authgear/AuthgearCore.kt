@@ -189,6 +189,12 @@ internal class AuthgearCore(
         clearSession(SessionStateChangeReason.LOGOUT)
     }
 
+    @Suppress("RedundantSuspendModifier")
+    suspend fun weChatAuthCallback(code: String, state: String) {
+        requireIsInitialized()
+        oauthRepo.weChatAuthCallback(code, state)
+    }
+
     @MainThread
     fun openUrl(path: String) {
         requireIsInitialized()
