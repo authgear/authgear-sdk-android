@@ -79,4 +79,12 @@ internal class OauthRepoHttp : OauthRepo {
             HttpClient.postJsonRespJson(URL(URL(endpoint), "/oauth2/app_session_token"), body)
         return response.result
     }
+
+    override fun weChatAuthCallback(code: String, state: String) {
+        val body = mutableMapOf<String, String>()
+        body["code"] = code
+        body["state"] = state
+        body["x_platform"] = "android"
+        HttpClient.postForm(URL(URL(endpoint), "/sso/wechat/callback"), body)
+    }
 }

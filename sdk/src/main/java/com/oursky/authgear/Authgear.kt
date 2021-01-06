@@ -387,4 +387,33 @@ constructor(
             }
         }
     }
+
+    /**
+     * WeChat auth callback function. In WeChat login flow, after returning from the WeChat SDK,
+     * this function should be called to complete the authorization.
+     * @param code WeChat Authorization code.
+     * @param state WeChat Authorization state.
+     */
+    @MainThread
+    @JvmOverloads
+    fun weChatAuthCallback(
+        code: String,
+        state: String,
+        onWeChatAuthCallbackListener: OnWeChatAuthCallbackListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.weChatAuthCallback(code, state)
+                handler.post {
+                    onWeChatAuthCallbackListener.onWeChatAuthCallback()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    onWeChatAuthCallbackListener.onWeChatAuthCallbackFailed(e)
+                }
+            }
+        }
+    }
 }
