@@ -65,7 +65,9 @@ internal class HttpClient {
                 conn.outputStream.use {
                     it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
                 }
-                conn.connect()
+                conn.inputStream.use {
+                    return
+                }
             } finally {
                 conn.disconnect()
             }
