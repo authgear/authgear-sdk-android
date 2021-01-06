@@ -1,5 +1,6 @@
 package com.oursky.authgear
 
 interface AuthgearDelegate {
-    fun onSessionStateChanged(container: Authgear, reason: SessionStateChangeReason)
+    @JvmDefault
+    fun onSessionStateChanged(container: Authgear, reason: SessionStateChangeReason) {}
 }

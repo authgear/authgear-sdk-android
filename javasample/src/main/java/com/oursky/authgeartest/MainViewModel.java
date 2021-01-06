@@ -12,6 +12,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.oursky.authgear.Authgear;
+import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
@@ -23,6 +24,7 @@ import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.SessionState;
+import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
@@ -130,9 +132,12 @@ public class MainViewModel extends AndroidViewModel {
             }
         });
 
-        mAuthgear.setDelegate((authgear, reason) -> {
-            Log.d(TAG, "Session state=" + authgear.getSessionState() + " reason=" + reason);
-            updateSessionState();
+        mAuthgear.setDelegate(new AuthgearDelegate() {
+            @Override
+            public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason) {
+                Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason);
+                updateSessionState();
+            }
         });
 
         initializeScreenState();
