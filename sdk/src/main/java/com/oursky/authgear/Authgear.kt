@@ -3,12 +3,15 @@ package com.oursky.authgear
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
 import kotlinx.coroutines.*
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.util.*
 
 /**
@@ -126,10 +129,26 @@ constructor(
         onAuthorizeListener: OnAuthorizeListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
-        val wsClient = WebSocketEventClient(authgearEndpoint)
-        val wsChannelID = UUID.randomUUID().toString()
         scope.launch {
+            val wsClient = WebSocketEventClient(authgearEndpoint)
             try {
+                val wsChannelID = UUID.randomUUID().toString()
+                val listener = object : WebSocketEventClient.EventListener {
+                    override fun OnMessage(eventKind: String, data: JsonObject?) {
+                        if (eventKind == WebSocketMessageKind.WECHAT_LOGIN_START.raw) {
+                            if (data?.get("state")?.jsonPrimitive?.isString == true) {
+                                val state = data["state"]?.jsonPrimitive?.content ?: ""
+                                val handler = Handler(Looper.getMainLooper())
+                                handler.post {
+                                    delegate?.sendWeChatAuthRequest(state)
+                                }
+                            } else {
+                                Log.e(TAG, "missing state in wechat login start event")
+                            }
+                        }
+                    }
+                }
+                wsClient.listener = listener
                 wsClient.connect(wsChannelID)
                 var o = options.copy(wsChannelID = wsChannelID)
                 val result = core.authorize(o)
@@ -142,6 +161,7 @@ constructor(
                     onAuthorizeListener.onAuthorizationFailed(e)
                 }
             }
+            wsClient.listener = null
             wsClient.disconnect()
         }
     }
