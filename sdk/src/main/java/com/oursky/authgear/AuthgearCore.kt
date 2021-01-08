@@ -91,6 +91,46 @@ internal class AuthgearCore(
             }
             return handler
         }
+
+        /**
+         * Check and handle wehchat redirect uri and trigger delegate function if needed
+         */
+        private var weChatRedirectURI: String? = null
+        private var weChatRedirectHandler: WeChatRedirectHandler? = null
+        fun registerWeChatRedirectURI(uri: String?, handler: WeChatRedirectHandler) {
+            if (uri != null) {
+                weChatRedirectURI = uri
+                weChatRedirectHandler = handler
+            } else {
+                unregisteredWeChatRedirectURI()
+            }
+        }
+        fun unregisteredWeChatRedirectURI() {
+            weChatRedirectURI = null
+            weChatRedirectHandler = null
+        }
+        /**
+        * handleWeChatRedirectDeepLink return true if it is handled
+        */
+        fun handleWeChatRedirectDeepLink(deepLink: String): Boolean {
+            if (weChatRedirectURI == null) {
+                return false
+            }
+            val uri = Uri.parse(deepLink)
+            val deepLinkWithoutQuery = "${uri.scheme}://${uri.authority}${uri.path}"
+            if (deepLinkWithoutQuery != weChatRedirectURI) {
+                return false
+            }
+            val state = uri.getQueryParameter("state")
+            if (state != null) {
+                weChatRedirectHandler?.sendWeChatAuthRequest(state)
+            }
+            return true
+        }
+    }
+
+    interface WeChatRedirectHandler {
+        fun sendWeChatAuthRequest(state: String)
     }
 
     data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
@@ -252,7 +292,8 @@ internal class AuthgearCore(
                 prompt = "login",
                 loginHint = loginHint,
                 state = options.state,
-                uiLocales = options.uiLocales
+                uiLocales = options.uiLocales,
+                weChatRedirectURI = options.weChatRedirectURI
             )
         )
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
