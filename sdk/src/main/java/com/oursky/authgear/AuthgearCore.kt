@@ -344,6 +344,10 @@ internal class AuthgearCore(
         options.uiLocales?.let {
             queries["ui_locales"] = it.joinToString(separator = " ")
         }
+        options.weChatRedirectURI?.let {
+            queries["x_wechat_redirect_uri"] = it
+        }
+        queries["x_platform"] = "android"
         return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
     }
 

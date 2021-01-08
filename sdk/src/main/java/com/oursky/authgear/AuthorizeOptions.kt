@@ -31,5 +31,10 @@ data class AuthorizeOptions @JvmOverloads constructor(
     /**
      * UI locale tags
      */
-    val uiLocales: List<String>? = null
+    val uiLocales: List<String>? = null,
+    /**
+     * WeChat redirect uri is needed when integrating WeChat login
+     * The weChatRedirectURI will be called when user click the login with WeChat button
+     */
+    val weChatRedirectURI: String? = null
 )
