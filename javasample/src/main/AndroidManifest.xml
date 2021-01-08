@@ -15,6 +15,13 @@
         tools:ignore="AllowBackup,GoogleAppIndexingWarning"
         tools:targetApi="m">
         <activity
+            android:name=".wxapi.WXEntryActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.oursky.authgeartest"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"></activity>
+        <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
@@ -32,6 +39,9 @@
                 <data android:scheme="com.authgear.example"
                     android:host="host"
                     android:pathPrefix="/path"/>
+                <data android:scheme="com.authgear.example"
+                    android:host="host"
+                    android:pathPrefix="/open_wechat_app"/>
             </intent-filter>
         </activity>
     </application>

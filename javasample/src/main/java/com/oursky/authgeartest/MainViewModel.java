@@ -21,19 +21,26 @@ import com.oursky.authgear.OnConfigureListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
+import com.oursky.authgear.OnWeChatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.UserInfo;
+import com.oursky.authgeartest.wxapi.WXEntryActivity;
+import com.tencent.mm.opensdk.modelmsg.SendAuth;
+import com.tencent.mm.opensdk.openapi.IWXAPI;
+import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 @SuppressWarnings("ConstantConditions")
 public class MainViewModel extends AndroidViewModel {
     private static final String TAG = MainViewModel.class.getSimpleName();
     private Authgear mAuthgear = null;
+    private IWXAPI weChatAPI;
     final private MutableLiveData<Boolean> mIsConfigured = new MutableLiveData<>(false);
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
+    final private MutableLiveData<String> mWeChatAppID = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mIsThirdParty = new MutableLiveData<>(true);
     final private MutableLiveData<Boolean> mIsLoggedIn = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
@@ -48,9 +55,11 @@ public class MainViewModel extends AndroidViewModel {
         if (preferences != null) {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
+            String storedWeChatAppID = preferences.getString("weChatAppID", "");
             Boolean storedIsThirdParty = preferences.getBoolean("isThirdParty", true);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
+            mWeChatAppID.setValue(storedWeChatAppID);
             mIsThirdParty.setValue(storedIsThirdParty);
         }
     }
@@ -74,6 +83,10 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> endpoint() {
         return mEndpoint;
+    }
+
+    public LiveData<String> weChatAppID() {
+        return mWeChatAppID;
     }
 
     public LiveData<Boolean> isThirdParty() {
@@ -104,7 +117,7 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, Boolean isThirdParty) {
+    public void configure(String clientID, String endpoint, String weChatAppID, Boolean isThirdParty) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
@@ -114,6 +127,7 @@ public class MainViewModel extends AndroidViewModel {
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
+                .putString("weChatAppID", weChatAppID)
                 .putBoolean("isThirdParty", isThirdParty)
                 .apply();
         mAuthgear = new Authgear(getApplication(), clientID, endpoint, null, isThirdParty);
@@ -138,16 +152,55 @@ public class MainViewModel extends AndroidViewModel {
                 Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason);
                 updateSessionState();
             }
+
+            @Override
+            public void sendWeChatAuthRequest(String state) {
+                Log.d(TAG, "Open wechat sdk state=" + state);
+                if (!weChatAPI.isWXAppInstalled()) {
+                    mError.setValue(new RuntimeException("You have not installed the WeChat client app"));
+                    return;
+                }
+                if (weChatAPI == null) {
+                    mError.setValue(new RuntimeException("WeChat app id is not configured"));
+                    return;
+                }
+                SendAuth.Req req = new SendAuth.Req();
+                req.scope = "snsapi_userinfo";
+                req.state = state;
+                weChatAPI.sendReq(req);
+            }
         });
 
         initializeScreenState();
         mIsConfigured.setValue(true);
+
+        if (weChatAppID != null && !weChatAppID.isEmpty()) {
+            weChatAPI = WXAPIFactory.createWXAPI(app, weChatAppID, true);
+            weChatAPI.registerApp(weChatAppID);
+        }
+
+        WXEntryActivity.setOnWeChatSendAuthResultListener((code, state) -> {
+            Log.d(TAG, "Sending WeChat Callback");
+            mAuthgear.weChatAuthCallback(code, state, new OnWeChatAuthCallbackListener() {
+                @Override
+                public void onWeChatAuthCallback() {
+                    Log.d(TAG, "onWeChatAuthCallback");
+                }
+
+                @Override
+                public void onWeChatAuthCallbackFailed(Throwable throwable) {
+                    Log.e(TAG, "onWeChatAuthCallbackFailed", throwable);
+                }
+            });
+        });
     }
 
     public void authorize() {
         if (mAuthgear == null || mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
-        mAuthgear.authorize(new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI), new OnAuthorizeListener() {
+        AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+        options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        mAuthgear.authorize(options, new OnAuthorizeListener() {
             @Override
             public void onAuthorized(@Nullable AuthorizeResult result) {
                 String state = result.getState();
@@ -213,7 +266,9 @@ public class MainViewModel extends AndroidViewModel {
     public void promoteAnonymousUser() {
         if (mAuthgear == null || mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
-        mAuthgear.promoteAnonymousUser(new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI, null, null), new OnPromoteAnonymousUserListener() {
+        PromoteOptions options = new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+        options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        mAuthgear.promoteAnonymousUser(options, new OnPromoteAnonymousUserListener() {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
                 mUserInfo.setValue(result.getUserInfo());
