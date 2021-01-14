@@ -72,8 +72,7 @@ internal class AuthgearCore(
         fun handleDeepLink(deepLink: String, isSuccessful: Boolean) {
             if (isSuccessful) {
                 // The deep link would contain code in query parameter so we trim it to get back the handler.
-                val uri = Uri.parse(deepLink)
-                val deepLinkWithoutQuery = "${uri.scheme}://${uri.authority}${uri.path}"
+                val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
                 val handler = requireDeepLinkHandler(deepLinkWithoutQuery)
                 handler.continuation.resume(deepLink)
                 DeepLinkHandlerMap.remove(deepLinkWithoutQuery)
@@ -91,6 +90,53 @@ internal class AuthgearCore(
             }
             return handler
         }
+
+        /**
+         * Check and handle wehchat redirect uri and trigger delegate function if needed
+         */
+        private var weChatRedirectURI: String? = null
+        private var weChatRedirectHandler: WeChatRedirectHandler? = null
+        fun registerWeChatRedirectURI(uri: String?, handler: WeChatRedirectHandler) {
+            if (uri != null) {
+                weChatRedirectURI = uri
+                weChatRedirectHandler = handler
+            } else {
+                unregisteredWeChatRedirectURI()
+            }
+        }
+        fun unregisteredWeChatRedirectURI() {
+            weChatRedirectURI = null
+            weChatRedirectHandler = null
+        }
+        /**
+        * handleWeChatRedirectDeepLink return true if it is handled
+        */
+        fun handleWeChatRedirectDeepLink(deepLink: String): Boolean {
+            if (weChatRedirectURI == null) {
+                return false
+            }
+            val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
+            if (deepLinkWithoutQuery != weChatRedirectURI) {
+                return false
+            }
+            val uri = Uri.parse(deepLink)
+            val state = uri.getQueryParameter("state")
+            if (state != null) {
+                weChatRedirectHandler?.sendWeChatAuthRequest(state)
+            }
+            return true
+        }
+
+        private fun getURLWithoutQuery(input: String): String {
+            val uri = Uri.parse(input)
+            var builder = uri.buildUpon().clearQuery()
+            builder = builder.fragment("")
+            return builder.build().toString()
+        }
+    }
+
+    interface WeChatRedirectHandler {
+        fun sendWeChatAuthRequest(state: String)
     }
 
     data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
@@ -189,6 +235,12 @@ internal class AuthgearCore(
         clearSession(SessionStateChangeReason.LOGOUT)
     }
 
+    @Suppress("RedundantSuspendModifier")
+    suspend fun weChatAuthCallback(code: String, state: String) {
+        requireIsInitialized()
+        oauthRepo.weChatAuthCallback(code, state)
+    }
+
     @MainThread
     fun openUrl(path: String) {
         requireIsInitialized()
@@ -252,7 +304,8 @@ internal class AuthgearCore(
                 prompt = "login",
                 loginHint = loginHint,
                 state = options.state,
-                uiLocales = options.uiLocales
+                uiLocales = options.uiLocales,
+                weChatRedirectURI = options.weChatRedirectURI
             )
         )
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
@@ -344,6 +397,10 @@ internal class AuthgearCore(
         options.uiLocales?.let {
             queries["ui_locales"] = it.joinToString(separator = " ")
         }
+        options.weChatRedirectURI?.let {
+            queries["x_wechat_redirect_uri"] = it
+        }
+        queries["x_platform"] = "android"
         return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
     }
 

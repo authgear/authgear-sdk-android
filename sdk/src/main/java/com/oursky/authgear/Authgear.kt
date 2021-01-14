@@ -127,6 +127,15 @@ constructor(
     ) {
         scope.launch {
             try {
+                AuthgearCore.registerWeChatRedirectURI(
+                    options.weChatRedirectURI,
+                    object : AuthgearCore.WeChatRedirectHandler {
+                        override fun sendWeChatAuthRequest(state: String) {
+                            handler.post {
+                                delegate?.sendWeChatAuthRequest(state)
+                            }
+                    }
+                })
                 val result = core.authorize(options)
                 handler.post {
                     onAuthorizeListener.onAuthorized(result)
@@ -136,6 +145,8 @@ constructor(
                 handler.post {
                     onAuthorizeListener.onAuthorizationFailed(e)
                 }
+            } finally {
+                AuthgearCore.unregisteredWeChatRedirectURI()
             }
         }
     }
@@ -325,6 +336,16 @@ constructor(
     ) {
         scope.launch {
             try {
+                AuthgearCore.registerWeChatRedirectURI(
+                    options.weChatRedirectURI,
+                    object : AuthgearCore.WeChatRedirectHandler {
+                        override fun sendWeChatAuthRequest(state: String) {
+                            handler.post {
+                                delegate?.sendWeChatAuthRequest(state)
+                            }
+                        }
+                    }
+                )
                 val result = core.promoteAnonymousUser(options)
                 handler.post {
                     onPromoteAnonymousUserListener.onPromoted(result)
@@ -334,6 +355,8 @@ constructor(
                 handler.post {
                     onPromoteAnonymousUserListener.onPromotionFailed(e)
                 }
+            } finally {
+                AuthgearCore.unregisteredWeChatRedirectURI()
             }
         }
     }
@@ -360,6 +383,35 @@ constructor(
                 e.printStackTrace()
                 handler.post {
                     onFetchUserInfoListener.onFetchingUserInfoFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * WeChat auth callback function. In WeChat login flow, after returning from the WeChat SDK,
+     * this function should be called to complete the authorization.
+     * @param code WeChat Authorization code.
+     * @param state WeChat Authorization state.
+     */
+    @MainThread
+    @JvmOverloads
+    fun weChatAuthCallback(
+        code: String,
+        state: String,
+        onWeChatAuthCallbackListener: OnWeChatAuthCallbackListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.weChatAuthCallback(code, state)
+                handler.post {
+                    onWeChatAuthCallbackListener.onWeChatAuthCallback()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    onWeChatAuthCallbackListener.onWeChatAuthCallbackFailed(e)
                 }
             }
         }
