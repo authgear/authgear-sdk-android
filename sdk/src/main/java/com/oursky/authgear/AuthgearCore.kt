@@ -72,8 +72,7 @@ internal class AuthgearCore(
         fun handleDeepLink(deepLink: String, isSuccessful: Boolean) {
             if (isSuccessful) {
                 // The deep link would contain code in query parameter so we trim it to get back the handler.
-                val uri = Uri.parse(deepLink)
-                val deepLinkWithoutQuery = "${uri.scheme}://${uri.authority}${uri.path}"
+                val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
                 val handler = requireDeepLinkHandler(deepLinkWithoutQuery)
                 handler.continuation.resume(deepLink)
                 DeepLinkHandlerMap.remove(deepLinkWithoutQuery)
@@ -116,16 +115,23 @@ internal class AuthgearCore(
             if (weChatRedirectURI == null) {
                 return false
             }
-            val uri = Uri.parse(deepLink)
-            val deepLinkWithoutQuery = "${uri.scheme}://${uri.authority}${uri.path}"
+            val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
             if (deepLinkWithoutQuery != weChatRedirectURI) {
                 return false
             }
+            val uri = Uri.parse(deepLink)
             val state = uri.getQueryParameter("state")
             if (state != null) {
                 weChatRedirectHandler?.sendWeChatAuthRequest(state)
             }
             return true
+        }
+
+        private fun getURLWithoutQuery(input: String): String {
+            val uri = Uri.parse(input)
+            var builder = uri.buildUpon().clearQuery()
+            builder = builder.fragment("")
+            return builder.build().toString()
         }
     }
 
