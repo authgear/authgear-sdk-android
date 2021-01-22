@@ -17,7 +17,6 @@ import com.oursky.authgear.UserInfo;
 public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
-    private EditText mWeChatAppID;
     private CheckBox mIsThirdParty;
     private TextView mLoading;
     private View mAuthorize;
@@ -38,7 +37,6 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
-        mWeChatAppID = findViewById(R.id.weChatAppIDInput);
         mIsThirdParty = findViewById(R.id.isThirdPartyInput);
         mLoading = findViewById(R.id.loading);
         mAuthorize = findViewById(R.id.authorize);
@@ -52,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
             view -> viewModel.configure(
                 mClientId.getText().toString(),
                 mEndpoint.getText().toString(),
-                mWeChatAppID.getText().toString(),
                 mIsThirdParty.isChecked()
             )
         );
@@ -65,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
-        mWeChatAppID.setText(viewModel.weChatAppID().getValue());
         mIsThirdParty.setChecked(viewModel.isThirdParty().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {

@@ -109,36 +109,6 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/weChatAppIDField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    >
-
-                    <TextView
-                        android:id="@+id/weChatAppIDLabel"
-                        android:layout_width="80dp"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        android:text="WeChat App ID"
-                        tools:ignore="HardcodedText" />
-
-                    <EditText
-                        android:id="@+id/weChatAppIDInput"
-                        android:layout_height="wrap_content"
-                        android:layout_width="0dp"
-                        android:hint="Enter WeChat App ID (Optional)"
-                        app:layout_constraintStart_toEndOf="@+id/weChatAppIDLabel"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        android:inputType="text"/>
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-
                 <CheckBox
                     android:id="@+id/isThirdPartyInput"
                     android:layout_width="match_parent"
