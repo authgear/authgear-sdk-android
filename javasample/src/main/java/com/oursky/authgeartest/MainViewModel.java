@@ -40,7 +40,6 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Boolean> mIsConfigured = new MutableLiveData<>(false);
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
-    final private MutableLiveData<String> mWeChatAppID = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mIsThirdParty = new MutableLiveData<>(true);
     final private MutableLiveData<Boolean> mIsLoggedIn = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
@@ -55,11 +54,9 @@ public class MainViewModel extends AndroidViewModel {
         if (preferences != null) {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
-            String storedWeChatAppID = preferences.getString("weChatAppID", "");
             Boolean storedIsThirdParty = preferences.getBoolean("isThirdParty", true);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
-            mWeChatAppID.setValue(storedWeChatAppID);
             mIsThirdParty.setValue(storedIsThirdParty);
         }
     }
@@ -83,10 +80,6 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> endpoint() {
         return mEndpoint;
-    }
-
-    public LiveData<String> weChatAppID() {
-        return mWeChatAppID;
     }
 
     public LiveData<Boolean> isThirdParty() {
@@ -117,7 +110,7 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, String weChatAppID, Boolean isThirdParty) {
+    public void configure(String clientID, String endpoint, Boolean isThirdParty) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
@@ -127,7 +120,6 @@ public class MainViewModel extends AndroidViewModel {
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
-                .putString("weChatAppID", weChatAppID)
                 .putBoolean("isThirdParty", isThirdParty)
                 .apply();
         mAuthgear = new Authgear(getApplication(), clientID, endpoint, null, isThirdParty);
@@ -174,10 +166,8 @@ public class MainViewModel extends AndroidViewModel {
         initializeScreenState();
         mIsConfigured.setValue(true);
 
-        if (weChatAppID != null && !weChatAppID.isEmpty()) {
-            weChatAPI = WXAPIFactory.createWXAPI(app, weChatAppID, true);
-            weChatAPI.registerApp(weChatAppID);
-        }
+        weChatAPI = WXAPIFactory.createWXAPI(app, MainApplication.AUTHGEAR_WECHAT_APP_ID, true);
+        weChatAPI.registerApp(MainApplication.AUTHGEAR_WECHAT_APP_ID);
 
         WXEntryActivity.setOnWeChatSendAuthResultListener((code, state) -> {
             Log.d(TAG, "Sending WeChat Callback");

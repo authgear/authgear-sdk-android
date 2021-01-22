@@ -1,18 +1,10 @@
 package com.oursky.authgeartest.wxapi;
 
 import android.app.Activity;
-import android.app.Application;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-
-import com.oursky.authgear.Authgear;
-import com.oursky.authgear.OnConfigureListener;
-import com.oursky.authgear.OnWeChatAuthCallbackListener;
 import com.oursky.authgeartest.MainApplication;
 import com.tencent.mm.opensdk.constants.ConstantsAPI;
 import com.tencent.mm.opensdk.modelbase.BaseReq;
@@ -36,17 +28,12 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler{
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Application app = getApplication();
-        SharedPreferences preferences = app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE);
-        if (preferences != null) {
-            String weChatAppID = preferences.getString("weChatAppID", "");
-            api = WXAPIFactory.createWXAPI(this, weChatAppID, false);
-            try {
-                Intent intent = getIntent();
-                api.handleIntent(intent, this);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        api = WXAPIFactory.createWXAPI(this, MainApplication.AUTHGEAR_WECHAT_APP_ID, false);
+        try {
+            Intent intent = getIntent();
+            api.handleIntent(intent, this);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
