@@ -294,15 +294,31 @@ constructor(
      * Open the specific [Page] in web view.
      *
      * @param page Page in Authgear Web UI.
+     * @param options Setting options.
      * @param listener The listener.
      * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
     @JvmOverloads
-    fun open(page: Page, listener: OnOpenURLListener? = null, handler: Handler = Handler(Looper.getMainLooper())) {
+    fun open(
+        page: Page,
+        options: SettingOptions? = null,
+        listener: OnOpenURLListener? = null,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
         scope.launch {
             try {
-                core.open(page)
+                AuthgearCore.registerWeChatRedirectURI(
+                    options?.weChatRedirectURI,
+                    object : AuthgearCore.WeChatRedirectHandler {
+                        override fun sendWeChatAuthRequest(state: String) {
+                            handler.post {
+                                delegate?.sendWeChatAuthRequest(state)
+                            }
+                        }
+                    }
+                )
+                core.open(page, options)
                 handler.post {
                     listener?.onOpened()
                 }
