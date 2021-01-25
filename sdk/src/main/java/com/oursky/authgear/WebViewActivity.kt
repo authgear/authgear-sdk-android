@@ -13,6 +13,7 @@ internal class WebViewActivity : AppCompatActivity() {
     companion object {
         fun createIntent(context: Context, uri: Uri): Intent {
             val intent = Intent(context, WebViewActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.data = uri
             return intent
         }
