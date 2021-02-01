@@ -26,6 +26,7 @@ import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
+import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
@@ -250,7 +251,9 @@ public class MainViewModel extends AndroidViewModel {
 
     public void openSettings() {
         if (mAuthgear == null) return;
-        mAuthgear.open(Page.Settings);
+        SettingOptions options = new SettingOptions();
+        options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        mAuthgear.open(Page.Settings, options);
     }
 
     public void promoteAnonymousUser() {

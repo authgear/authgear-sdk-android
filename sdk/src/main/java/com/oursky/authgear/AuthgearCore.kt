@@ -242,7 +242,7 @@ internal class AuthgearCore(
     }
 
     @MainThread
-    fun openUrl(path: String) {
+    fun openUrl(path: String, options: SettingOptions? = null) {
         requireIsInitialized()
 
         val refreshToken = tokenRepo.getRefreshToken(name)
@@ -259,7 +259,8 @@ internal class AuthgearCore(
                 redirectUri = url.toString(),
                 prompt = "none",
                 responseType = "none",
-                loginHint = loginHint
+                loginHint = loginHint,
+                weChatRedirectURI = options?.weChatRedirectURI
             )
         )
 
@@ -268,12 +269,13 @@ internal class AuthgearCore(
         )
     }
 
-    fun open(page: Page) {
+    fun open(page: Page, options: SettingOptions? = null) {
         openUrl(
             when (page) {
                 Page.Settings -> "/settings"
                 Page.Identity -> "/settings/identities"
-            }
+            },
+            options
         )
     }
 
