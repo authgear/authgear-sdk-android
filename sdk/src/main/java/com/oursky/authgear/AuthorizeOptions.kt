@@ -23,7 +23,7 @@ data class AuthorizeOptions @JvmOverloads constructor(
      * It is recommended that you do not modify this parameter unless you are familiar with the OIDC
      * spec.
      */
-    var prompt: String? = "login",
+    var prompt: String? = null,
     /**
      * OIDC login hint parameter
      */
