@@ -36,5 +36,10 @@ data class AuthorizeOptions @JvmOverloads constructor(
      * WeChat redirect uri is needed when integrating WeChat login
      * The weChatRedirectURI will be called when user click the login with WeChat button
      */
-    var weChatRedirectURI: String? = null
+    var weChatRedirectURI: String? = null,
+
+    /**
+     * Which page to open initially. Valid values are "login" and "signup".
+     */
+    var page: String? = null
 )
