@@ -403,6 +403,9 @@ internal class AuthgearCore(
             queries["x_wechat_redirect_uri"] = it
         }
         queries["x_platform"] = "android"
+        options.page?.let {
+            queries["x_page"] = it
+        }
         return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
     }
 

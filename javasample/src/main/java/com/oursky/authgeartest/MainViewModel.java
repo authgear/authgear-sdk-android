@@ -41,6 +41,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Boolean> mIsConfigured = new MutableLiveData<>(false);
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
+    final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mIsThirdParty = new MutableLiveData<>(true);
     final private MutableLiveData<Boolean> mIsLoggedIn = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
@@ -55,9 +56,11 @@ public class MainViewModel extends AndroidViewModel {
         if (preferences != null) {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
+            String storedPage = preferences.getString("page", "");
             Boolean storedIsThirdParty = preferences.getBoolean("isThirdParty", true);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
+            mPage.setValue(storedPage);
             mIsThirdParty.setValue(storedIsThirdParty);
         }
     }
@@ -82,6 +85,8 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<String> endpoint() {
         return mEndpoint;
     }
+
+    public LiveData<String> page() { return mPage; }
 
     public LiveData<Boolean> isThirdParty() {
         return mIsThirdParty;
@@ -186,10 +191,17 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void authorize() {
+    public void authorize(String page) {
         if (mAuthgear == null || mIsLoading.getValue()) return;
+        mPage.setValue(page);
+        MainApplication app = getApplication();
+        app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
+                .edit()
+                .putString("page", page)
+                .apply();
         mIsLoading.setValue(true);
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+        options.setPage(page);
         options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
             @Override

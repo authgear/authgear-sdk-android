@@ -23,7 +23,7 @@ data class AuthorizeOptions @JvmOverloads constructor(
      * It is recommended that you do not modify this parameter unless you are familiar with the OIDC
      * spec.
      */
-    var prompt: String? = "login",
+    var prompt: String? = null,
     /**
      * OIDC login hint parameter
      */
@@ -36,5 +36,10 @@ data class AuthorizeOptions @JvmOverloads constructor(
      * WeChat redirect uri is needed when integrating WeChat login
      * The weChatRedirectURI will be called when user click the login with WeChat button
      */
-    var weChatRedirectURI: String? = null
+    var weChatRedirectURI: String? = null,
+
+    /**
+     * Which page to open initially. Valid values are "login" and "signup".
+     */
+    var page: String? = null
 )
