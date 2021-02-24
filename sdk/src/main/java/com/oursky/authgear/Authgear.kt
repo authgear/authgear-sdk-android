@@ -164,6 +164,16 @@ constructor(
      * It is recommended that the application setup a proper http request abstraction that calls
      * [refreshAccessTokenIfNeededSync] (or its async variant) so that the validity
      * of access token is handled automatically.
+     *
+     * It does local IO to retrieve the refresh token.
+     * It also does network IO to refresh the access token.
+     *
+     * Therefore, it is possible that configure() could fail for many reasons.
+     * If your application is offline first, be prepared for handling errors.
+     *
+     * configure() can be called more than once if it failed.
+     * Otherwise, it is NOT recommended to call it more than once.
+     *
      * @param skipRefreshAccessToken `true` to skip refreshing access token during configuration,
      * `false` otherwise.
      * @param onConfigureListener The listener.
