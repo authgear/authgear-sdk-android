@@ -28,4 +28,14 @@ internal class TokenRepoInMemory(private var refreshToken: String? = null) : Tok
 
     override fun deleteAnonymousKeyId(namespace: String) {
     }
+
+    override fun getBiometricKeyId(namespace: String): String? {
+        return null
+    }
+
+    override fun setBiometricKeyId(namespace: String, keyId: String) {
+    }
+
+    override fun deleteBiometricKeyId(namespace: String) {
+    }
 }

@@ -50,3 +50,17 @@ suspend fun Authgear.promoteAnonymousUser(options: PromoteOptions): AuthorizeRes
 suspend fun Authgear.fetchUserInfo(): UserInfo {
     return core.fetchUserInfo()
 }
+
+/**
+ * @see [Authgear.enableBiometric]
+ */
+suspend fun Authgear.enableBiometric(options: BiometricOptions) {
+    core.enableBiometric(options)
+}
+
+/**
+ * @see [Authgear.authenticateBiometric]
+ */
+suspend fun Authgear.authenticateBiometric(options: BiometricOptions): UserInfo {
+    return core.authenticateBiometric(options)
+}

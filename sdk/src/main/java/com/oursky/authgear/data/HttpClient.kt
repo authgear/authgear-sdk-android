@@ -28,7 +28,7 @@ internal class HttpClient {
 
         inline fun <reified R, reified E : Exception> postFormRespJsonWithError(
             url: URL,
-            body: MutableMap<String, String>
+            body: Map<String, String>
         ): R {
             val conn = url.openConnection() as HttpURLConnection
             try {
@@ -56,11 +56,14 @@ internal class HttpClient {
             }
         }
 
-        fun postForm(url: URL, body: MutableMap<String, String>) {
+        fun postForm(url: URL, body: Map<String, String>, headers: Map<String, String>?) {
             val conn = url.openConnection() as HttpURLConnection
             try {
                 conn.doOutput = true
                 conn.requestMethod = "POST"
+                headers?.forEach { (key, value) ->
+                    conn.setRequestProperty(key, value)
+                }
                 conn.setRequestProperty("content-type", "application/x-www-form-urlencoded")
                 conn.outputStream.use {
                     it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))

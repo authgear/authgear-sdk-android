@@ -1,9 +1,12 @@
 package com.oursky.authgear
 
 import android.app.Application
+import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.MainThread
+import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
@@ -438,6 +441,83 @@ constructor(
                 e.printStackTrace()
                 handler.post {
                     onWeChatAuthCallbackListener.onWeChatAuthCallbackFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if biometric is supported. If not supported, an exception will be thrown.
+     */
+    @MainThread
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun checkBiometricSupported(context: Context, allowedAuthenticators: Int) {
+        core.checkBiometricSupported(context, allowedAuthenticators)
+    }
+
+    /**
+     * Check if biometric is enabled.
+     */
+    @MainThread
+    fun isBiometricEnabled(): Boolean {
+        return core.isBiometricEnabled()
+    }
+
+    /**
+     * Disable biometric if it was enabled.
+     */
+    @MainThread
+    fun disableBiometric() {
+        core.disableBiometric()
+    }
+
+    /**
+     * Enable biometric for the current user.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun enableBiometric(
+        options: BiometricOptions,
+        onEnableBiometricListener: OnEnableBiometricListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.enableBiometric(options)
+                handler.post {
+                    onEnableBiometricListener.onEnabled()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    onEnableBiometricListener.onFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Authenticate with previously enabled biometric.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun authenticateBiometric(
+        options: BiometricOptions,
+        onAuthenticateBiometricListener: OnAuthenticateBiometricListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val userInfo = core.authenticateBiometric(options)
+                handler.post {
+                    onAuthenticateBiometricListener.onAuthenticated(userInfo)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    onAuthenticateBiometricListener.onAuthenticationFailed(e)
                 }
             }
         }

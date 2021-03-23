@@ -1,6 +1,8 @@
 package com.oursky.authgear.data.key
 
+import java.security.KeyPair
+
 internal interface KeyRepo {
-    fun getAnonymousKey(kid: String?, isUrlSafe: Boolean = true): JwkResponse
-    fun signAnonymousToken(kid: String, data: String, isUrlSafe: Boolean = true): String
+    fun generateAnonymousKey(kid: String): KeyPair
+    fun getAnonymousKey(kid: String): KeyPair?
 }

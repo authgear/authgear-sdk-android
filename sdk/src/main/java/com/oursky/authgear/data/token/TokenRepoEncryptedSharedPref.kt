@@ -15,6 +15,7 @@ internal class TokenRepoEncryptedSharedPref(private val applicationContext: Cont
         const val Verifier = "verifier"
         const val RefreshToken = "refreshToken"
         const val AnonymousKeyId = "anonymousKeyId"
+        const val BiometricKeyId = "biometricKeyId"
     }
 
     private val masterKey = MasterKey.Builder(applicationContext)
@@ -76,6 +77,24 @@ internal class TokenRepoEncryptedSharedPref(private val applicationContext: Cont
             getPref(namespace).edit()
                 .remove(AnonymousKeyId)
                 .commit()
+        }
+    }
+
+    override fun getBiometricKeyId(namespace: String): String? {
+        synchronized(this) {
+            return getPref(namespace).getString(BiometricKeyId, null)
+        }
+    }
+
+    override fun setBiometricKeyId(namespace: String, keyId: String) {
+        synchronized(this) {
+            getPref(namespace).edit().putString(BiometricKeyId, keyId).commit()
+        }
+    }
+
+    override fun deleteBiometricKeyId(namespace: String) {
+        synchronized(this) {
+            getPref(namespace).edit().remove(BiometricKeyId).commit()
         }
     }
 

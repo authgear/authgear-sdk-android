@@ -1,5 +1,6 @@
 package com.oursky.authgear.data.oauth
 
+import com.oursky.authgear.GrantType
 import com.oursky.authgear.UserInfo
 import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.oauth.*
@@ -27,7 +28,8 @@ internal class OauthRepoHttp : OauthRepo {
         synchronized(this) {
             val configAfterAcquire = this.config
             if (configAfterAcquire != null) return configAfterAcquire
-            val newConfig: OIDCConfiguration = HttpClient.getJson(URL(URL(endpoint), "/.well-known/openid-configuration"))
+            val newConfig: OIDCConfiguration =
+                HttpClient.getJson(URL(URL(endpoint), "/.well-known/openid-configuration"))
             this.config = newConfig
             return newConfig
         }
@@ -49,18 +51,33 @@ internal class OauthRepoHttp : OauthRepo {
         )
     }
 
+    override fun biometricSetupRequest(accessToken: String, clientId: String, jwt: String) {
+        val config = getOIDCConfiguration()
+        val body = mutableMapOf<String, String>()
+        body["client_id"] = clientId
+        body["grant_type"] = GrantType.BIOMETRIC.raw
+        body["jwt"] = jwt
+        return HttpClient.postForm(
+            URL(config.tokenEndpoint),
+            body,
+            mutableMapOf(
+                Pair("authorization", "Bearer $accessToken")
+            )
+        )
+    }
+
     override fun oidcRevocationRequest(refreshToken: String) {
         val config = getOIDCConfiguration()
         val queries = mutableMapOf<String, String>()
         queries["token"] = refreshToken
-        HttpClient.postForm(URL(config.revocationEndpoint), queries)
+        HttpClient.postForm(URL(config.revocationEndpoint), queries, null)
     }
 
     override fun oidcUserInfoRequest(accessToken: String): UserInfo {
         val config = getOIDCConfiguration()
         return HttpClient.getJson(
             URL(config.userInfoEndpoint),
-            mutableMapOf(Pair("authorization", "bearer $accessToken"))
+            mutableMapOf(Pair("authorization", "Bearer $accessToken"))
         )
     }
 
@@ -85,6 +102,6 @@ internal class OauthRepoHttp : OauthRepo {
         body["code"] = code
         body["state"] = state
         body["x_platform"] = "android"
-        HttpClient.postForm(URL(URL(endpoint), "/sso/wechat/callback"), body)
+        HttpClient.postForm(URL(URL(endpoint), "/sso/wechat/callback"), body, null)
     }
 }

@@ -14,6 +14,7 @@ internal interface OauthRepo {
     var endpoint: String?
     fun getOIDCConfiguration(): OIDCConfiguration
     fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse
+    fun biometricSetupRequest(accessToken: String, clientId: String, jwt: String)
     fun oidcRevocationRequest(refreshToken: String)
     fun oidcUserInfoRequest(accessToken: String): UserInfo
     fun oauthChallenge(purpose: String): ChallengeResponse
