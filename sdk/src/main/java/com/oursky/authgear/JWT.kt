@@ -35,14 +35,15 @@ internal data class JWTPayload(
     val iat: Long,
     val exp: Long,
     val challenge: String,
-    val action: String
-    // FIXME(biometric): device info
+    val action: String,
+    val deviceInfo: DeviceInfoRoot
 ) {
     constructor(now: Instant, challenge: String, action: String) : this(
         iat = now.epochSecond,
         exp = now.epochSecond + 60,
         challenge = challenge,
-        action = action
+        action = action,
+        deviceInfo = getDeviceInfo()
     )
 }
 
@@ -52,6 +53,7 @@ internal fun JWTPayload.toJsonObject(): JsonObject {
     m["exp"] = JsonPrimitive(exp)
     m["challenge"] = JsonPrimitive(challenge)
     m["action"] = JsonPrimitive(action)
+    m["device_info"] = this.deviceInfo.toJsonObject()
     return JsonObject(m)
 }
 
