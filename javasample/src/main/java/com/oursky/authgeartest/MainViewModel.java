@@ -54,6 +54,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Boolean> mBiometricSupported = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
+    final private MutableLiveData<SessionState> mSessionState = new MutableLiveData<>(SessionState.UNKNOWN);
     final private MutableLiveData<String> mSuccessDialogMessage = new MutableLiveData<>(null);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
 
@@ -101,6 +102,7 @@ public class MainViewModel extends AndroidViewModel {
         mUserInfo.setValue(null);
         mBiometricSupported.setValue(false);
         mBiometricEnable.setValue(false);
+        mSessionState.setValue(SessionState.UNKNOWN);
         mSuccessDialogMessage.setValue(null);
         mError.setValue(null);
     }
@@ -134,6 +136,8 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<UserInfo> userInfo() {
         return mUserInfo;
     }
+
+    public LiveData<SessionState> sessionState() { return mSessionState; }
 
     public LiveData<String> successDialogMessage() {
         return mSuccessDialogMessage;
@@ -176,6 +180,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason) {
                 Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason);
+                mSessionState.setValue(container.getSessionState());
             }
 
             @Override

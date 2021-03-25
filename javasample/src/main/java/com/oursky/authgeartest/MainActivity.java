@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.oursky.authgear.SessionState;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
@@ -126,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
         boolean isAnonymous = userInfo != null && userInfo.isAnonymous();
         boolean isBiometricSupported = viewModel.isBiometricSupported().getValue();
         boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
-        boolean isLoggedIn = userInfo != null;
+        boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mConfigure.setEnabled(!isLoading);
         mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
