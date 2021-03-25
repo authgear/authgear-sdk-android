@@ -171,6 +171,12 @@ internal class AuthgearCore(
         }
     }
 
+    private fun requireMinimumBiometricAPILevel() {
+        require(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            "Biometric authentication requires at least API Level 23"
+        }
+    }
+
     @Suppress("RedundantSuspendModifier")
     suspend fun authenticateAnonymously(): UserInfo {
         requireIsInitialized()
@@ -575,6 +581,7 @@ internal class AuthgearCore(
     @RequiresApi(api = Build.VERSION_CODES.M)
     fun checkBiometricSupported(context: Context, allowed: Int) {
         requireIsInitialized()
+        requireMinimumBiometricAPILevel()
 
         var allowed = allowed
         ensureAllowedIsValid(allowed)
@@ -611,6 +618,7 @@ internal class AuthgearCore(
         options: BiometricOptions
     ) {
         requireIsInitialized()
+        requireMinimumBiometricAPILevel()
 
         val accessToken: String = this.accessToken
             ?: throw IllegalStateException("enableBiometric required authenticated user.")
@@ -687,6 +695,10 @@ internal class AuthgearCore(
         options: BiometricOptions
     ): UserInfo {
         requireIsInitialized()
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            throw RuntimeException("Biometric authentication requires at least API Level 23")
+        }
 
         ensureAllowedIsValid(options.allowedAuthenticators)
         val allowed = convertAllowed(options.allowedAuthenticators)

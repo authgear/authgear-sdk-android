@@ -18,25 +18,35 @@ internal fun makeGenerateKeyPairSpec(alias: String, allowed: Int): KeyGenParamet
     val builder = KeyGenParameterSpec.Builder(
         alias,
         KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
-    )
-        .setKeySize(2048)
-        .setDigests(KeyProperties.DIGEST_SHA256)
-        .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
-        .setUserAuthenticationRequired(true)
-        .setUserAuthenticationParameters(
+    ) // API Level 23
+        .setKeySize(2048) // API Level 23
+        .setDigests(KeyProperties.DIGEST_SHA256) // API Level 23
+        .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1) // API Level 23
+        .setUserAuthenticationRequired(true) // API Level 23
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        builder.setUserAuthenticationParameters(
             0 /* 0 means require authentication every time */,
             allowed
-        )
-        // User confirmation is not needed because the BiometricPrompt itself is a kind of confirmation.
-        // .setUserConfirmationRequired(true)
-        // User presence requires a physical button which is not our intended use case.
-        // .setUserPresenceRequired(true)
+        ) // API Level 30
+    }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         builder.setInvalidatedByBiometricEnrollment(true)
     }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         builder.setUnlockedDeviceRequired(true)
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        // User confirmation is not needed because the BiometricPrompt itself is a kind of confirmation.
+        // builder.setUserConfirmationRequired(true)
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        // User presence requires a physical button which is not our intended use case.
+        // builder.setUserPresenceRequired(true)
     }
 
     return builder.build()
@@ -50,6 +60,7 @@ internal fun createKeyPair(spec: KeyGenParameterSpec): KeyPair {
     return keyPairGenerator.generateKeyPair()
 }
 
+@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
 internal fun removePrivateKey(alias: String) {
     // This function does NOT throw exception if the entry is not found.
     val keyStore: KeyStore = KeyStore.getInstance("AndroidKeyStore")
@@ -57,6 +68,7 @@ internal fun removePrivateKey(alias: String) {
     keyStore.deleteEntry(alias)
 }
 
+@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
 internal fun getPrivateKey(alias: String): KeyPair? {
     val keyStore = KeyStore.getInstance("AndroidKeyStore")
     keyStore.load(null)
