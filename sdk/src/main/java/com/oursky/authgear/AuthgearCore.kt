@@ -285,7 +285,7 @@ internal class AuthgearCore(
         val url = URL(URL(authgearEndpoint), path).toString()
 
         val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
-        URLEncoder.encode(token, StandardCharsets.UTF_8.toString())
+        URLEncoder.encode(token, StandardCharsets.UTF_8.name())
         }"
         val authorizeUrl = authorizeEndpoint(
             AuthorizeOptions(
@@ -340,7 +340,7 @@ internal class AuthgearCore(
         val loginHint = "https://authgear.com/login_hint?type=anonymous&jwt=${
         URLEncoder.encode(
             jwt,
-            StandardCharsets.UTF_8.toString()
+            StandardCharsets.UTF_8.name()
         )
         }"
         val authorizeUrl = authorizeEndpoint(

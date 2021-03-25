@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets
 
 internal fun Map<String, String>.toQueryParameter(): String {
     val queryBuilder = StringBuilder()
-    val charset = StandardCharsets.UTF_8.toString()
+    val charset = StandardCharsets.UTF_8.name()
     forEach { (key, value) ->
         queryBuilder.append("$key=${URLEncoder.encode(value, charset)}&")
     }
