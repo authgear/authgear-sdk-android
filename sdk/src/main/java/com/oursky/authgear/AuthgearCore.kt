@@ -707,10 +707,7 @@ internal class AuthgearCore(
         options: BiometricOptions
     ): UserInfo {
         requireIsInitialized()
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            throw RuntimeException("Biometric authentication requires at least API Level 23")
-        }
+        requireMinimumBiometricAPILevel()
 
         ensureAllowedIsValid(options.allowedAuthenticators)
         val allowed = convertAllowed(options.allowedAuthenticators)
