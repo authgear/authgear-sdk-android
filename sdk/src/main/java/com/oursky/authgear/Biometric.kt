@@ -14,7 +14,7 @@ internal const val BIOMETRIC_OR_DEVICE_CREDENTIAL =
     BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
 @RequiresApi(api = Build.VERSION_CODES.M)
-internal fun makeGenerateKeyPairSpec(alias: String, allowed: Int): KeyGenParameterSpec {
+internal fun makeGenerateKeyPairSpec(alias: String, allowed: Int, invalidatedByBiometricEnrollment: Boolean): KeyGenParameterSpec {
     val builder = KeyGenParameterSpec.Builder(
         alias,
         KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
@@ -32,7 +32,7 @@ internal fun makeGenerateKeyPairSpec(alias: String, allowed: Int): KeyGenParamet
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        builder.setInvalidatedByBiometricEnrollment(true)
+        builder.setInvalidatedByBiometricEnrollment(invalidatedByBiometricEnrollment)
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

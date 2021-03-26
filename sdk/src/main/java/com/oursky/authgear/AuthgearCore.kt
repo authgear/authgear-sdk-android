@@ -648,7 +648,7 @@ internal class AuthgearCore(
 
         val kid = UUID.randomUUID().toString()
         val alias = "com.authgear.keys.biometric.$kid"
-        val spec = makeGenerateKeyPairSpec(alias, authenticatorTypesToKeyProperties(allowed))
+        val spec = makeGenerateKeyPairSpec(alias, authenticatorTypesToKeyProperties(allowed), options.invalidatedByBiometricEnrollment)
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
         val keyPair = createKeyPair(spec)
         val jwk = publicKeyToJWK(kid, keyPair.public)

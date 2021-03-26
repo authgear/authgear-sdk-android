@@ -8,5 +8,6 @@ data class BiometricOptions constructor(
     var subtitle: String,
     var description: String,
     var negativeButtonText: String,
-    var allowedAuthenticators: Int
+    var allowedAuthenticators: Int,
+    var invalidatedByBiometricEnrollment: Boolean
 )

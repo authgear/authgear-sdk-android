@@ -265,7 +265,8 @@ public class MainViewModel extends AndroidViewModel {
                 "Biometric authentication",
                 "Use biometric to authenticate",
                 "Cancel",
-                ALLOWED
+                ALLOWED,
+                true
         );
     }
 
