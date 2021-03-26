@@ -85,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         viewModel.isLoading().observe(this, isLoading -> updateButtonDisabledState(viewModel));
-        viewModel.isBiometricSupported().observe(this, isSupported -> updateButtonDisabledState(viewModel));
         viewModel.isBiometricEnabled().observe(this, isEnabled -> updateButtonDisabledState(viewModel));
 
         viewModel.userInfo().observe(this, userInfo -> {
@@ -94,16 +93,6 @@ public class MainActivity extends AppCompatActivity {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Got UserInfo");
             builder.setMessage(userInfo.toString());
-            builder.setPositiveButton("OK", (dialogInterface, i) -> {
-            });
-            builder.create().show();
-        });
-
-        viewModel.successDialogMessage().observe(this, message -> {
-            if (message == null || message == "") return;
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Success");
-            builder.setMessage(message);
             builder.setPositiveButton("OK", (dialogInterface, i) -> {
             });
             builder.create().show();
@@ -125,7 +114,6 @@ public class MainActivity extends AppCompatActivity {
         boolean isLoading = viewModel.isLoading().getValue();
         boolean isConfigured = viewModel.isConfigured().getValue();
         boolean isAnonymous = userInfo != null && userInfo.isAnonymous();
-        boolean isBiometricSupported = viewModel.isBiometricSupported().getValue();
         boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
         boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
@@ -133,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
-        mEnableBiometric.setEnabled(!isLoading && isConfigured && isLoggedIn && isBiometricSupported && !isBiometricEnabled);
+        mEnableBiometric.setEnabled(!isLoading && isConfigured && isLoggedIn && !isBiometricEnabled);
         mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
         mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);

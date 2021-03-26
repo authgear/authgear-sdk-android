@@ -41,7 +41,7 @@ import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 @SuppressWarnings("ConstantConditions")
 public class MainViewModel extends AndroidViewModel {
-    private static final int ALLOWED = BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+    private static final int ALLOWED = BiometricManager.Authenticators.BIOMETRIC_STRONG;
     private static final String TAG = MainViewModel.class.getSimpleName();
     private Authgear mAuthgear = null;
     private IWXAPI weChatAPI;
@@ -51,11 +51,9 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mIsThirdParty = new MutableLiveData<>(true);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
-    final private MutableLiveData<Boolean> mBiometricSupported = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
     final private MutableLiveData<SessionState> mSessionState = new MutableLiveData<>(SessionState.UNKNOWN);
-    final private MutableLiveData<String> mSuccessDialogMessage = new MutableLiveData<>(null);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
 
     public MainViewModel(Application application) {
@@ -75,35 +73,30 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     private void updateBiometricState() {
+        boolean supported = false;
         try {
             if (Build.VERSION.SDK_INT >= 23) {
                 mAuthgear.checkBiometricSupported(
                         this.getApplication(),
                         ALLOWED
                 );
+                supported = true;
             }
-            mBiometricSupported.setValue(true);
-        } catch (Exception e) {
-            mError.setValue(e);
-        }
-
-        if (mBiometricSupported.getValue()) {
+        } catch (Exception e) {}
+        boolean enabled = false;
+        if (supported) {
             try {
-                final boolean enabled = mAuthgear.isBiometricEnabled();
-                mBiometricEnable.setValue(enabled);
-            } catch (Exception e) {
-                mError.setValue(e);
-            }
+                enabled = mAuthgear.isBiometricEnabled();
+            } catch (Exception e) {}
         }
+        mBiometricEnable.setValue(enabled);
     }
 
     private void resetState() {
         mIsConfigured.setValue(true);
         mUserInfo.setValue(null);
-        mBiometricSupported.setValue(false);
         mBiometricEnable.setValue(false);
         mSessionState.setValue(SessionState.UNKNOWN);
-        mSuccessDialogMessage.setValue(null);
         mError.setValue(null);
     }
 
@@ -129,8 +122,6 @@ public class MainViewModel extends AndroidViewModel {
         return mIsLoading;
     }
 
-    public LiveData<Boolean> isBiometricSupported() { return mBiometricSupported; }
-
     public LiveData<Boolean> isBiometricEnabled() { return mBiometricEnable; }
 
     public LiveData<UserInfo> userInfo() {
@@ -138,10 +129,6 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public LiveData<SessionState> sessionState() { return mSessionState; }
-
-    public LiveData<String> successDialogMessage() {
-        return mSuccessDialogMessage;
-    }
 
     public LiveData<Throwable> error() {
         return mError;
@@ -163,7 +150,6 @@ public class MainViewModel extends AndroidViewModel {
         mAuthgear.configure(false, new OnConfigureListener() {
             @Override
             public void onConfigured() {
-                mSuccessDialogMessage.setValue("Configured Authgear successfully");
                 mIsLoading.setValue(false);
                 updateBiometricState();
             }
@@ -239,7 +225,6 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthorized(@Nullable AuthorizeResult result) {
                 String state = result.getState();
                 Log.d(TAG, state == null ? "No state" : state);
-                mSuccessDialogMessage.setValue("Logged in successfully");
                 mUserInfo.setValue(result.getUserInfo());
                 mIsLoading.setValue(false);
                 updateBiometricState();
@@ -260,7 +245,6 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onAuthenticated(@NonNull UserInfo userInfo) {
                 mUserInfo.setValue(userInfo);
-                mSuccessDialogMessage.setValue("Logged in anonymously");
                 mIsLoading.setValue(false);
                 updateBiometricState();
             }
@@ -323,7 +307,6 @@ public class MainViewModel extends AndroidViewModel {
                     public void onAuthenticated(UserInfo userInfo) {
                         mIsLoading.setValue(false);
                         mUserInfo.setValue(userInfo);
-                        mSuccessDialogMessage.setValue("Logged in with biometric");
                         updateBiometricState();
                     }
 
@@ -345,7 +328,6 @@ public class MainViewModel extends AndroidViewModel {
             public void onLogout() {
                 mIsLoading.setValue(false);
                 mUserInfo.setValue(null);
-                mSuccessDialogMessage.setValue("Logged out successfully");
                 updateBiometricState();
             }
 
@@ -372,7 +354,6 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
                 mUserInfo.setValue(result.getUserInfo());
-                mSuccessDialogMessage.setValue("Successfully promoted anonymous user");
                 mIsLoading.setValue(false);
             }
 
