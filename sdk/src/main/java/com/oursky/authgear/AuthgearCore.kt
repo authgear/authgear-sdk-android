@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
@@ -667,30 +668,35 @@ internal class AuthgearCore(
 
         val jwt = suspendCoroutine<String> {
             val prompt =
-                BiometricPrompt(options.activity, object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationFailed() {
-                        // This callback will be invoked EVERY time the recognition failed.
-                        // So while the prompt is still opened, this callback can be called repetitively.
-                        // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
-                        // So this callback is not important to the developer.
-                    }
+                BiometricPrompt(
+                    options.activity,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationFailed() {
+                            // This callback will be invoked EVERY time the recognition failed.
+                            // So while the prompt is still opened, this callback can be called repetitively.
+                            // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
+                            // So this callback is not important to the developer.
+                        }
 
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        it.resumeWith(
-                            Result.failure(
-                                BiometricPromptAuthenticationException(
-                                    errorCode
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence
+                        ) {
+                            it.resumeWith(
+                                Result.failure(
+                                    BiometricPromptAuthenticationException(
+                                        errorCode
+                                    )
                                 )
                             )
-                        )
-                    }
+                        }
 
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        val signature = result.cryptoObject!!.signature!!
-                        val jwt = signJWT(signature, header, payload)
-                        it.resume(jwt)
-                    }
-                })
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                            val signature = result.cryptoObject!!.signature!!
+                            val jwt = signJWT(signature, header, payload)
+                            it.resume(jwt)
+                        }
+                    })
 
             val handler = Handler(Looper.getMainLooper())
             handler.post {
@@ -723,73 +729,86 @@ internal class AuthgearCore(
         val kid = tokenRepo.getBiometricKeyId(name)
             ?: throw IllegalStateException("biometric kid not found")
         val alias = "com.authgear.keys.biometric.$kid"
-        val keyPair = getPrivateKey(alias) ?: throw IllegalStateException("biometric key not found")
-        val jwk = publicKeyToJWK(kid, keyPair.public)
-        val header = JWTHeader(
-            typ = JWTHeaderType.BIOMETRIC,
-            kid = kid,
-            alg = jwk.alg,
-            jwk = jwk
-        )
-        val payload = JWTPayload(
-            now = Instant.now(),
-            challenge = challenge,
-            action = "authenticate"
-        )
-        val lockedSignature = makeSignature(keyPair.private)
-        val cryptoObject = BiometricPrompt.CryptoObject(lockedSignature)
-
-        val jwt = suspendCoroutine<String> {
-            val prompt =
-                BiometricPrompt(options.activity, object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationFailed() {
-                        // This callback will be invoked EVERY time the recognition failed.
-                        // So while the prompt is still opened, this callback can be called repetitively.
-                        // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
-                        // So this callback is not important to the developer.
-                    }
-
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        it.resumeWith(
-                            Result.failure(
-                                BiometricPromptAuthenticationException(
-                                    errorCode
-                                )
-                            )
-                        )
-                    }
-
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        val signature = result.cryptoObject!!.signature!!
-                        val jwt = signJWT(signature, header, payload)
-                        it.resume(jwt)
-                    }
-                })
-
-            val handler = Handler(Looper.getMainLooper())
-            handler.post {
-                prompt.authenticate(promptInfo, cryptoObject)
-            }
-        }
 
         try {
-            val tokenResponse = oauthRepo.oidcTokenRequest(
-                OIDCTokenRequest(
-                    grantType = com.oursky.authgear.GrantType.BIOMETRIC,
-                    clientId = clientId,
-                    jwt = jwt
-                )
+            val keyPair =
+                getPrivateKey(alias) ?: throw IllegalStateException("biometric key not found")
+            val jwk = publicKeyToJWK(kid, keyPair.public)
+            val header = JWTHeader(
+                typ = JWTHeaderType.BIOMETRIC,
+                kid = kid,
+                alg = jwk.alg,
+                jwk = jwk
             )
-            val userInfo = oauthRepo.oidcUserInfoRequest(
-                tokenResponse.accessToken
+            val payload = JWTPayload(
+                now = Instant.now(),
+                challenge = challenge,
+                action = "authenticate"
             )
-            saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
-            return userInfo
-        } catch (e: OauthException) {
-            // In case the biometric was removed remotely.
-            if (e.error == "invalid_grant" && e.errorDescription == "InvalidCredentials") {
-                disableBiometric()
+            val lockedSignature = makeSignature(keyPair.private)
+            val cryptoObject = BiometricPrompt.CryptoObject(lockedSignature)
+
+            val jwt = suspendCoroutine<String> {
+                val prompt =
+                    BiometricPrompt(
+                        options.activity,
+                        object : BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationFailed() {
+                                // This callback will be invoked EVERY time the recognition failed.
+                                // So while the prompt is still opened, this callback can be called repetitively.
+                                // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
+                                // So this callback is not important to the developer.
+                            }
+
+                            override fun onAuthenticationError(
+                                errorCode: Int,
+                                errString: CharSequence
+                            ) {
+                                it.resumeWith(
+                                    Result.failure(
+                                        BiometricPromptAuthenticationException(
+                                            errorCode
+                                        )
+                                    )
+                                )
+                            }
+
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                val signature = result.cryptoObject!!.signature!!
+                                val jwt = signJWT(signature, header, payload)
+                                it.resume(jwt)
+                            }
+                        })
+
+                val handler = Handler(Looper.getMainLooper())
+                handler.post {
+                    prompt.authenticate(promptInfo, cryptoObject)
+                }
             }
+
+            try {
+                val tokenResponse = oauthRepo.oidcTokenRequest(
+                    OIDCTokenRequest(
+                        grantType = com.oursky.authgear.GrantType.BIOMETRIC,
+                        clientId = clientId,
+                        jwt = jwt
+                    )
+                )
+                val userInfo = oauthRepo.oidcUserInfoRequest(
+                    tokenResponse.accessToken
+                )
+                saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
+                return userInfo
+            } catch (e: OauthException) {
+                // In case the biometric was removed remotely.
+                if (e.error == "invalid_grant" && e.errorDescription == "InvalidCredentials") {
+                    disableBiometric()
+                }
+                throw e
+            }
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            // This biometric has changed
+            this.disableBiometric()
             throw e
         }
     }
