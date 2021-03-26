@@ -17,7 +17,6 @@ import com.oursky.authgear.data.token.TokenRepo
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OIDCTokenResponse
-import com.oursky.authgear.oauth.OauthException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -556,12 +555,25 @@ internal class AuthgearCore(
     private fun finishAuthorization(deepLink: String): AuthorizeResult {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
+        val state = uri.getQueryParameter("state")
         val error = uri.getQueryParameter("error")
+        val errorDescription = uri.getQueryParameter("error_description")
+        var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
-            throw OauthException(error, uri.getQueryParameter("error_description") ?: "")
+            throw OauthException(
+                error = error,
+                errorDescription = errorDescription,
+                state = state,
+                errorURI = errorURI
+            )
         }
         val code = uri.getQueryParameter("code")
-            ?: throw OauthException("invalid_request", "Missing parameter: code")
+            ?: throw OauthException(
+                error = "invalid_request",
+                errorDescription = "Missing parameter: code",
+                state = state,
+                errorURI = errorURI
+            )
         val codeVerifier = tokenRepo.getOIDCCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(

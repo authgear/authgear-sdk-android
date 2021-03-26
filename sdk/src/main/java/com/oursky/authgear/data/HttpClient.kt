@@ -1,96 +1,84 @@
 package com.oursky.authgear.data
 
-import com.oursky.authgear.net.toFormData
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
+import com.oursky.authgear.OauthException
+import com.oursky.authgear.ServerException
 import kotlinx.serialization.json.Json
+import org.json.JSONException
+import org.json.JSONObject
+import java.lang.RuntimeException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.charset.StandardCharsets
 
 internal class HttpClient {
     companion object {
         val json = Json { ignoreUnknownKeys = true }
-        inline fun <reified T> getJson(url: URL, headers: Map<String, String>? = null): T {
+        fun <T> fetch(url: URL, method: String, headers: Map<String, String>, callback: (conn: HttpURLConnection) -> T): T {
             val conn = url.openConnection() as HttpURLConnection
             try {
-                conn.requestMethod = "GET"
-                headers?.forEach { (key, value) ->
+                conn.requestMethod = method
+                conn.doInput = true
+                if (method != "GET" && method != "HEAD") {
+                    conn.doOutput = true
+                }
+                headers.forEach { (key, value) ->
                     conn.setRequestProperty(key, value)
                 }
-                conn.inputStream.use {
-                    return json.decodeFromString(String(it.readBytes(), StandardCharsets.UTF_8))
-                }
+                return callback(conn)
             } finally {
                 conn.disconnect()
             }
         }
 
-        inline fun <reified R, reified E : Exception> postFormRespJsonWithError(
-            url: URL,
-            body: Map<String, String>
-        ): R {
-            val conn = url.openConnection() as HttpURLConnection
-            try {
-                conn.doOutput = true
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("content-type", "application/x-www-form-urlencoded")
-                conn.outputStream.use {
-                    it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
-                }
-                conn.inputStream.use {
-                    return json.decodeFromString(String(it.readBytes(), StandardCharsets.UTF_8))
-                }
-            } catch (e: Exception) {
-                conn.errorStream?.use {
-                    try {
-                        val errorResp: E =
-                            json.decodeFromString(String(it.readBytes(), StandardCharsets.UTF_8))
-                        throw errorResp
-                    } catch (innerE: Exception) {
-                        throw innerE
+        fun throwErrorIfNeeded(conn: HttpURLConnection, responseString: String) {
+            if (conn.responseCode < 200 || conn.responseCode >= 300) {
+                try {
+                    val jsonObject = JSONObject(responseString)
+                    val e = makeError(jsonObject)
+                    if (e != null) {
+                        throw e
                     }
-                } ?: throw e
-            } finally {
-                conn.disconnect()
+                    throw RuntimeException(responseString)
+                } catch (e: JSONException) {
+                    throw RuntimeException(responseString)
+                }
             }
         }
 
-        fun postForm(url: URL, body: Map<String, String>, headers: Map<String, String>?) {
-            val conn = url.openConnection() as HttpURLConnection
-            try {
-                conn.doOutput = true
-                conn.requestMethod = "POST"
-                headers?.forEach { (key, value) ->
-                    conn.setRequestProperty(key, value)
+        fun makeError(jsonObject: JSONObject): Exception? {
+            if (jsonObject.has("name") && jsonObject.has("reason") && jsonObject.has("message")) {
+                var info: JSONObject? = null
+                if (jsonObject.has("info")) {
+                    info = jsonObject.getJSONObject("info")
                 }
-                conn.setRequestProperty("content-type", "application/x-www-form-urlencoded")
-                conn.outputStream.use {
-                    it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
-                }
-                conn.inputStream.use {
-                    return
-                }
-            } finally {
-                conn.disconnect()
+                return ServerException(
+                    name = jsonObject.getString("name"),
+                    reason = jsonObject.getString("reason"),
+                    message = jsonObject.getString("message"),
+                    info = info
+                )
             }
-        }
+            if (jsonObject.has("error")) {
+                var state: String? = null
+                var errorDescription: String? = null
+                var errorURI: String? = null
+                if (jsonObject.has("state")) {
+                    state = jsonObject.getString("state")
+                }
+                if (jsonObject.has("error_description")) {
+                    errorDescription = jsonObject.getString("error_description")
+                }
+                if (jsonObject.has("error_uri")) {
+                    errorURI = jsonObject.getString("error_uri")
+                }
+                return OauthException(
+                    error = jsonObject.getString("error"),
+                    errorDescription = errorDescription,
+                    state = state,
+                    errorURI = errorURI
+                )
+            }
 
-        inline fun <reified R, reified T> postJsonRespJson(url: URL, body: T): R {
-            val conn = url.openConnection() as HttpURLConnection
-            try {
-                conn.doOutput = true
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("content-type", "application/json")
-                conn.outputStream.use {
-                    it.write(json.encodeToString(body).toByteArray(StandardCharsets.UTF_8))
-                }
-                conn.inputStream.use {
-                    return json.decodeFromString(String(it.readBytes(), StandardCharsets.UTF_8))
-                }
-            } finally {
-                conn.disconnect()
-            }
+            return null
         }
     }
 }
