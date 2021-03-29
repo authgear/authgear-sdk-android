@@ -47,6 +47,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
     implementation 'com.google.android.material:material:1.2.1'
     implementation 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:6.6.5'
+    implementation "androidx.biometric:biometric:1.2.0-alpha03"
     // To add Authgear in your app, use the following for latest version in main branch
     // implementation 'com.github.authgear:authgear-sdk-android:main-SNAPSHOT'
     implementation project(':sdk')

@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.oursky.authgear.SessionState;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
@@ -20,9 +21,13 @@ public class MainActivity extends AppCompatActivity {
     private EditText mPage;
     private CheckBox mIsThirdParty;
     private TextView mLoading;
+    private View mConfigure;
     private View mAuthorize;
     private View mAuthenticateAnonymously;
     private View mPromoteAnonymousUser;
+    private View mEnableBiometric;
+    private View mDisableBiometric;
+    private View mAuthenticateBiometric;
     private View mOpenSettings;
     private View mFetchUserInfo;
     private View mLogout;
@@ -41,24 +46,31 @@ public class MainActivity extends AppCompatActivity {
         mPage = findViewById(R.id.pageInput);
         mIsThirdParty = findViewById(R.id.isThirdPartyInput);
         mLoading = findViewById(R.id.loading);
+        mConfigure = findViewById(R.id.configure);
         mAuthorize = findViewById(R.id.authorize);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mPromoteAnonymousUser = findViewById(R.id.promoteAnonymousUser);
+        mEnableBiometric = findViewById(R.id.enableBiometric);
+        mDisableBiometric = findViewById(R.id.disableBiometric);
+        mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
         mOpenSettings = findViewById(R.id.openSettings);
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mLogout = findViewById(R.id.logout);
 
-        findViewById(R.id.configure).setOnClickListener(
-            view -> viewModel.configure(
-                mClientId.getText().toString(),
-                mEndpoint.getText().toString(),
-                mIsThirdParty.isChecked()
-            )
+        mConfigure.setOnClickListener(
+                view -> viewModel.configure(
+                        mClientId.getText().toString(),
+                        mEndpoint.getText().toString(),
+                        mIsThirdParty.isChecked()
+                )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
-        mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
+        mEnableBiometric.setOnClickListener(view -> viewModel.enableBiometric(this));
+        mDisableBiometric.setOnClickListener(view -> viewModel.disableBiometric());
+        mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
+        mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
         mLogout.setOnClickListener(view -> viewModel.logout());
 
@@ -72,26 +84,15 @@ public class MainActivity extends AppCompatActivity {
             mLoading.setText(isConfigured ? "Loading..." : "Configuring...");
         });
 
-        viewModel.isLoggedIn().observe(this, isLoggedIn -> updateButtonDisabledState(viewModel));
-
         viewModel.isLoading().observe(this, isLoading -> updateButtonDisabledState(viewModel));
+        viewModel.isBiometricEnabled().observe(this, isEnabled -> updateButtonDisabledState(viewModel));
 
         viewModel.userInfo().observe(this, userInfo -> {
-            if (userInfo == null) return;
             updateButtonDisabledState(viewModel);
+            if (userInfo == null) return;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Got UserInfo");
             builder.setMessage(userInfo.toString());
-            builder.setPositiveButton("OK", (dialogInterface, i) -> {
-            });
-            builder.create().show();
-        });
-
-        viewModel.successDialogMessage().observe(this, message -> {
-            if (message == null || message == "") return;
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Success");
-            builder.setMessage(message);
             builder.setPositiveButton("OK", (dialogInterface, i) -> {
             });
             builder.create().show();
@@ -112,13 +113,18 @@ public class MainActivity extends AppCompatActivity {
         UserInfo userInfo = viewModel.userInfo().getValue();
         boolean isLoading = viewModel.isLoading().getValue();
         boolean isConfigured = viewModel.isConfigured().getValue();
-        boolean isLoggedIn = viewModel.isLoggedIn().getValue();
         boolean isAnonymous = userInfo != null && userInfo.isAnonymous();
+        boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
+        boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        mConfigure.setEnabled(!isLoading);
         mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
-        mOpenSettings.setEnabled(!isLoading && isConfigured);
+        mEnableBiometric.setEnabled(!isLoading && isConfigured && isLoggedIn && !isBiometricEnabled);
+        mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
+        mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
+        mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mLogout.setEnabled(!isLoading && isConfigured && isLoggedIn);
     }

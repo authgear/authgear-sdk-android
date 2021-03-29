@@ -1,34 +1,36 @@
 package com.oursky.authgear
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
 import androidx.annotation.MainThread
-import com.oursky.authgear.data.key.JwkResponse
+import androidx.annotation.RequiresApi
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
-import com.oursky.authgear.jwt.prepareJwtData
 import com.oursky.authgear.net.toQueryParameter
-import com.oursky.authgear.oauth.OIDCTokenResponse
 import com.oursky.authgear.oauth.OIDCTokenRequest
-import com.oursky.authgear.oauth.OauthException
+import com.oursky.authgear.oauth.OIDCTokenResponse
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.security.KeyPair
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.Duration
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -104,13 +106,15 @@ internal class AuthgearCore(
                 unregisteredWeChatRedirectURI()
             }
         }
+
         fun unregisteredWeChatRedirectURI() {
             weChatRedirectURI = null
             weChatRedirectHandler = null
         }
+
         /**
-        * handleWeChatRedirectDeepLink return true if it is handled
-        */
+         * handleWeChatRedirectDeepLink return true if it is handled
+         */
         fun handleWeChatRedirectDeepLink(deepLink: String): Boolean {
             if (weChatRedirectURI == null) {
                 return false
@@ -167,20 +171,48 @@ internal class AuthgearCore(
         }
     }
 
+    private fun requireMinimumBiometricAPILevel() {
+        require(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            "Biometric authentication requires at least API Level 23"
+        }
+    }
+
     @Suppress("RedundantSuspendModifier")
     suspend fun authenticateAnonymously(): UserInfo {
         requireIsInitialized()
-        val token = oauthRepo.oauthChallenge("anonymous_request").token
-        val keyId = tokenRepo.getAnonymousKeyId(name)
-        val key = keyRepo.getAnonymousKey(keyId)
-        val now = Instant.now().epochSecond
-        val header = key.toHeader()
-        val payload = mutableMapOf<String, String>()
-        payload["iat"] = now.toString()
-        payload["exp"] = (now + 60).toString()
-        payload["challenge"] = token
-        payload["action"] = "auth"
-        val jwt = getJwt(key.kid, header, payload)
+        val challenge = oauthRepo.oauthChallenge("anonymous_request").token
+
+        var keyId = tokenRepo.getAnonymousKeyId(name)
+        var keyPair: KeyPair
+
+        if (keyId == null) {
+            keyId = UUID.randomUUID().toString()
+            keyPair = keyRepo.generateAnonymousKey(keyId)
+        } else {
+            val maybeKeyPair = keyRepo.getAnonymousKey(keyId)
+            if (maybeKeyPair == null) {
+                throw IllegalArgumentException("Anonymous user key not found.")
+            }
+            keyPair = maybeKeyPair
+        }
+
+        val jwk = publicKeyToJWK(keyId, keyPair.public)
+
+        val header = JWTHeader(
+            typ = JWTHeaderType.ANONYMOUS,
+            kid = jwk.kid,
+            alg = jwk.alg,
+            jwk = jwk
+        )
+        val payload = JWTPayload(
+            now = Instant.now(),
+            challenge = challenge,
+            action = "auth"
+        )
+
+        val signature = makeSignature(keyPair.private)
+        val jwt = signJWT(signature, header, payload)
+
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
                 grantType = GrantType.ANONYMOUS,
@@ -192,7 +224,8 @@ internal class AuthgearCore(
             tokenResponse.accessToken
         )
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
-        tokenRepo.setAnonymousKeyId(name, key.kid)
+        disableBiometric()
+        tokenRepo.setAnonymousKeyId(name, keyId)
         return userInfo
     }
 
@@ -252,7 +285,7 @@ internal class AuthgearCore(
         val url = URL(URL(authgearEndpoint), path).toString()
 
         val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
-            URLEncoder.encode(token, StandardCharsets.UTF_8.toString())
+        URLEncoder.encode(token, StandardCharsets.UTF_8.name())
         }"
         val authorizeUrl = authorizeEndpoint(
             AuthorizeOptions(
@@ -284,21 +317,31 @@ internal class AuthgearCore(
         requireIsInitialized()
         val keyId = tokenRepo.getAnonymousKeyId(name)
             ?: throw IllegalStateException("Anonymous user credentials not found")
-        val key = keyRepo.getAnonymousKey(keyId)
-        val token = oauthRepo.oauthChallenge("anonymous_request").token
-        val now = Instant.now().epochSecond
-        val header = key.toHeader()
-        val payload = mutableMapOf<String, String>()
-        payload["iat"] = now.toString()
-        payload["exp"] = (now + 60).toString()
-        payload["challenge"] = token
-        payload["action"] = "promote"
-        val jwt = getJwt(key.kid, header, payload)
+        val keyPair = keyRepo.getAnonymousKey(keyId)
+            ?: throw IllegalStateException("Anonymous user credentials not found")
+        val challenge = oauthRepo.oauthChallenge("anonymous_request").token
+
+        val jwk = publicKeyToJWK(keyId, keyPair.public)
+
+        val header = JWTHeader(
+            typ = JWTHeaderType.ANONYMOUS,
+            kid = jwk.kid,
+            alg = jwk.alg,
+            jwk = jwk
+        )
+        val payload = JWTPayload(
+            now = Instant.now(),
+            challenge = challenge,
+            action = "promote"
+
+        )
+        val signature = makeSignature(keyPair.private)
+        val jwt = signJWT(signature, header, payload)
         val loginHint = "https://authgear.com/login_hint?type=anonymous&jwt=${
-            URLEncoder.encode(
-                jwt,
-                StandardCharsets.UTF_8.toString()
-            )
+        URLEncoder.encode(
+            jwt,
+            StandardCharsets.UTF_8.name()
+        )
         }"
         val authorizeUrl = authorizeEndpoint(
             AuthorizeOptions(
@@ -316,7 +359,6 @@ internal class AuthgearCore(
         return result
     }
 
-    @Suppress("RedundantSuspendModifier")
     suspend fun fetchUserInfo(): UserInfo {
         requireIsInitialized()
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
@@ -337,32 +379,6 @@ internal class AuthgearCore(
         handler.post {
             this.delegate?.onSessionStateChanged(this.authgear, reason)
         }
-    }
-
-    private fun JwkResponse.toHeader(): JsonObject {
-        val header = mutableMapOf<String, JsonElement>()
-        header["typ"] = JsonPrimitive("vnd.authgear.anonymous-request")
-        header["kid"] = JsonPrimitive(kid)
-        header["alg"] = JsonPrimitive(alg)
-        jwk?.let { jwk ->
-            header["jwk"] = JsonObject(mutableMapOf<String, JsonElement>().also {
-                it["kid"] = JsonPrimitive(jwk.kid)
-                it["kty"] = JsonPrimitive(jwk.kty)
-                it["n"] = JsonPrimitive(jwk.n)
-                it["e"] = JsonPrimitive(jwk.e)
-            })
-        }
-        return JsonObject(header)
-    }
-
-    private fun getJwt(
-        kid: String,
-        header: Map<String, JsonElement>,
-        payload: Map<String, String>
-    ): String {
-        val jwtData = prepareJwtData(header, payload)
-        val sig = keyRepo.signAnonymousToken(kid, jwtData)
-        return "$jwtData.$sig"
     }
 
     private fun authorizeEndpoint(options: AuthorizeOptions): String {
@@ -540,12 +556,25 @@ internal class AuthgearCore(
     private fun finishAuthorization(deepLink: String): AuthorizeResult {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
+        val state = uri.getQueryParameter("state")
         val error = uri.getQueryParameter("error")
+        val errorDescription = uri.getQueryParameter("error_description")
+        var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
-            throw OauthException(error, uri.getQueryParameter("error_description") ?: "")
+            throw OauthException(
+                error = error,
+                errorDescription = errorDescription,
+                state = state,
+                errorURI = errorURI
+            )
         }
         val code = uri.getQueryParameter("code")
-            ?: throw OauthException("invalid_request", "Missing parameter: code")
+            ?: throw OauthException(
+                error = "invalid_request",
+                errorDescription = "Missing parameter: code",
+                state = state,
+                errorURI = errorURI
+            )
         val codeVerifier = tokenRepo.getOIDCCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
@@ -558,6 +587,229 @@ internal class AuthgearCore(
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken)
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
+        disableBiometric()
         return AuthorizeResult(userInfo, uri.getQueryParameter("state"))
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun checkBiometricSupported(context: Context, allowed: Int) {
+        requireIsInitialized()
+        requireMinimumBiometricAPILevel()
+
+        var allowed = allowed
+        ensureAllowedIsValid(allowed)
+        allowed = convertAllowed(allowed)
+        val result = BiometricManager.from(context).canAuthenticate(allowed)
+        if (result != BiometricManager.BIOMETRIC_SUCCESS) {
+            throw BiometricCanAuthenticateException(result)
+        }
+    }
+
+    fun isBiometricEnabled(): Boolean {
+        requireIsInitialized()
+
+        val kid = this.tokenRepo.getBiometricKeyId(this.name)
+        if (kid == null) {
+            return false
+        }
+        return true
+    }
+
+    fun disableBiometric() {
+        requireIsInitialized()
+
+        val kid = this.tokenRepo.getBiometricKeyId(this.name)
+        if (kid != null) {
+            val alias = "com.authgear.keys.biometric.$kid"
+            removePrivateKey(alias)
+            this.tokenRepo.deleteBiometricKeyId(this.name)
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    suspend fun enableBiometric(
+        options: BiometricOptions
+    ) {
+        requireIsInitialized()
+        requireMinimumBiometricAPILevel()
+
+        val accessToken: String = this.accessToken
+            ?: throw IllegalStateException("enableBiometric required authenticated user.")
+
+        ensureAllowedIsValid(options.allowedAuthenticators)
+        val allowed = convertAllowed(options.allowedAuthenticators)
+        val promptInfo = buildPromptInfo(
+            options.title,
+            options.subtitle,
+            options.description,
+            options.negativeButtonText,
+            allowed
+        )
+
+        val kid = UUID.randomUUID().toString()
+        val alias = "com.authgear.keys.biometric.$kid"
+        val spec = makeGenerateKeyPairSpec(alias, authenticatorTypesToKeyProperties(allowed), options.invalidatedByBiometricEnrollment)
+        val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
+        val keyPair = createKeyPair(spec)
+        val jwk = publicKeyToJWK(kid, keyPair.public)
+        val header = JWTHeader(
+            typ = JWTHeaderType.BIOMETRIC,
+            kid = kid,
+            alg = jwk.alg,
+            jwk = jwk
+        )
+        val payload = JWTPayload(
+            now = Instant.now(),
+            challenge = challenge,
+            action = "setup"
+        )
+        val lockedSignature = makeSignature(keyPair.private)
+        val cryptoObject = BiometricPrompt.CryptoObject(lockedSignature)
+
+        val jwt = suspendCoroutine<String> {
+            val prompt =
+                BiometricPrompt(
+                    options.activity,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationFailed() {
+                            // This callback will be invoked EVERY time the recognition failed.
+                            // So while the prompt is still opened, this callback can be called repetitively.
+                            // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
+                            // So this callback is not important to the developer.
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence
+                        ) {
+                            it.resumeWith(
+                                Result.failure(
+                                    BiometricPromptAuthenticationException(
+                                        errorCode
+                                    )
+                                )
+                            )
+                        }
+
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                            val signature = result.cryptoObject!!.signature!!
+                            val jwt = signJWT(signature, header, payload)
+                            it.resume(jwt)
+                        }
+                    })
+
+            val handler = Handler(Looper.getMainLooper())
+            handler.post {
+                prompt.authenticate(promptInfo, cryptoObject)
+            }
+        }
+
+        this.oauthRepo.biometricSetupRequest(accessToken, clientId, jwt)
+        tokenRepo.setBiometricKeyId(name, kid)
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    suspend fun authenticateBiometric(
+        options: BiometricOptions
+    ): UserInfo {
+        requireIsInitialized()
+        requireMinimumBiometricAPILevel()
+
+        ensureAllowedIsValid(options.allowedAuthenticators)
+        val allowed = convertAllowed(options.allowedAuthenticators)
+        val promptInfo = buildPromptInfo(
+            options.title,
+            options.subtitle,
+            options.description,
+            options.negativeButtonText,
+            allowed
+        )
+
+        val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
+        val kid = tokenRepo.getBiometricKeyId(name)
+            ?: throw IllegalStateException("biometric kid not found")
+        val alias = "com.authgear.keys.biometric.$kid"
+
+        try {
+            val keyPair =
+                getPrivateKey(alias) ?: throw IllegalStateException("biometric key not found")
+            val jwk = publicKeyToJWK(kid, keyPair.public)
+            val header = JWTHeader(
+                typ = JWTHeaderType.BIOMETRIC,
+                kid = kid,
+                alg = jwk.alg,
+                jwk = jwk
+            )
+            val payload = JWTPayload(
+                now = Instant.now(),
+                challenge = challenge,
+                action = "authenticate"
+            )
+            val lockedSignature = makeSignature(keyPair.private)
+            val cryptoObject = BiometricPrompt.CryptoObject(lockedSignature)
+
+            val jwt = suspendCoroutine<String> {
+                val prompt =
+                    BiometricPrompt(
+                        options.activity,
+                        object : BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationFailed() {
+                                // This callback will be invoked EVERY time the recognition failed.
+                                // So while the prompt is still opened, this callback can be called repetitively.
+                                // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
+                                // So this callback is not important to the developer.
+                            }
+
+                            override fun onAuthenticationError(
+                                errorCode: Int,
+                                errString: CharSequence
+                            ) {
+                                it.resumeWith(
+                                    Result.failure(
+                                        BiometricPromptAuthenticationException(
+                                            errorCode
+                                        )
+                                    )
+                                )
+                            }
+
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                val signature = result.cryptoObject!!.signature!!
+                                val jwt = signJWT(signature, header, payload)
+                                it.resume(jwt)
+                            }
+                        })
+
+                val handler = Handler(Looper.getMainLooper())
+                handler.post {
+                    prompt.authenticate(promptInfo, cryptoObject)
+                }
+            }
+
+            try {
+                val tokenResponse = oauthRepo.oidcTokenRequest(
+                    OIDCTokenRequest(
+                        grantType = com.oursky.authgear.GrantType.BIOMETRIC,
+                        clientId = clientId,
+                        jwt = jwt
+                    )
+                )
+                val userInfo = oauthRepo.oidcUserInfoRequest(
+                    tokenResponse.accessToken
+                )
+                saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
+                return userInfo
+            } catch (e: OauthException) {
+                // In case the biometric was removed remotely.
+                if (e.error == "invalid_grant" && e.errorDescription == "InvalidCredentials") {
+                    disableBiometric()
+                }
+                throw e
+            }
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            // This biometric has changed
+            this.disableBiometric()
+            throw e
+        }
     }
 }

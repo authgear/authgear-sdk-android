@@ -3,10 +3,13 @@ package com.oursky.authgeartest;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.biometric.BiometricManager;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -15,9 +18,12 @@ import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
+import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
+import com.oursky.authgear.OnAuthenticateBiometricListener;
 import com.oursky.authgear.OnAuthorizeListener;
 import com.oursky.authgear.OnConfigureListener;
+import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
@@ -35,6 +41,7 @@ import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 @SuppressWarnings("ConstantConditions")
 public class MainViewModel extends AndroidViewModel {
+    private static final int ALLOWED = BiometricManager.Authenticators.BIOMETRIC_STRONG;
     private static final String TAG = MainViewModel.class.getSimpleName();
     private Authgear mAuthgear = null;
     private IWXAPI weChatAPI;
@@ -43,10 +50,10 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mIsThirdParty = new MutableLiveData<>(true);
-    final private MutableLiveData<Boolean> mIsLoggedIn = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
+    final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
-    final private MutableLiveData<String> mSuccessDialogMessage = new MutableLiveData<>(null);
+    final private MutableLiveData<SessionState> mSessionState = new MutableLiveData<>(SessionState.UNKNOWN);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
 
     public MainViewModel(Application application) {
@@ -65,16 +72,31 @@ public class MainViewModel extends AndroidViewModel {
         }
     }
 
-    private void updateSessionState() {
-        if (mAuthgear == null) return;
-        mIsLoggedIn.setValue(mAuthgear.getSessionState() == SessionState.AUTHENTICATED);
+    private void updateBiometricState() {
+        boolean supported = false;
+        try {
+            if (Build.VERSION.SDK_INT >= 23) {
+                mAuthgear.checkBiometricSupported(
+                        this.getApplication(),
+                        ALLOWED
+                );
+                supported = true;
+            }
+        } catch (Exception e) {}
+        boolean enabled = false;
+        if (supported) {
+            try {
+                enabled = mAuthgear.isBiometricEnabled();
+            } catch (Exception e) {}
+        }
+        mBiometricEnable.setValue(enabled);
     }
 
-    // clear screen state when user configure Authgear for more than once
-    private void initializeScreenState() {
-        mIsLoggedIn.setValue(false);
+    private void resetState() {
+        mIsConfigured.setValue(true);
         mUserInfo.setValue(null);
-        mSuccessDialogMessage.setValue(null);
+        mBiometricEnable.setValue(false);
+        mSessionState.setValue(SessionState.UNKNOWN);
         mError.setValue(null);
     }
 
@@ -96,21 +118,17 @@ public class MainViewModel extends AndroidViewModel {
         return mIsConfigured;
     }
 
-    public LiveData<Boolean> isLoggedIn() {
-        return mIsLoggedIn;
-    }
-
     public LiveData<Boolean> isLoading() {
         return mIsLoading;
     }
+
+    public LiveData<Boolean> isBiometricEnabled() { return mBiometricEnable; }
 
     public LiveData<UserInfo> userInfo() {
         return mUserInfo;
     }
 
-    public LiveData<String> successDialogMessage() {
-        return mSuccessDialogMessage;
-    }
+    public LiveData<SessionState> sessionState() { return mSessionState; }
 
     public LiveData<Throwable> error() {
         return mError;
@@ -132,8 +150,8 @@ public class MainViewModel extends AndroidViewModel {
         mAuthgear.configure(false, new OnConfigureListener() {
             @Override
             public void onConfigured() {
-                mSuccessDialogMessage.setValue("Configured Authgear successfully");
                 mIsLoading.setValue(false);
+                updateBiometricState();
             }
 
             @Override
@@ -148,7 +166,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason) {
                 Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason);
-                updateSessionState();
+                mSessionState.setValue(container.getSessionState());
             }
 
             @Override
@@ -169,8 +187,7 @@ public class MainViewModel extends AndroidViewModel {
             }
         });
 
-        initializeScreenState();
-        mIsConfigured.setValue(true);
+        resetState();
 
         weChatAPI = WXAPIFactory.createWXAPI(app, MainApplication.AUTHGEAR_WECHAT_APP_ID, true);
         weChatAPI.registerApp(MainApplication.AUTHGEAR_WECHAT_APP_ID);
@@ -192,7 +209,6 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public void authorize(String page) {
-        if (mAuthgear == null || mIsLoading.getValue()) return;
         mPage.setValue(page);
         MainApplication app = getApplication();
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
@@ -201,6 +217,7 @@ public class MainViewModel extends AndroidViewModel {
                 .apply();
         mIsLoading.setValue(true);
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+        options.setPrompt("login");
         options.setPage(page);
         options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
@@ -208,8 +225,9 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthorized(@Nullable AuthorizeResult result) {
                 String state = result.getState();
                 Log.d(TAG, state == null ? "No state" : state);
-                mSuccessDialogMessage.setValue("Logged in successfully");
+                mUserInfo.setValue(result.getUserInfo());
                 mIsLoading.setValue(false);
+                updateBiometricState();
             }
 
             @Override
@@ -222,14 +240,13 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public void authenticateAnonymously() {
-        if (mAuthgear == null || mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         mAuthgear.authenticateAnonymously(new OnAuthenticateAnonymouslyListener() {
             @Override
             public void onAuthenticated(@NonNull UserInfo userInfo) {
                 mUserInfo.setValue(userInfo);
-                mSuccessDialogMessage.setValue("Logged in anonymously");
                 mIsLoading.setValue(false);
+                updateBiometricState();
             }
 
             @Override
@@ -241,15 +258,78 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
+    private BiometricOptions makeBiometricOptions(FragmentActivity activity) {
+        return new BiometricOptions(
+                activity,
+                "Biometric authentication",
+                "Biometric authentication",
+                "Use biometric to authenticate",
+                "Cancel",
+                ALLOWED,
+                true
+        );
+    }
+
+    public void enableBiometric(FragmentActivity activity) {
+        mIsLoading.setValue(true);
+        mAuthgear.enableBiometric(
+                makeBiometricOptions(activity),
+                new OnEnableBiometricListener() {
+                    @Override
+                    public void onEnabled() {
+                        mIsLoading.setValue(false);
+                        updateBiometricState();
+                    }
+
+                    @Override
+                    public void onFailed(Throwable throwable) {
+                        mIsLoading.setValue(false);
+                        mError.setValue(throwable);
+                    }
+                }
+        );
+    }
+
+    public void disableBiometric() {
+        try {
+            mAuthgear.disableBiometric();
+            updateBiometricState();
+        } catch (Exception e) {
+            mError.setValue(e);
+        }
+    }
+
+    public void authenticateBiometric(FragmentActivity activity) {
+        mIsLoading.setValue(true);
+        mAuthgear.authenticateBiometric(
+                makeBiometricOptions(activity),
+                new OnAuthenticateBiometricListener() {
+                    @Override
+                    public void onAuthenticated(UserInfo userInfo) {
+                        mIsLoading.setValue(false);
+                        mUserInfo.setValue(userInfo);
+                        updateBiometricState();
+                    }
+
+                    @Override
+                    public void onAuthenticationFailed(Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        mIsLoading.setValue(false);
+                        mError.setValue(throwable);
+                        updateBiometricState();
+                    }
+                }
+        );
+    }
+
     public void logout() {
-        if (mAuthgear == null || mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         mAuthgear.logout(new OnLogoutListener() {
             @Override
             public void onLogout() {
                 mIsLoading.setValue(false);
                 mUserInfo.setValue(null);
-                mSuccessDialogMessage.setValue("Logged out successfully");
+                updateBiometricState();
             }
 
             @Override
@@ -262,14 +342,12 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public void openSettings() {
-        if (mAuthgear == null) return;
         SettingOptions options = new SettingOptions();
         options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.open(Page.Settings, options);
     }
 
     public void promoteAnonymousUser() {
-        if (mAuthgear == null || mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         PromoteOptions options = new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
         options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
@@ -277,7 +355,6 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
                 mUserInfo.setValue(result.getUserInfo());
-                mSuccessDialogMessage.setValue("Successfully promoted anonymous user");
                 mIsLoading.setValue(false);
             }
 
@@ -291,7 +368,6 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public void fetchUserInfo() {
-        if (mAuthgear == null) return;
         mAuthgear.fetchUserInfo(new OnFetchUserInfoListener() {
             @Override
             public void onFetchedUserInfo(@NonNull UserInfo userInfo) {

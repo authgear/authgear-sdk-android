@@ -1,9 +1,14 @@
 package com.oursky.authgear.data.oauth
 
+import com.oursky.authgear.GrantType
 import com.oursky.authgear.UserInfo
 import com.oursky.authgear.data.HttpClient
+import com.oursky.authgear.net.toFormData
 import com.oursky.authgear.oauth.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.net.URL
+import java.nio.charset.StandardCharsets
 
 internal class OauthRepoHttp : OauthRepo {
     companion object {
@@ -27,7 +32,18 @@ internal class OauthRepoHttp : OauthRepo {
         synchronized(this) {
             val configAfterAcquire = this.config
             if (configAfterAcquire != null) return configAfterAcquire
-            val newConfig: OIDCConfiguration = HttpClient.getJson(URL(URL(endpoint), "/.well-known/openid-configuration"))
+            val url = URL(URL(endpoint), "/.well-known/openid-configuration")
+            val newConfig: OIDCConfiguration = HttpClient.fetch(url = url, method = "GET", headers = emptyMap()) { conn ->
+                conn.errorStream?.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                }
+                conn.inputStream.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                    HttpClient.json.decodeFromString(responseString)
+                }
+            }
             this.config = newConfig
             return newConfig
         }
@@ -43,40 +59,151 @@ internal class OauthRepoHttp : OauthRepo {
         request.codeVerifier?.let { body["code_verifier"] = it }
         request.refreshToken?.let { body["refresh_token"] = it }
         request.jwt?.let { body["jwt"] = it }
-        return HttpClient.postFormRespJsonWithError<OIDCTokenResponse, OauthException>(
-            URL(config.tokenEndpoint),
-            body
-        )
+        return HttpClient.fetch(
+            url = URL(config.tokenEndpoint),
+            method = "POST",
+            headers = mutableMapOf(
+                "content-type" to "application/x-www-form-urlencoded"
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
+        }
+    }
+
+    override fun biometricSetupRequest(accessToken: String, clientId: String, jwt: String) {
+        val config = getOIDCConfiguration()
+        val body = mutableMapOf<String, String>()
+        body["client_id"] = clientId
+        body["grant_type"] = GrantType.BIOMETRIC.raw
+        body["jwt"] = jwt
+        return HttpClient.fetch(
+            url = URL(config.tokenEndpoint),
+            method = "POST",
+            headers = mutableMapOf(
+                "authorization" to "Bearer $accessToken",
+                "content-type" to "application/x-www-form-urlencoded"
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+        }
     }
 
     override fun oidcRevocationRequest(refreshToken: String) {
         val config = getOIDCConfiguration()
-        val queries = mutableMapOf<String, String>()
-        queries["token"] = refreshToken
-        HttpClient.postForm(URL(config.revocationEndpoint), queries)
+        val body = mutableMapOf<String, String>()
+        body["token"] = refreshToken
+        HttpClient.fetch(
+            url = URL(config.revocationEndpoint),
+            method = "POST",
+            headers = mutableMapOf(
+                "content-type" to "application/x-www-form-urlencoded"
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+        }
     }
 
     override fun oidcUserInfoRequest(accessToken: String): UserInfo {
         val config = getOIDCConfiguration()
-        return HttpClient.getJson(
-            URL(config.userInfoEndpoint),
-            mutableMapOf(Pair("authorization", "bearer $accessToken"))
-        )
+        return HttpClient.fetch(
+            url = URL(config.userInfoEndpoint),
+            method = "GET",
+            headers = mutableMapOf(
+                "authorization" to "Bearer $accessToken"
+            )
+        ) { conn ->
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
+        }
     }
 
     override fun oauthChallenge(purpose: String): ChallengeResponse {
         val body = mutableMapOf<String, String>()
         body["purpose"] = purpose
-        val response: ChallengeResponseResult =
-            HttpClient.postJsonRespJson(URL(URL(endpoint), "/oauth2/challenge"), body)
+        val response: ChallengeResponseResult = HttpClient.fetch(
+            url = URL(URL(endpoint), "/oauth2/challenge"),
+            method = "POST",
+            headers = mutableMapOf(
+                "content-type" to "application/json"
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(HttpClient.json.encodeToString(body).toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
+        }
         return response.result
     }
 
     override fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse {
         val body = mutableMapOf<String, String>()
         body["refresh_token"] = refreshToken
-        val response: AppSessionTokenResponseResult =
-            HttpClient.postJsonRespJson(URL(URL(endpoint), "/oauth2/app_session_token"), body)
+        val response: AppSessionTokenResponseResult = HttpClient.fetch(
+            url = URL(URL(endpoint), "/oauth2/app_session_token"),
+            method = "POST",
+            headers = mutableMapOf(
+                "content-type" to "application/json"
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(HttpClient.json.encodeToString(body).toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
+        }
         return response.result
     }
 
@@ -85,6 +212,24 @@ internal class OauthRepoHttp : OauthRepo {
         body["code"] = code
         body["state"] = state
         body["x_platform"] = "android"
-        HttpClient.postForm(URL(URL(endpoint), "/sso/wechat/callback"), body)
+        HttpClient.fetch(
+            url = URL(URL(endpoint), "/sso/wechat/callback"),
+            method = "POST",
+            headers = mutableMapOf(
+                "content-type" to "application/x-www-form-urlencoded"
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+        }
     }
 }
