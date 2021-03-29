@@ -45,39 +45,43 @@ internal class HttpClient {
         }
 
         fun makeError(jsonObject: JSONObject): Exception? {
-            if (jsonObject.has("name") && jsonObject.has("reason") && jsonObject.has("message")) {
-                var info: JSONObject? = null
-                if (jsonObject.has("info")) {
-                    info = jsonObject.getJSONObject("info")
-                }
-                return ServerException(
-                    name = jsonObject.getString("name"),
-                    reason = jsonObject.getString("reason"),
-                    message = jsonObject.getString("message"),
-                    info = info
-                )
-            }
             if (jsonObject.has("error")) {
-                var state: String? = null
-                var errorDescription: String? = null
-                var errorURI: String? = null
-                if (jsonObject.has("state")) {
-                    state = jsonObject.getString("state")
+                val any = jsonObject.get("error")
+                if (any is JSONObject) {
+                    if (any.has("name") && any.has("reason") && any.has("message")) {
+                        var info: JSONObject? = null
+                        if (any.has("info")) {
+                            info = any.getJSONObject("info")
+                        }
+                        return ServerException(
+                            name = any.getString("name"),
+                            reason = any.getString("reason"),
+                            message = any.getString("message"),
+                            info = info
+                        )
+                    }
                 }
-                if (jsonObject.has("error_description")) {
-                    errorDescription = jsonObject.getString("error_description")
+                if (any is String) {
+                    var state: String? = null
+                    var errorDescription: String? = null
+                    var errorURI: String? = null
+                    if (jsonObject.has("state")) {
+                        state = jsonObject.getString("state")
+                    }
+                    if (jsonObject.has("error_description")) {
+                        errorDescription = jsonObject.getString("error_description")
+                    }
+                    if (jsonObject.has("error_uri")) {
+                        errorURI = jsonObject.getString("error_uri")
+                    }
+                    return OauthException(
+                        error = jsonObject.getString("error"),
+                        errorDescription = errorDescription,
+                        state = state,
+                        errorURI = errorURI
+                    )
                 }
-                if (jsonObject.has("error_uri")) {
-                    errorURI = jsonObject.getString("error_uri")
-                }
-                return OauthException(
-                    error = jsonObject.getString("error"),
-                    errorDescription = errorDescription,
-                    state = state,
-                    errorURI = errorURI
-                )
             }
-
             return null
         }
     }
