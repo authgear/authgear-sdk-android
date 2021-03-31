@@ -49,7 +49,6 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
-    final private MutableLiveData<Boolean> mIsThirdParty = new MutableLiveData<>(true);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
@@ -64,11 +63,9 @@ public class MainViewModel extends AndroidViewModel {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
-            Boolean storedIsThirdParty = preferences.getBoolean("isThirdParty", true);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
-            mIsThirdParty.setValue(storedIsThirdParty);
         }
     }
 
@@ -110,10 +107,6 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> page() { return mPage; }
 
-    public LiveData<Boolean> isThirdParty() {
-        return mIsThirdParty;
-    }
-
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
     }
@@ -134,7 +127,7 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, Boolean isThirdParty) {
+    public void configure(String clientID, String endpoint) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
@@ -144,9 +137,8 @@ public class MainViewModel extends AndroidViewModel {
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
-                .putBoolean("isThirdParty", isThirdParty)
                 .apply();
-        mAuthgear = new Authgear(getApplication(), clientID, endpoint, null, isThirdParty);
+        mAuthgear = new Authgear(getApplication(), clientID, endpoint, null);
         mAuthgear.configure(false, new OnConfigureListener() {
             @Override
             public void onConfigured() {
