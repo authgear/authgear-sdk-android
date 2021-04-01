@@ -47,8 +47,7 @@ internal class AuthgearCore(
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
-    name: String? = null,
-    private val isThirdParty: Boolean
+    name: String? = null
 ) {
     companion object {
         @Suppress("unused")
@@ -395,11 +394,7 @@ internal class AuthgearCore(
             queries["code_challenge"] = codeVerifier.challenge
         }
 
-        if (this.isThirdParty) {
-            queries["scope"] = "openid offline_access"
-        } else {
-            queries["scope"] = "openid offline_access https://authgear.com/scopes/full-access"
-        }
+        queries["scope"] = "openid offline_access https://authgear.com/scopes/full-access"
 
         queries["client_id"] = clientId
         queries["redirect_uri"] = options.redirectUri

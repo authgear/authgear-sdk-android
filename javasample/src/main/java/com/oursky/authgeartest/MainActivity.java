@@ -19,7 +19,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
     private EditText mPage;
-    private CheckBox mIsThirdParty;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthorize;
@@ -44,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
         mPage = findViewById(R.id.pageInput);
-        mIsThirdParty = findViewById(R.id.isThirdPartyInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthorize = findViewById(R.id.authorize);
@@ -60,8 +58,7 @@ public class MainActivity extends AppCompatActivity {
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
-                        mEndpoint.getText().toString(),
-                        mIsThirdParty.isChecked()
+                        mEndpoint.getText().toString()
                 )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
@@ -77,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mPage.setText(viewModel.page().getValue());
-        mIsThirdParty.setChecked(viewModel.isThirdParty().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
