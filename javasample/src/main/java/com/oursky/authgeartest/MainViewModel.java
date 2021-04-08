@@ -49,6 +49,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
+    final private MutableLiveData<Boolean> mTransientSession = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
@@ -63,9 +64,11 @@ public class MainViewModel extends AndroidViewModel {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
+            Boolean storedTransientSession = preferences.getBoolean("transientSession", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
+            mTransientSession.setValue(storedTransientSession);
         }
     }
 
@@ -107,6 +110,8 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> page() { return mPage; }
 
+    public LiveData<Boolean> transientSession() { return mTransientSession; }
+
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
     }
@@ -127,19 +132,21 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint) {
+    public void configure(String clientID, String endpoint, Boolean transientSession) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
+        mTransientSession.setValue(transientSession);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
+                .putBoolean("transientSession", transientSession)
                 .apply();
         mAuthgear = new Authgear(getApplication(), clientID, endpoint, null);
-        mAuthgear.configure(false, false, new OnConfigureListener() {
+        mAuthgear.configure(false, transientSession, new OnConfigureListener() {
             @Override
             public void onConfigured() {
                 mIsLoading.setValue(false);
