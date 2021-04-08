@@ -184,12 +184,13 @@ constructor(
     @JvmOverloads
     fun configure(
         skipRefreshAccessToken: Boolean = false,
+        transientSession: Boolean = false,
         onConfigureListener: OnConfigureListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
-                core.configure(skipRefreshAccessToken)
+                core.configure(skipRefreshAccessToken, transientSession)
                 handler.post {
                     onConfigureListener.onConfigured()
                 }

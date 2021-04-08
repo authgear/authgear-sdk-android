@@ -139,7 +139,7 @@ public class MainViewModel extends AndroidViewModel {
                 .putString("endpoint", endpoint)
                 .apply();
         mAuthgear = new Authgear(getApplication(), clientID, endpoint, null);
-        mAuthgear.configure(false, new OnConfigureListener() {
+        mAuthgear.configure(false, false, new OnConfigureListener() {
             @Override
             public void onConfigured() {
                 mIsLoading.setValue(false);
