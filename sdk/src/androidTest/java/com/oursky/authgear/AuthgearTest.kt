@@ -5,10 +5,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepoInMemory
-import com.oursky.authgear.oauth.ChallengeResponse
+import com.oursky.authgear.oauth.*
 import com.oursky.authgear.oauth.OIDCConfiguration
-import com.oursky.authgear.oauth.OIDCTokenRequest
-import com.oursky.authgear.oauth.OIDCTokenResponse
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -60,6 +58,18 @@ class AuthgearTest {
         override fun oauthChallenge(purpose: String): ChallengeResponse {
             return ChallengeResponse("abc", "0")
         }
+
+        override fun biometricSetupRequest(accessToken: String, clientId: String, jwt: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse {
+            TODO("Not yet implemented")
+        }
+
+        override fun weChatAuthCallback(code: String, state: String) {
+            TODO("Not yet implemented")
+        }
     }
 
     private lateinit var oauthMock: OauthRepoMock
@@ -81,7 +91,7 @@ class AuthgearTest {
             application,
             ClientId,
             "EndpointNotUsed",
-            TokenRepoInMemory(refreshToken = "refreshToken"),
+            TokenRepoInMemory(refreshTokenMap = mutableMapOf("default" to "refreshToken")),
             oauthMock,
             KeyRepoKeystore()
         )
@@ -99,7 +109,9 @@ class AuthgearTest {
     @Test(timeout = RefreshTokenWaitMs * 5)
     fun concurrentRefreshAccessTokenResultInOnlyOneRefresh() {
         runBlocking {
-            authgearCore.configure(skipRefreshAccessToken = true)
+            val options = ConfigureOptions()
+            options.skipRefreshAccessToken = true
+            authgearCore.configure(options)
             val deferredList = mutableListOf<Deferred<String?>>()
             repeat(10) {
                 deferredList.add(async(Dispatchers.IO) {
@@ -118,7 +130,9 @@ class AuthgearTest {
     @Test(timeout = RefreshTokenWaitMs * 15)
     fun refreshAccessTokenWorkMultipleTimes() {
         runBlocking {
-            authgearCore.configure(skipRefreshAccessToken = true)
+            val options = ConfigureOptions()
+            options.skipRefreshAccessToken = true
+            authgearCore.configure(options)
             val repeatCount = 3
             repeat(repeatCount) {
                 authgearCore.refreshAccessTokenIfNeeded()

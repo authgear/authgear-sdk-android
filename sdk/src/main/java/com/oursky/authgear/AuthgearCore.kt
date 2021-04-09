@@ -15,6 +15,7 @@ import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
+import com.oursky.authgear.data.token.TokenRepoInMemory
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OIDCTokenResponse
@@ -66,6 +67,12 @@ internal class AuthgearCore(
          */
         private const val ExpireInPercentage = 0.9
 
+        /*
+         * GlobalMemoryStore is used when calling configure with transientSession
+         * Using same global memory store to ensure the refresh token can be retained in the whole
+         * app lifecycle
+         */
+        private var GlobalMemoryStore: TokenRepo = TokenRepoInMemory()
         /**
          * A map used to keep track of which deep link is being handled by which container.
          */
@@ -163,6 +170,7 @@ internal class AuthgearCore(
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
+    private var refreshTokenRepo: TokenRepo = tokenRepo
 
     private fun requireIsInitialized() {
         require(isInitialized) {
@@ -237,12 +245,17 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun configure(skipRefreshAccessToken: Boolean = false) {
+    suspend fun configure(configureOptions: ConfigureOptions) {
         isInitialized = true
-        val refreshToken = tokenRepo.getRefreshToken(name)
+        if (configureOptions.transientSession) {
+            refreshTokenRepo = GlobalMemoryStore
+        } else {
+            refreshTokenRepo = tokenRepo
+        }
+        val refreshToken = refreshTokenRepo.getRefreshToken(name)
         this.refreshToken = refreshToken
         if (shouldRefreshAccessToken()) {
-            if (skipRefreshAccessToken) {
+            if (configureOptions.skipRefreshAccessToken) {
                 // Consider user as logged in if refresh token is available
                 updateSessionState(SessionState.AUTHENTICATED, SessionStateChangeReason.FOUND_TOKEN)
             } else {
@@ -257,7 +270,7 @@ internal class AuthgearCore(
     suspend fun logout(force: Boolean? = null) {
         requireIsInitialized()
         try {
-            val refreshToken = tokenRepo.getRefreshToken(name) ?: ""
+            val refreshToken = refreshTokenRepo.getRefreshToken(name) ?: ""
             oauthRepo.oidcRevocationRequest(refreshToken)
         } catch (e: Exception) {
             if (force != true) {
@@ -277,7 +290,7 @@ internal class AuthgearCore(
     fun openUrl(path: String, options: SettingOptions? = null) {
         requireIsInitialized()
 
-        val refreshToken = tokenRepo.getRefreshToken(name)
+        val refreshToken = refreshTokenRepo.getRefreshToken(name)
             ?: throw IllegalStateException("Refresh token not found")
         val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
 
@@ -481,7 +494,7 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier")
     private suspend fun doRefreshAccessToken() {
-        val refreshToken = tokenRepo.getRefreshToken(name)
+        val refreshToken = refreshTokenRepo.getRefreshToken(name)
         if (refreshToken == null) {
             // Somehow we are asked to refresh access token but we don't have the refresh token.
             // Something went wrong, clear session.
@@ -517,7 +530,7 @@ internal class AuthgearCore(
         }
         val refreshToken = this.refreshToken
         if (refreshToken != null) {
-            tokenRepo.setRefreshToken(name, refreshToken)
+            refreshTokenRepo.setRefreshToken(name, refreshToken)
         }
     }
 
