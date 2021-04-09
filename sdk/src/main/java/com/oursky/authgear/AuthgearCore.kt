@@ -214,7 +214,8 @@ internal class AuthgearCore(
         val payload = JWTPayload(
             now = Instant.now(),
             challenge = challenge,
-            action = "auth"
+            action = "auth",
+            deviceInfo = getDeviceInfo(this.application)
         )
 
         val signature = makeSignature(keyPair.private)
@@ -224,6 +225,7 @@ internal class AuthgearCore(
             OIDCTokenRequest(
                 grantType = GrantType.ANONYMOUS,
                 clientId = clientId,
+                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                 jwt = jwt
             )
         )
@@ -344,7 +346,8 @@ internal class AuthgearCore(
         val payload = JWTPayload(
             now = Instant.now(),
             challenge = challenge,
-            action = "promote"
+            action = "promote",
+            deviceInfo = getDeviceInfo(this.application)
 
         )
         val signature = makeSignature(keyPair.private)
@@ -507,6 +510,7 @@ internal class AuthgearCore(
                 OIDCTokenRequest(
                     grantType = GrantType.REFRESH_TOKEN,
                     clientId = clientId,
+                    xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                     refreshToken = refreshToken
                 )
             )
@@ -587,9 +591,10 @@ internal class AuthgearCore(
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
+                clientId = clientId,
+                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                 code = code,
                 redirectUri = redirectUri,
-                clientId = clientId,
                 codeVerifier = codeVerifier ?: ""
             )
         )
@@ -669,7 +674,8 @@ internal class AuthgearCore(
         val payload = JWTPayload(
             now = Instant.now(),
             challenge = challenge,
-            action = "setup"
+            action = "setup",
+            deviceInfo = getDeviceInfo(this.application)
         )
         val lockedSignature = makeSignature(keyPair.private)
         val cryptoObject = BiometricPrompt.CryptoObject(lockedSignature)
@@ -751,7 +757,8 @@ internal class AuthgearCore(
             val payload = JWTPayload(
                 now = Instant.now(),
                 challenge = challenge,
-                action = "authenticate"
+                action = "authenticate",
+                deviceInfo = getDeviceInfo(this.application)
             )
             val lockedSignature = makeSignature(keyPair.private)
             val cryptoObject = BiometricPrompt.CryptoObject(lockedSignature)
@@ -799,6 +806,7 @@ internal class AuthgearCore(
                     OIDCTokenRequest(
                         grantType = com.oursky.authgear.GrantType.BIOMETRIC,
                         clientId = clientId,
+                        xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                         jwt = jwt
                     )
                 )

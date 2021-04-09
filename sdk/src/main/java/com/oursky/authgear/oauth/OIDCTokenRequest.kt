@@ -10,6 +10,8 @@ internal data class OIDCTokenRequest(
     val grantType: GrantType,
     @SerialName("client_id")
     val clientId: String,
+    @SerialName("x_device_info")
+    val xDeviceInfo: String,
     @SerialName("redirect_uri")
     val redirectUri: String? = null,
     val code: String? = null,
