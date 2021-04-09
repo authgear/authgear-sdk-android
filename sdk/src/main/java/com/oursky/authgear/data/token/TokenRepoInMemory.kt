@@ -1,6 +1,6 @@
 package com.oursky.authgear.data.token
 
-internal class TokenRepoInMemory(private var refreshToken: String? = null) : TokenRepo {
+internal class TokenRepoInMemory(private var refreshTokenMap: MutableMap<String, String> = mutableMapOf<String, String>()) : TokenRepo {
     override fun setOIDCCodeVerifier(namespace: String, verifier: String) {
     }
 
@@ -9,11 +9,11 @@ internal class TokenRepoInMemory(private var refreshToken: String? = null) : Tok
     }
 
     override fun setRefreshToken(namespace: String, refreshToken: String) {
-        this.refreshToken = refreshToken
+        this.refreshTokenMap[namespace] = refreshToken
     }
 
     override fun getRefreshToken(namespace: String): String? {
-        return refreshToken
+        return this.refreshTokenMap[namespace]
     }
 
     override fun deleteRefreshToken(namespace: String) {

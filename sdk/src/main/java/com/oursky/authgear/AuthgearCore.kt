@@ -67,6 +67,12 @@ internal class AuthgearCore(
          */
         private const val ExpireInPercentage = 0.9
 
+        /*
+         * GlobalMemoryStore is used when calling configure with transientSession
+         * Using same global memory store to ensure the refresh token can be retained in the whole
+         * app lifecycle
+         */
+        private var GlobalMemoryStore: TokenRepo = TokenRepoInMemory()
         /**
          * A map used to keep track of which deep link is being handled by which container.
          */
@@ -242,7 +248,7 @@ internal class AuthgearCore(
     suspend fun configure(configureOptions: ConfigureOptions) {
         isInitialized = true
         if (configureOptions.transientSession) {
-            refreshTokenRepo = TokenRepoInMemory()
+            refreshTokenRepo = GlobalMemoryStore
         } else {
             refreshTokenRepo = tokenRepo
         }
