@@ -5,8 +5,8 @@ package com.oursky.authgear
 /**
  * @see [Authgear.configure].
  */
-suspend fun Authgear.configure() {
-    return core.configure()
+suspend fun Authgear.configure(options: ConfigureOptions) {
+    return core.configure(options)
 }
 
 /**

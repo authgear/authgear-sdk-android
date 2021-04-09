@@ -157,15 +157,6 @@ constructor(
      * If configuration is successful and there was a valid user session, authgear's [accessToken]
      * is non-null and the token is ready to be used.
      *
-     * When it is not needed to always have the most up-to-date access token during application
-     * setup, set [skipRefreshAccessToken] to `true` to bypass refreshing access token. You can
-     * later use [refreshAccessTokenIfNeeded] or the synchronous variant
-     * [refreshAccessTokenIfNeededSync] to refresh when necessary.
-     *
-     * It is recommended that the application setup a proper http request abstraction that calls
-     * [refreshAccessTokenIfNeededSync] (or its async variant) so that the validity
-     * of access token is handled automatically.
-     *
      * It does local IO to retrieve the refresh token.
      * It also does network IO to refresh the access token.
      *
@@ -175,22 +166,20 @@ constructor(
      * configure() can be called more than once if it failed.
      * Otherwise, it is NOT recommended to call it more than once.
      *
-     * @param skipRefreshAccessToken `true` to skip refreshing access token during configuration,
-     * `false` otherwise.
+     * @param configureOptions Configure options.
      * @param onConfigureListener The listener.
      * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
     @JvmOverloads
     fun configure(
-        skipRefreshAccessToken: Boolean = false,
-        transientSession: Boolean = false,
+        configureOptions: ConfigureOptions,
         onConfigureListener: OnConfigureListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
-                core.configure(skipRefreshAccessToken, transientSession)
+                core.configure(configureOptions)
                 handler.post {
                     onConfigureListener.onConfigured()
                 }

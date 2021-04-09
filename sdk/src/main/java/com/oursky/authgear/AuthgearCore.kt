@@ -239,9 +239,9 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun configure(skipRefreshAccessToken: Boolean = false, transientSession: Boolean = false) {
+    suspend fun configure(configureOptions: ConfigureOptions) {
         isInitialized = true
-        if (transientSession) {
+        if (configureOptions.transientSession) {
             refreshTokenRepo = TokenRepoInMemory()
         } else {
             refreshTokenRepo = tokenRepo
@@ -249,7 +249,7 @@ internal class AuthgearCore(
         val refreshToken = refreshTokenRepo.getRefreshToken(name)
         this.refreshToken = refreshToken
         if (shouldRefreshAccessToken()) {
-            if (skipRefreshAccessToken) {
+            if (configureOptions.skipRefreshAccessToken) {
                 // Consider user as logged in if refresh token is available
                 updateSessionState(SessionState.AUTHENTICATED, SessionStateChangeReason.FOUND_TOKEN)
             } else {

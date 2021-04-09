@@ -19,6 +19,7 @@ import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.BiometricOptions;
+import com.oursky.authgear.ConfigureOptions;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
 import com.oursky.authgear.OnAuthorizeListener;
@@ -145,8 +146,11 @@ public class MainViewModel extends AndroidViewModel {
                 .putString("endpoint", endpoint)
                 .putBoolean("transientSession", transientSession)
                 .apply();
+        ConfigureOptions configureOptions = new ConfigureOptions();
+        configureOptions.setSkipRefreshAccessToken(false);
+        configureOptions.setTransientSession(transientSession);
         mAuthgear = new Authgear(getApplication(), clientID, endpoint, null);
-        mAuthgear.configure(false, transientSession, new OnConfigureListener() {
+        mAuthgear.configure(configureOptions, new OnConfigureListener() {
             @Override
             public void onConfigured() {
                 mIsLoading.setValue(false);
