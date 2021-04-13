@@ -54,6 +54,7 @@ internal class OauthRepoHttp : OauthRepo {
         val body = mutableMapOf<String, String>()
         body["grant_type"] = request.grantType.raw
         body["client_id"] = request.clientId
+        body["x_device_info"] = request.xDeviceInfo
         request.redirectUri?.let { body["redirect_uri"] = it }
         request.code?.let { body["code"] = it }
         request.codeVerifier?.let { body["code_verifier"] = it }

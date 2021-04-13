@@ -38,12 +38,12 @@ internal data class JWTPayload(
     val action: String,
     val deviceInfo: DeviceInfoRoot
 ) {
-    constructor(now: Instant, challenge: String, action: String) : this(
+    constructor(now: Instant, challenge: String, action: String, deviceInfo: DeviceInfoRoot) : this(
         iat = now.epochSecond,
         exp = now.epochSecond + 60,
         challenge = challenge,
         action = action,
-        deviceInfo = getDeviceInfo()
+        deviceInfo = deviceInfo
     )
 }
 

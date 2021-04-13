@@ -149,7 +149,8 @@ class AuthgearTest {
     fun serializeGrantType() {
         val testOIDCTokenRequest = OIDCTokenRequest(
             grantType = GrantType.ANONYMOUS,
-            clientId = "test"
+            clientId = "test",
+            xDeviceInfo = "dummy"
         )
         val encoded = Json.encodeToString(
             testOIDCTokenRequest
@@ -158,7 +159,7 @@ class AuthgearTest {
             "Encoded OIDCTokenRequest does not match with expected JSON string",
             encoded,
             "{\"grant_type\":\"urn:authgear:params:oauth:grant-type:anonymous-request\"," +
-                    "\"client_id\":\"test\",\"redirect_uri\":null,\"code\":null,\"code_verifier\":null,\"refresh_token\":null,\"jwt\":null}"
+                    "\"client_id\":\"test\",\"x_device_info\":\"dummy\",\"redirect_uri\":null,\"code\":null,\"code_verifier\":null,\"refresh_token\":null,\"jwt\":null}"
         )
         val decoded: OIDCTokenRequest = Json.decodeFromString(encoded)
         assertEquals(
