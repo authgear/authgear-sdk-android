@@ -256,13 +256,9 @@ internal class AuthgearCore(
         }
         val refreshToken = refreshTokenRepo.getRefreshToken(name)
         this.refreshToken = refreshToken
-        if (shouldRefreshAccessToken()) {
-            if (configureOptions.skipRefreshAccessToken) {
-                // Consider user as logged in if refresh token is available
-                updateSessionState(SessionState.AUTHENTICATED, SessionStateChangeReason.FOUND_TOKEN)
-            } else {
-                refreshAccessToken()
-            }
+        if (refreshToken != null) {
+            // Consider user as logged in if refresh token is available
+            updateSessionState(SessionState.AUTHENTICATED, SessionStateChangeReason.FOUND_TOKEN)
         } else {
             updateSessionState(SessionState.NO_SESSION, SessionStateChangeReason.NO_TOKEN)
         }
