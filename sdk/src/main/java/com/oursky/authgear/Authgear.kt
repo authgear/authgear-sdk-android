@@ -253,9 +253,9 @@ constructor(
     ) {
         scope.launch {
             try {
-                val token = core.refreshAccessTokenIfNeeded()
+                core.refreshAccessTokenIfNeeded()
                 handler.post {
-                    onRefreshAccessTokenIfNeededListener.onFinished(token)
+                    onRefreshAccessTokenIfNeededListener.onFinished()
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
