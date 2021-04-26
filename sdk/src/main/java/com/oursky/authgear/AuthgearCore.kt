@@ -372,6 +372,10 @@ internal class AuthgearCore(
 
     suspend fun fetchUserInfo(): UserInfo {
         requireIsInitialized()
+        refreshAccessTokenIfNeeded()
+
+        val accessToken: String = this.accessToken
+            ?: throw IllegalStateException("fetchUserInfo required authenticated user.")
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
     }
 
@@ -641,6 +645,7 @@ internal class AuthgearCore(
     ) {
         requireIsInitialized()
         requireMinimumBiometricAPILevel()
+        refreshAccessTokenIfNeeded()
 
         val accessToken: String = this.accessToken
             ?: throw IllegalStateException("enableBiometric required authenticated user.")
