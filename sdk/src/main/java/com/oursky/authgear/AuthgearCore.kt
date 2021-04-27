@@ -387,6 +387,11 @@ internal class AuthgearCore(
         return accessToken
     }
 
+    fun clearSessionState() {
+        requireIsInitialized()
+        clearSession(SessionStateChangeReason.CLEAR)
+    }
+
     private fun updateSessionState(state: SessionState, reason: SessionStateChangeReason) {
         // TODO: Add re-entry detection
         sessionState = state

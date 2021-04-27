@@ -267,6 +267,14 @@ constructor(
     }
 
     /**
+     * Clear SDK session state. Clear refresh token and reset session state to [SessionState.NO_SESSION].
+     */
+    @MainThread
+    fun clearSessionState() {
+        core.clearSessionState()
+    }
+
+    /**
      * Open the specific path on the authgear server.
      *
      * @param path Path to be opened in web view
