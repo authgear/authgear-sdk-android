@@ -147,7 +147,6 @@ public class MainViewModel extends AndroidViewModel {
                 .putBoolean("transientSession", transientSession)
                 .apply();
         ConfigureOptions configureOptions = new ConfigureOptions();
-        configureOptions.setSkipRefreshAccessToken(false);
         configureOptions.setTransientSession(transientSession);
         mAuthgear = new Authgear(getApplication(), clientID, endpoint, null);
         mAuthgear.configure(configureOptions, new OnConfigureListener() {

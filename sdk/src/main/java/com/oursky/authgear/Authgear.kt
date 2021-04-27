@@ -253,9 +253,9 @@ constructor(
     ) {
         scope.launch {
             try {
-                val token = core.refreshAccessTokenIfNeeded()
+                core.refreshAccessTokenIfNeeded()
                 handler.post {
-                    onRefreshAccessTokenIfNeededListener.onFinished(token)
+                    onRefreshAccessTokenIfNeededListener.onFinished()
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -264,6 +264,14 @@ constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Clear SDK session state. Clear refresh token and reset session state to [SessionState.NO_SESSION].
+     */
+    @MainThread
+    fun clearSessionState() {
+        core.clearSessionState()
     }
 
     /**

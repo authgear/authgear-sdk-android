@@ -110,7 +110,6 @@ class AuthgearTest {
     fun concurrentRefreshAccessTokenResultInOnlyOneRefresh() {
         runBlocking {
             val options = ConfigureOptions()
-            options.skipRefreshAccessToken = true
             authgearCore.configure(options)
             val deferredList = mutableListOf<Deferred<String?>>()
             repeat(10) {
@@ -131,7 +130,6 @@ class AuthgearTest {
     fun refreshAccessTokenWorkMultipleTimes() {
         runBlocking {
             val options = ConfigureOptions()
-            options.skipRefreshAccessToken = true
             authgearCore.configure(options)
             val repeatCount = 3
             repeat(repeatCount) {
