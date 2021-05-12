@@ -102,37 +102,37 @@ internal class AuthgearCore(
         /**
          * Check and handle wehchat redirect uri and trigger delegate function if needed
          */
-        private var weChatRedirectURI: String? = null
-        private var weChatRedirectHandler: WeChatRedirectHandler? = null
-        fun registerWeChatRedirectURI(uri: String?, handler: WeChatRedirectHandler) {
+        private var wechatRedirectURI: String? = null
+        private var wechatRedirectHandler: WechatRedirectHandler? = null
+        fun registerWechatRedirectURI(uri: String?, handler: WechatRedirectHandler) {
             if (uri != null) {
-                weChatRedirectURI = uri
-                weChatRedirectHandler = handler
+                wechatRedirectURI = uri
+                wechatRedirectHandler = handler
             } else {
-                unregisteredWeChatRedirectURI()
+                unregisteredWechatRedirectURI()
             }
         }
 
-        fun unregisteredWeChatRedirectURI() {
-            weChatRedirectURI = null
-            weChatRedirectHandler = null
+        fun unregisteredWechatRedirectURI() {
+            wechatRedirectURI = null
+            wechatRedirectHandler = null
         }
 
         /**
          * handleWeChatRedirectDeepLink return true if it is handled
          */
-        fun handleWeChatRedirectDeepLink(deepLink: String): Boolean {
-            if (weChatRedirectURI == null) {
+        fun handleWechatRedirectDeepLink(deepLink: String): Boolean {
+            if (wechatRedirectURI == null) {
                 return false
             }
             val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
-            if (deepLinkWithoutQuery != weChatRedirectURI) {
+            if (deepLinkWithoutQuery != wechatRedirectURI) {
                 return false
             }
             val uri = Uri.parse(deepLink)
             val state = uri.getQueryParameter("state")
             if (state != null) {
-                weChatRedirectHandler?.sendWeChatAuthRequest(state)
+                wechatRedirectHandler?.sendWechatAuthRequest(state)
             }
             return true
         }
@@ -145,8 +145,8 @@ internal class AuthgearCore(
         }
     }
 
-    interface WeChatRedirectHandler {
-        fun sendWeChatAuthRequest(state: String)
+    interface WechatRedirectHandler {
+        fun sendWechatAuthRequest(state: String)
     }
 
     data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
@@ -279,9 +279,9 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun weChatAuthCallback(code: String, state: String) {
+    suspend fun wechatAuthCallback(code: String, state: String) {
         requireIsInitialized()
-        oauthRepo.weChatAuthCallback(code, state)
+        oauthRepo.wechatAuthCallback(code, state)
     }
 
     @MainThread
@@ -303,7 +303,7 @@ internal class AuthgearCore(
                 prompt = "none",
                 responseType = "none",
                 loginHint = loginHint,
-                weChatRedirectURI = options?.weChatRedirectURI
+                wechatRedirectURI = options?.wechatRedirectURI
             )
         )
 
@@ -361,7 +361,7 @@ internal class AuthgearCore(
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
-                weChatRedirectURI = options.weChatRedirectURI
+                wechatRedirectURI = options.wechatRedirectURI
             )
         )
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
@@ -431,7 +431,7 @@ internal class AuthgearCore(
         options.uiLocales?.let {
             queries["ui_locales"] = it.joinToString(separator = " ")
         }
-        options.weChatRedirectURI?.let {
+        options.wechatRedirectURI?.let {
             queries["x_wechat_redirect_uri"] = it
         }
         queries["x_platform"] = "android"

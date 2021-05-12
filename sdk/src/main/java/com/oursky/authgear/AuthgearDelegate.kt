@@ -5,5 +5,5 @@ interface AuthgearDelegate {
     fun onSessionStateChanged(container: Authgear, reason: SessionStateChangeReason) {}
 
     @JvmDefault
-    fun sendWeChatAuthRequest(state: String) {}
+    fun sendWechatAuthRequest(state: String) {}
 }

@@ -10,7 +10,7 @@ class OauthRedirectActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val deepLink = intent.data?.toString()
-        if (deepLink != null && AuthgearCore.handleWeChatRedirectDeepLink(deepLink)) {
+        if (deepLink != null && AuthgearCore.handleWechatRedirectDeepLink(deepLink)) {
             // this is wechat callback skip the other handling
             finish()
             return

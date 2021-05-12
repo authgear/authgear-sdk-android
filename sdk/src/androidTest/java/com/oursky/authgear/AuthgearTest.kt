@@ -67,7 +67,7 @@ class AuthgearTest {
             TODO("Not yet implemented")
         }
 
-        override fun weChatAuthCallback(code: String, state: String) {
+        override fun wechatAuthCallback(code: String, state: String) {
             TODO("Not yet implemented")
         }
     }

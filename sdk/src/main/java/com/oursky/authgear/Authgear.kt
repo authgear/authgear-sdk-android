@@ -128,12 +128,12 @@ constructor(
     ) {
         scope.launch {
             try {
-                AuthgearCore.registerWeChatRedirectURI(
-                    options.weChatRedirectURI,
-                    object : AuthgearCore.WeChatRedirectHandler {
-                        override fun sendWeChatAuthRequest(state: String) {
+                AuthgearCore.registerWechatRedirectURI(
+                    options.wechatRedirectURI,
+                    object : AuthgearCore.WechatRedirectHandler {
+                        override fun sendWechatAuthRequest(state: String) {
                             handler.post {
-                                delegate?.sendWeChatAuthRequest(state)
+                                delegate?.sendWechatAuthRequest(state)
                             }
                     }
                 })
@@ -147,7 +147,7 @@ constructor(
                     onAuthorizeListener.onAuthorizationFailed(e)
                 }
             } finally {
-                AuthgearCore.unregisteredWeChatRedirectURI()
+                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -317,12 +317,12 @@ constructor(
     ) {
         scope.launch {
             try {
-                AuthgearCore.registerWeChatRedirectURI(
-                    options?.weChatRedirectURI,
-                    object : AuthgearCore.WeChatRedirectHandler {
-                        override fun sendWeChatAuthRequest(state: String) {
+                AuthgearCore.registerWechatRedirectURI(
+                    options?.wechatRedirectURI,
+                    object : AuthgearCore.WechatRedirectHandler {
+                        override fun sendWechatAuthRequest(state: String) {
                             handler.post {
-                                delegate?.sendWeChatAuthRequest(state)
+                                delegate?.sendWechatAuthRequest(state)
                             }
                         }
                     }
@@ -361,12 +361,12 @@ constructor(
     ) {
         scope.launch {
             try {
-                AuthgearCore.registerWeChatRedirectURI(
-                    options.weChatRedirectURI,
-                    object : AuthgearCore.WeChatRedirectHandler {
-                        override fun sendWeChatAuthRequest(state: String) {
+                AuthgearCore.registerWechatRedirectURI(
+                    options.wechatRedirectURI,
+                    object : AuthgearCore.WechatRedirectHandler {
+                        override fun sendWechatAuthRequest(state: String) {
                             handler.post {
-                                delegate?.sendWeChatAuthRequest(state)
+                                delegate?.sendWechatAuthRequest(state)
                             }
                         }
                     }
@@ -381,7 +381,7 @@ constructor(
                     onPromoteAnonymousUserListener.onPromotionFailed(e)
                 }
             } finally {
-                AuthgearCore.unregisteredWeChatRedirectURI()
+                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -421,7 +421,7 @@ constructor(
      */
     @MainThread
     @JvmOverloads
-    fun weChatAuthCallback(
+    fun wechatAuthCallback(
         code: String,
         state: String,
         onWeChatAuthCallbackListener: OnWeChatAuthCallbackListener,
@@ -429,7 +429,7 @@ constructor(
     ) {
         scope.launch {
             try {
-                core.weChatAuthCallback(code, state)
+                core.wechatAuthCallback(code, state)
                 handler.post {
                     onWeChatAuthCallbackListener.onWeChatAuthCallback()
                 }
