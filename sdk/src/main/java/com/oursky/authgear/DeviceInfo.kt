@@ -112,7 +112,7 @@ internal fun DeviceInfoSettingsGlobal.toJsonObject(): JsonObject {
 internal fun getDeviceInfo(context: Context): DeviceInfoRoot {
     val packageName = context.applicationContext.packageName
     val packageInfo = context.packageManager.getPackageInfo(packageName, 0)
-    val versionName = packageInfo.versionName
+    val versionName = packageInfo.versionName ?: ""
     val versionCode = packageInfo.versionCode.toString()
     var longVersionCode = ""
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
