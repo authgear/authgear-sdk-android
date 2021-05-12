@@ -1,5 +1,6 @@
 package com.oursky.authgear.data
 
+import com.oursky.authgear.AuthgearException
 import com.oursky.authgear.OAuthException
 import com.oursky.authgear.ServerException
 import kotlinx.serialization.json.Json
@@ -37,9 +38,9 @@ internal class HttpClient {
                     if (e != null) {
                         throw e
                     }
-                    throw RuntimeException(responseString)
+                    throw AuthgearException(responseString)
                 } catch (e: JSONException) {
-                    throw RuntimeException(responseString)
+                    throw AuthgearException(responseString)
                 }
             }
         }

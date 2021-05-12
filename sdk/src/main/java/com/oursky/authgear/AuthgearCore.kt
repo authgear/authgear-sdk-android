@@ -198,7 +198,7 @@ internal class AuthgearCore(
         } else {
             val maybeKeyPair = keyRepo.getAnonymousKey(keyId)
             if (maybeKeyPair == null) {
-                throw IllegalArgumentException("Anonymous user key not found.")
+                throw AnonymousUserNotFoundException()
             }
             keyPair = maybeKeyPair
         }
@@ -289,7 +289,7 @@ internal class AuthgearCore(
         requireIsInitialized()
 
         val refreshToken = refreshTokenRepo.getRefreshToken(name)
-            ?: throw IllegalStateException("Refresh token not found")
+            ?: throw UnauthenticatedUserException()
         val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
 
         val url = URL(URL(authgearEndpoint), path).toString()
@@ -326,9 +326,9 @@ internal class AuthgearCore(
     suspend fun promoteAnonymousUser(options: PromoteOptions): AuthorizeResult {
         requireIsInitialized()
         val keyId = tokenRepo.getAnonymousKeyId(name)
-            ?: throw IllegalStateException("Anonymous user credentials not found")
+            ?: throw AnonymousUserNotFoundException()
         val keyPair = keyRepo.getAnonymousKey(keyId)
-            ?: throw IllegalStateException("Anonymous user credentials not found")
+            ?: throw AnonymousUserNotFoundException()
         val challenge = oauthRepo.oauthChallenge("anonymous_request").token
 
         val jwk = publicKeyToJWK(keyId, keyPair.public)
@@ -375,7 +375,7 @@ internal class AuthgearCore(
         refreshAccessTokenIfNeeded()
 
         val accessToken: String = this.accessToken
-            ?: throw IllegalStateException("fetchUserInfo required authenticated user.")
+            ?: throw UnauthenticatedUserException()
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
     }
 
@@ -653,7 +653,7 @@ internal class AuthgearCore(
         refreshAccessTokenIfNeeded()
 
         val accessToken: String = this.accessToken
-            ?: throw IllegalStateException("enableBiometric required authenticated user.")
+            ?: throw UnauthenticatedUserException()
 
         ensureAllowedIsValid(options.allowedAuthenticators)
         val allowed = convertAllowed(options.allowedAuthenticators)
@@ -747,12 +747,12 @@ internal class AuthgearCore(
 
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
         val kid = tokenRepo.getBiometricKeyId(name)
-            ?: throw IllegalStateException("biometric kid not found")
+            ?: throw BiometricPrivateKeyNotFoundException()
         val alias = "com.authgear.keys.biometric.$kid"
 
         try {
             val keyPair =
-                getPrivateKey(alias) ?: throw IllegalStateException("biometric key not found")
+                getPrivateKey(alias) ?: throw BiometricPrivateKeyNotFoundException()
             val jwk = publicKeyToJWK(kid, keyPair.public)
             val header = JWTHeader(
                 typ = JWTHeaderType.BIOMETRIC,
