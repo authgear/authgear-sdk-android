@@ -106,7 +106,7 @@ class AuthgearTest {
         )
     }
 
-    @Test(timeout = RefreshTokenWaitMs * 5)
+    @Test
     fun concurrentRefreshAccessTokenResultInOnlyOneRefresh() {
         runBlocking {
             val options = ConfigureOptions()
@@ -126,7 +126,7 @@ class AuthgearTest {
         }
     }
 
-    @Test(timeout = RefreshTokenWaitMs * 15)
+    @Test
     fun refreshAccessTokenWorkMultipleTimes() {
         runBlocking {
             val options = ConfigureOptions()
