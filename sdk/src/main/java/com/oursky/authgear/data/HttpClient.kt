@@ -6,7 +6,6 @@ import com.oursky.authgear.ServerException
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
-import java.lang.RuntimeException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -40,7 +39,7 @@ internal class HttpClient {
                     }
                     throw AuthgearException(responseString)
                 } catch (e: JSONException) {
-                    throw AuthgearException(responseString)
+                    throw AuthgearException(responseString, e)
                 }
             }
         }

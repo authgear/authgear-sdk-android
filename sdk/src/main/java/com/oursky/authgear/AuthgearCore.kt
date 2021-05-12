@@ -619,7 +619,7 @@ internal class AuthgearCore(
         allowed = convertAllowed(allowed)
         val result = BiometricManager.from(context).canAuthenticate(allowed)
         if (result != BiometricManager.BIOMETRIC_SUCCESS) {
-            throw BiometricCanAuthenticateException(result)
+            throw wrapException(BiometricCanAuthenticateException(result))
         }
     }
 
@@ -704,9 +704,9 @@ internal class AuthgearCore(
                         ) {
                             it.resumeWith(
                                 Result.failure(
-                                    BiometricPromptAuthenticationException(
+                                    wrapException(BiometricPromptAuthenticationException(
                                         errorCode
-                                    )
+                                    ))
                                 )
                             )
                         }
@@ -787,9 +787,9 @@ internal class AuthgearCore(
                             ) {
                                 it.resumeWith(
                                     Result.failure(
-                                        BiometricPromptAuthenticationException(
+                                        wrapException(BiometricPromptAuthenticationException(
                                             errorCode
-                                        )
+                                        ))
                                     )
                                 )
                             }
@@ -831,7 +831,9 @@ internal class AuthgearCore(
         } catch (e: KeyPermanentlyInvalidatedException) {
             // This biometric has changed
             this.disableBiometric()
-            throw e
+            throw wrapException(e)
+        } catch (e: Exception) {
+            throw wrapException(e)
         }
     }
 }

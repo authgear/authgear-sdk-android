@@ -1,3 +1,3 @@
 package com.oursky.authgear
 
-class UnauthenticatedUserException: AuthgearException()
+class UnauthenticatedUserException : AuthgearException()
