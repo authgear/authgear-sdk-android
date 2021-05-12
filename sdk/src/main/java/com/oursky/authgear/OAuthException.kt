@@ -8,7 +8,7 @@ internal fun formatOauthExceptionMessage(error: String, errorDescription: String
     return message
 }
 
-class OauthException : RuntimeException {
+class OAuthException : AuthgearException {
     val error: String
     val errorDescription: String?
     var state: String?

@@ -86,7 +86,7 @@ internal class AuthgearCore(
                 DeepLinkHandlerMap.remove(deepLinkWithoutQuery)
             } else {
                 val handler = requireDeepLinkHandler(deepLink)
-                handler.continuation.resumeWith(Result.failure(CancelledException()))
+                handler.continuation.resumeWith(Result.failure(CancelException()))
                 DeepLinkHandlerMap.remove(deepLink)
             }
         }
@@ -520,7 +520,7 @@ internal class AuthgearCore(
                 )
             )
         } catch (e: Exception) {
-            if (e is OauthException && e.error == "invalid_grant") {
+            if (e is OAuthException && e.error == "invalid_grant") {
                 clearSession(SessionStateChangeReason.INVALID)
                 return
             }
@@ -578,7 +578,7 @@ internal class AuthgearCore(
         val errorDescription = uri.getQueryParameter("error_description")
         var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
-            throw OauthException(
+            throw OAuthException(
                 error = error,
                 errorDescription = errorDescription,
                 state = state,
@@ -586,7 +586,7 @@ internal class AuthgearCore(
             )
         }
         val code = uri.getQueryParameter("code")
-            ?: throw OauthException(
+            ?: throw OAuthException(
                 error = "invalid_request",
                 errorDescription = "Missing parameter: code",
                 state = state,
@@ -821,7 +821,7 @@ internal class AuthgearCore(
                 )
                 saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
                 return userInfo
-            } catch (e: OauthException) {
+            } catch (e: OAuthException) {
                 // In case the biometric was removed remotely.
                 if (e.error == "invalid_grant" && e.errorDescription == "InvalidCredentials") {
                     disableBiometric()

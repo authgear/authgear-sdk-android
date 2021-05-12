@@ -2,7 +2,7 @@ package com.oursky.authgear
 
 import org.json.JSONObject
 
-class ServerException : RuntimeException {
+class ServerException : AuthgearException {
     val name: String
     val reason: String
     var info: JSONObject?
