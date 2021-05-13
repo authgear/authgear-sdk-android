@@ -28,7 +28,7 @@ import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
-import com.oursky.authgear.OnWeChatAuthCallbackListener;
+import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.SessionState;
@@ -196,14 +196,14 @@ public class MainViewModel extends AndroidViewModel {
 
         WXEntryActivity.setOnWeChatSendAuthResultListener((code, state) -> {
             Log.d(TAG, "Sending WeChat Callback");
-            mAuthgear.wechatAuthCallback(code, state, new OnWeChatAuthCallbackListener() {
+            mAuthgear.wechatAuthCallback(code, state, new OnWechatAuthCallbackListener() {
                 @Override
-                public void onWeChatAuthCallback() {
+                public void onWechatAuthCallback() {
                     Log.d(TAG, "onWeChatAuthCallback");
                 }
 
                 @Override
-                public void onWeChatAuthCallbackFailed(Throwable throwable) {
+                public void onWechatAuthCallbackFailed(Throwable throwable) {
                     Log.e(TAG, "onWeChatAuthCallbackFailed", throwable);
                 }
             });
