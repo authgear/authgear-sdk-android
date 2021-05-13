@@ -19,6 +19,8 @@ import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.BiometricOptions;
+import com.oursky.authgear.BiometricPrivateKeyNotFoundException;
+import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ConfigureOptions;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
@@ -101,6 +103,14 @@ public class MainViewModel extends AndroidViewModel {
         mError.setValue(null);
     }
 
+    private void setError(Throwable e) {
+        if (e instanceof CancelException) {
+            mError.setValue(null);
+        } else {
+            mError.setValue(e);
+        }
+    }
+
     public LiveData<String> clientID() {
         return mClientID;
     }
@@ -160,7 +170,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onConfigurationFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
-                mError.setValue(throwable);
+                setError(throwable);
             }
         });
 
@@ -175,11 +185,11 @@ public class MainViewModel extends AndroidViewModel {
             public void sendWechatAuthRequest(String state) {
                 Log.d(TAG, "Open wechat sdk state=" + state);
                 if (!wechatAPI.isWXAppInstalled()) {
-                    mError.setValue(new RuntimeException("You have not installed the WeChat client app"));
+                    setError(new RuntimeException("You have not installed the WeChat client app"));
                     return;
                 }
                 if (wechatAPI == null) {
-                    mError.setValue(new RuntimeException("WeChat app id is not configured"));
+                    setError(new RuntimeException("WeChat app id is not configured"));
                     return;
                 }
                 SendAuth.Req req = new SendAuth.Req();
@@ -236,7 +246,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthorizationFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
-                mError.setValue(throwable);
+                setError(throwable);
             }
         });
     }
@@ -255,7 +265,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onAuthenticationFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
-                mError.setValue(throwable);
+                setError(throwable);
             }
         });
     }
@@ -274,6 +284,15 @@ public class MainViewModel extends AndroidViewModel {
 
     public void enableBiometric(FragmentActivity activity) {
         mIsLoading.setValue(true);
+
+        try {
+            mAuthgear.checkBiometricSupported(activity, ALLOWED);
+        } catch (Exception e) {
+            mIsLoading.setValue(false);
+            setError(e);
+            return;
+        }
+
         mAuthgear.enableBiometric(
                 makeBiometricOptions(activity),
                 new OnEnableBiometricListener() {
@@ -286,7 +305,7 @@ public class MainViewModel extends AndroidViewModel {
                     @Override
                     public void onFailed(Throwable throwable) {
                         mIsLoading.setValue(false);
-                        mError.setValue(throwable);
+                        setError(throwable);
                     }
                 }
         );
@@ -297,7 +316,7 @@ public class MainViewModel extends AndroidViewModel {
             mAuthgear.disableBiometric();
             updateBiometricState();
         } catch (Exception e) {
-            mError.setValue(e);
+            setError(e);
         }
     }
 
@@ -317,7 +336,7 @@ public class MainViewModel extends AndroidViewModel {
                     public void onAuthenticationFailed(Throwable throwable) {
                         Log.d(TAG, throwable.toString());
                         mIsLoading.setValue(false);
-                        mError.setValue(throwable);
+                        setError(throwable);
                         updateBiometricState();
                     }
                 }
@@ -338,7 +357,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onLogoutFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
-                mError.setValue(throwable);
+                setError(throwable);
             }
         });
     }
@@ -364,7 +383,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onPromotionFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
-                mError.setValue(throwable);
+                setError(throwable);
             }
         });
     }
@@ -379,7 +398,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onFetchingUserInfoFailed(@NonNull Throwable throwable) {
                 mUserInfo.setValue(null);
-                mError.setValue(throwable);
+                setError(throwable);
             }
         });
     }

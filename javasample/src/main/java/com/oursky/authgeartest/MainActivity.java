@@ -11,6 +11,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.oursky.authgear.BiometricLockoutException;
+import com.oursky.authgear.BiometricNoEnrollmentException;
+import com.oursky.authgear.BiometricNoPasscodeException;
+import com.oursky.authgear.BiometricNotSupportedOrPermissionDeniedException;
+import com.oursky.authgear.BiometricPrivateKeyNotFoundException;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.UserInfo;
 
@@ -102,7 +107,21 @@ public class MainActivity extends AppCompatActivity {
             if (e == null) return;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Error");
-            builder.setMessage(e.toString());
+
+            String message = e.toString();
+            if (e instanceof BiometricPrivateKeyNotFoundException) {
+                message = "Your biometric info has changed. For security reason, you have to set up biometric authentication again.";
+            } else if (e instanceof BiometricNoEnrollmentException) {
+                message = "You have not set up biometric yet. Please set up your fingerprint or face";
+            } else if (e instanceof BiometricNotSupportedOrPermissionDeniedException) {
+                message = "Your device does not support biometric. The developer should have checked this and not letting you to see feature that requires biometric";
+            } else if (e instanceof BiometricNoPasscodeException) {
+                message = "You device does not have credential set up. Please set up either a PIN, a pattern or a password";
+            } else if (e instanceof BiometricLockoutException) {
+                message = "The biometric is locked out due to too many failed attempts. The developer should handle this error by using normal authentication as a fallback. So normally you should not see this error";
+            }
+
+            builder.setMessage(message);
             builder.setPositiveButton("OK", (dialogInterface, i) -> {
             });
             builder.create().show();
