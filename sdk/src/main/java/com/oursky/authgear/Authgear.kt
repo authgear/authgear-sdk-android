@@ -424,19 +424,19 @@ constructor(
     fun wechatAuthCallback(
         code: String,
         state: String,
-        onWeChatAuthCallbackListener: OnWeChatAuthCallbackListener,
+        onWechatAuthCallbackListener: OnWechatAuthCallbackListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
                 core.wechatAuthCallback(code, state)
                 handler.post {
-                    onWeChatAuthCallbackListener.onWeChatAuthCallback()
+                    onWechatAuthCallbackListener.onWechatAuthCallback()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 handler.post {
-                    onWeChatAuthCallbackListener.onWeChatAuthCallbackFailed(e)
+                    onWechatAuthCallbackListener.onWechatAuthCallbackFailed(e)
                 }
             }
         }
