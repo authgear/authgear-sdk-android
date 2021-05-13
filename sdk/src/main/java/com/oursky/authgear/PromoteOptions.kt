@@ -15,7 +15,7 @@ data class PromoteOptions @JvmOverloads constructor(
     var uiLocales: List<String>? = null,
     /**
      * WeChat redirect uri is needed when integrating WeChat login
-     * The weChatRedirectURI will be called when user click the login with WeChat button
+     * The wechatRedirectURI will be called when user click the login with WeChat button
      */
-    var weChatRedirectURI: String? = null
+    var wechatRedirectURI: String? = null
 )

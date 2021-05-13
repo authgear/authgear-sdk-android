@@ -19,5 +19,5 @@ internal interface OauthRepo {
     fun oidcUserInfoRequest(accessToken: String): UserInfo
     fun oauthChallenge(purpose: String): ChallengeResponse
     fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse
-    fun weChatAuthCallback(code: String, state: String)
+    fun wechatAuthCallback(code: String, state: String)
 }

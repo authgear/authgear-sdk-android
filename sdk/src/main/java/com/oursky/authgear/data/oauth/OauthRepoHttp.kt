@@ -208,7 +208,7 @@ internal class OauthRepoHttp : OauthRepo {
         return response.result
     }
 
-    override fun weChatAuthCallback(code: String, state: String) {
+    override fun wechatAuthCallback(code: String, state: String) {
         val body = mutableMapOf<String, String>()
         body["code"] = code
         body["state"] = state

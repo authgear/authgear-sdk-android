@@ -45,7 +45,7 @@ public class MainViewModel extends AndroidViewModel {
     private static final int ALLOWED = BiometricManager.Authenticators.BIOMETRIC_STRONG;
     private static final String TAG = MainViewModel.class.getSimpleName();
     private Authgear mAuthgear = null;
-    private IWXAPI weChatAPI;
+    private IWXAPI wechatAPI;
     final private MutableLiveData<Boolean> mIsConfigured = new MutableLiveData<>(false);
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
@@ -172,31 +172,31 @@ public class MainViewModel extends AndroidViewModel {
             }
 
             @Override
-            public void sendWeChatAuthRequest(String state) {
+            public void sendWechatAuthRequest(String state) {
                 Log.d(TAG, "Open wechat sdk state=" + state);
-                if (!weChatAPI.isWXAppInstalled()) {
+                if (!wechatAPI.isWXAppInstalled()) {
                     mError.setValue(new RuntimeException("You have not installed the WeChat client app"));
                     return;
                 }
-                if (weChatAPI == null) {
+                if (wechatAPI == null) {
                     mError.setValue(new RuntimeException("WeChat app id is not configured"));
                     return;
                 }
                 SendAuth.Req req = new SendAuth.Req();
                 req.scope = "snsapi_userinfo";
                 req.state = state;
-                weChatAPI.sendReq(req);
+                wechatAPI.sendReq(req);
             }
         });
 
         resetState();
 
-        weChatAPI = WXAPIFactory.createWXAPI(app, MainApplication.AUTHGEAR_WECHAT_APP_ID, true);
-        weChatAPI.registerApp(MainApplication.AUTHGEAR_WECHAT_APP_ID);
+        wechatAPI = WXAPIFactory.createWXAPI(app, MainApplication.AUTHGEAR_WECHAT_APP_ID, true);
+        wechatAPI.registerApp(MainApplication.AUTHGEAR_WECHAT_APP_ID);
 
         WXEntryActivity.setOnWeChatSendAuthResultListener((code, state) -> {
             Log.d(TAG, "Sending WeChat Callback");
-            mAuthgear.weChatAuthCallback(code, state, new OnWeChatAuthCallbackListener() {
+            mAuthgear.wechatAuthCallback(code, state, new OnWeChatAuthCallbackListener() {
                 @Override
                 public void onWeChatAuthCallback() {
                     Log.d(TAG, "onWeChatAuthCallback");
@@ -221,7 +221,7 @@ public class MainViewModel extends AndroidViewModel {
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
         options.setPrompt("login");
         options.setPage(page);
-        options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
             @Override
             public void onAuthorized(@Nullable AuthorizeResult result) {
@@ -345,14 +345,14 @@ public class MainViewModel extends AndroidViewModel {
 
     public void openSettings() {
         SettingOptions options = new SettingOptions();
-        options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.open(Page.Settings, options);
     }
 
     public void promoteAnonymousUser() {
         mIsLoading.setValue(true);
         PromoteOptions options = new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
-        options.setWeChatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.promoteAnonymousUser(options, new OnPromoteAnonymousUserListener() {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
