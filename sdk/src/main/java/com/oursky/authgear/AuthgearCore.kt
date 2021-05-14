@@ -86,7 +86,7 @@ internal class AuthgearCore(
                 DeepLinkHandlerMap.remove(deepLinkWithoutQuery)
             } else {
                 val handler = requireDeepLinkHandler(deepLink)
-                handler.continuation.resumeWith(Result.failure(CancelledException()))
+                handler.continuation.resumeWith(Result.failure(CancelException()))
                 DeepLinkHandlerMap.remove(deepLink)
             }
         }
@@ -198,7 +198,7 @@ internal class AuthgearCore(
         } else {
             val maybeKeyPair = keyRepo.getAnonymousKey(keyId)
             if (maybeKeyPair == null) {
-                throw IllegalArgumentException("Anonymous user key not found.")
+                throw AnonymousUserNotFoundException()
             }
             keyPair = maybeKeyPair
         }
@@ -289,7 +289,7 @@ internal class AuthgearCore(
         requireIsInitialized()
 
         val refreshToken = refreshTokenRepo.getRefreshToken(name)
-            ?: throw IllegalStateException("Refresh token not found")
+            ?: throw UnauthenticatedUserException()
         val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
 
         val url = URL(URL(authgearEndpoint), path).toString()
@@ -326,9 +326,9 @@ internal class AuthgearCore(
     suspend fun promoteAnonymousUser(options: PromoteOptions): AuthorizeResult {
         requireIsInitialized()
         val keyId = tokenRepo.getAnonymousKeyId(name)
-            ?: throw IllegalStateException("Anonymous user credentials not found")
+            ?: throw AnonymousUserNotFoundException()
         val keyPair = keyRepo.getAnonymousKey(keyId)
-            ?: throw IllegalStateException("Anonymous user credentials not found")
+            ?: throw AnonymousUserNotFoundException()
         val challenge = oauthRepo.oauthChallenge("anonymous_request").token
 
         val jwk = publicKeyToJWK(keyId, keyPair.public)
@@ -375,7 +375,7 @@ internal class AuthgearCore(
         refreshAccessTokenIfNeeded()
 
         val accessToken: String = this.accessToken
-            ?: throw IllegalStateException("fetchUserInfo required authenticated user.")
+            ?: throw UnauthenticatedUserException()
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
     }
 
@@ -520,7 +520,7 @@ internal class AuthgearCore(
                 )
             )
         } catch (e: Exception) {
-            if (e is OauthException && e.error == "invalid_grant") {
+            if (e is OAuthException && e.error == "invalid_grant") {
                 clearSession(SessionStateChangeReason.INVALID)
                 return
             }
@@ -578,7 +578,7 @@ internal class AuthgearCore(
         val errorDescription = uri.getQueryParameter("error_description")
         var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
-            throw OauthException(
+            throw OAuthException(
                 error = error,
                 errorDescription = errorDescription,
                 state = state,
@@ -586,7 +586,7 @@ internal class AuthgearCore(
             )
         }
         val code = uri.getQueryParameter("code")
-            ?: throw OauthException(
+            ?: throw OAuthException(
                 error = "invalid_request",
                 errorDescription = "Missing parameter: code",
                 state = state,
@@ -619,7 +619,7 @@ internal class AuthgearCore(
         allowed = convertAllowed(allowed)
         val result = BiometricManager.from(context).canAuthenticate(allowed)
         if (result != BiometricManager.BIOMETRIC_SUCCESS) {
-            throw BiometricCanAuthenticateException(result)
+            throw wrapException(BiometricCanAuthenticateException(result))
         }
     }
 
@@ -653,7 +653,7 @@ internal class AuthgearCore(
         refreshAccessTokenIfNeeded()
 
         val accessToken: String = this.accessToken
-            ?: throw IllegalStateException("enableBiometric required authenticated user.")
+            ?: throw UnauthenticatedUserException()
 
         ensureAllowedIsValid(options.allowedAuthenticators)
         val allowed = convertAllowed(options.allowedAuthenticators)
@@ -704,9 +704,9 @@ internal class AuthgearCore(
                         ) {
                             it.resumeWith(
                                 Result.failure(
-                                    BiometricPromptAuthenticationException(
+                                    wrapException(BiometricPromptAuthenticationException(
                                         errorCode
-                                    )
+                                    ))
                                 )
                             )
                         }
@@ -747,12 +747,12 @@ internal class AuthgearCore(
 
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
         val kid = tokenRepo.getBiometricKeyId(name)
-            ?: throw IllegalStateException("biometric kid not found")
+            ?: throw BiometricPrivateKeyNotFoundException()
         val alias = "com.authgear.keys.biometric.$kid"
 
         try {
             val keyPair =
-                getPrivateKey(alias) ?: throw IllegalStateException("biometric key not found")
+                getPrivateKey(alias) ?: throw BiometricPrivateKeyNotFoundException()
             val jwk = publicKeyToJWK(kid, keyPair.public)
             val header = JWTHeader(
                 typ = JWTHeaderType.BIOMETRIC,
@@ -787,9 +787,9 @@ internal class AuthgearCore(
                             ) {
                                 it.resumeWith(
                                     Result.failure(
-                                        BiometricPromptAuthenticationException(
+                                        wrapException(BiometricPromptAuthenticationException(
                                             errorCode
-                                        )
+                                        ))
                                     )
                                 )
                             }
@@ -821,7 +821,7 @@ internal class AuthgearCore(
                 )
                 saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
                 return userInfo
-            } catch (e: OauthException) {
+            } catch (e: OAuthException) {
                 // In case the biometric was removed remotely.
                 if (e.error == "invalid_grant" && e.errorDescription == "InvalidCredentials") {
                     disableBiometric()
@@ -831,7 +831,9 @@ internal class AuthgearCore(
         } catch (e: KeyPermanentlyInvalidatedException) {
             // This biometric has changed
             this.disableBiometric()
-            throw e
+            throw wrapException(e)
+        } catch (e: Exception) {
+            throw wrapException(e)
         }
     }
 }

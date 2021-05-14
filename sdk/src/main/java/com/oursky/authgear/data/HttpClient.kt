@@ -1,11 +1,11 @@
 package com.oursky.authgear.data
 
-import com.oursky.authgear.OauthException
+import com.oursky.authgear.AuthgearException
+import com.oursky.authgear.OAuthException
 import com.oursky.authgear.ServerException
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
-import java.lang.RuntimeException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -37,9 +37,9 @@ internal class HttpClient {
                     if (e != null) {
                         throw e
                     }
-                    throw RuntimeException(responseString)
+                    throw AuthgearException(responseString)
                 } catch (e: JSONException) {
-                    throw RuntimeException(responseString)
+                    throw AuthgearException(responseString, e)
                 }
             }
         }
@@ -74,7 +74,7 @@ internal class HttpClient {
                     if (jsonObject.has("error_uri")) {
                         errorURI = jsonObject.getString("error_uri")
                     }
-                    return OauthException(
+                    return OAuthException(
                         error = jsonObject.getString("error"),
                         errorDescription = errorDescription,
                         state = state,
