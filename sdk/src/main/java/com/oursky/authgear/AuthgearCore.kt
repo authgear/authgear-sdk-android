@@ -300,7 +300,7 @@ internal class AuthgearCore(
         val authorizeUrl = authorizeEndpoint(
             AuthorizeOptions(
                 redirectUri = url.toString(),
-                prompt = "none",
+                prompt = listOf(PromptOption.NONE),
                 responseType = "none",
                 loginHint = loginHint,
                 wechatRedirectURI = options?.wechatRedirectURI
@@ -357,7 +357,7 @@ internal class AuthgearCore(
         val authorizeUrl = authorizeEndpoint(
             AuthorizeOptions(
                 redirectUri = options.redirectUri,
-                prompt = "login",
+                prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
@@ -423,7 +423,7 @@ internal class AuthgearCore(
             queries["state"] = it
         }
         options.prompt?.let {
-            queries["prompt"] = it
+            queries["prompt"] = it.joinToString(separator = " ") { it.raw }
         }
         options.loginHint?.let {
             queries["login_hint"] = it

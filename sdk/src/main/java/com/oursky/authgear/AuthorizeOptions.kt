@@ -17,13 +17,17 @@ data class AuthorizeOptions @JvmOverloads constructor(
      */
     var responseType: String? = "code",
     /**
-     * OIDC prompt parameter. Default value is `login` so that re-login after logout does not obtain
-     * the refresh token automatically if the cookies in the external browser persist.
+     * OIDC prompt parameter.
      *
-     * It is recommended that you do not modify this parameter unless you are familiar with the OIDC
-     * spec.
+     * Prompt parameter will be used for Authgear authorization, it will also be forwarded to the underlying SSO providers.
+     *
+     * For Authgear, currently, only login is supported. Other unsupported values will be ignored.
+     *
+     * For the underlying SSO providers, some providers only support a single value rather than a list.
+     * The first supported value will be used for that case.
+     * e.g. Azure Active Directory.
      */
-    var prompt: String? = null,
+    var prompt: List<PromptOption>? = null,
     /**
      * OIDC login hint parameter
      */
