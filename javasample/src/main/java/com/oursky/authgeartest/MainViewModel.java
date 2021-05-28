@@ -33,6 +33,7 @@ import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
+import com.oursky.authgear.PromptOption;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
@@ -41,6 +42,8 @@ import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
+
+import java.util.Arrays;
 
 @SuppressWarnings("ConstantConditions")
 public class MainViewModel extends AndroidViewModel {
@@ -229,7 +232,7 @@ public class MainViewModel extends AndroidViewModel {
                 .apply();
         mIsLoading.setValue(true);
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
-        options.setPrompt("login");
+        options.setPrompt(Arrays.asList(PromptOption.LOGIN));
         options.setPage(page);
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
