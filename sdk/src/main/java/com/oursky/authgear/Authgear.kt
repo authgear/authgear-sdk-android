@@ -12,6 +12,7 @@ import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
 import kotlinx.coroutines.*
+import java.util.*
 
 /**
  * An authgear instance represents a user session. If you need multiple user sessions, simply instantiate multiple authgear instances.
@@ -81,6 +82,18 @@ constructor(
         @MainThread
         get() {
             return core.idToken
+        }
+
+    val canReauthenticate: Boolean
+        @MainThread
+        get() {
+            return core.canReauthenticate
+        }
+
+    val authTime: Date?
+        @MainThread
+        get() {
+            return core.authTime
         }
 
     var delegate: AuthgearDelegate?

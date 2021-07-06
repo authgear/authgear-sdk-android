@@ -23,6 +23,9 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -173,6 +176,31 @@ internal class AuthgearCore(
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
     private var refreshTokenRepo: TokenRepo = tokenRepo
+
+    val canReauthenticate: Boolean
+        get() {
+            val idToken = this.idToken
+            if (idToken == null) {
+                return false
+            }
+            val jsonObject = decodeJWT(idToken)
+            val can = jsonObject["https://authgear.com/claims/user/can_reauthenticate"]
+            return can?.jsonPrimitive?.booleanOrNull ?: false
+        }
+
+    val authTime: Date?
+        get() {
+            val idToken = this.idToken
+            if (idToken == null) {
+                return null
+            }
+            val jsonObject = decodeJWT(idToken)
+            val authTimeValue = jsonObject["auth_time"]?.jsonPrimitive?.longOrNull
+            if (authTimeValue == null) {
+                return null
+            }
+            return Date(authTimeValue * 1000)
+        }
 
     private fun requireIsInitialized() {
         require(isInitialized) {
