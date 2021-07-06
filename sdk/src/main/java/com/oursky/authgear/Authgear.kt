@@ -172,6 +172,42 @@ constructor(
     }
 
     /**
+     * Reauthenticate the user either by biometric or web.
+     */
+    @MainThread
+    @JvmOverloads
+    fun reauthenticate(
+        options: ReauthentcateOptions,
+        listener: OnReauthenticateListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                AuthgearCore.registerWechatRedirectURI(
+                    options.wechatRedirectURI,
+                    object : AuthgearCore.WechatRedirectHandler {
+                        override fun sendWechatAuthRequest(state: String) {
+                            handler.post {
+                                delegate?.sendWechatAuthRequest(state)
+                            }
+                        }
+                    })
+                val result = core.reauthenticate(options)
+                handler.post {
+                    listener.onFinished(result)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onFailed(e)
+                }
+            } finally {
+                AuthgearCore.unregisteredWechatRedirectURI()
+            }
+        }
+    }
+
+    /**
      * Configure authgear. This must be ran before any other methods.
      * If configuration is successful and there was a valid user session, authgear's [accessToken]
      * is non-null and the token is ready to be used.

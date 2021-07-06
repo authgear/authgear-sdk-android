@@ -280,6 +280,23 @@ internal class AuthgearCore(
         return finishAuthorization(deepLink)
     }
 
+    suspend fun reauthenticate(options: ReauthentcateOptions): ReauthenticateResult {
+        requireIsInitialized()
+        // TODO: biometric
+        if (!this.canReauthenticate) {
+            throw AuthgearException("canReauthenticate is false")
+        }
+        val idTokenHint = this.idToken
+        if (idTokenHint == null) {
+            throw AuthgearException("Call refreshIDToken first")
+        }
+        val codeVerifier = this.setupVerifier()
+        val request = options.toRequest(idTokenHint)
+        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
+        return finishReauthentication(deepLink)
+    }
+
     @Suppress("RedundantSuspendModifier")
     suspend fun configure(configureOptions: ConfigureOptions) {
         isInitialized = true
@@ -647,6 +664,46 @@ internal class AuthgearCore(
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
         return AuthorizeResult(userInfo, uri.getQueryParameter("state"))
+    }
+
+    private fun finishReauthentication(deepLink: String): ReauthenticateResult {
+        val uri = Uri.parse(deepLink)
+        val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
+        val state = uri.getQueryParameter("state")
+        val error = uri.getQueryParameter("error")
+        val errorDescription = uri.getQueryParameter("error_description")
+        var errorURI = uri.getQueryParameter("error_uri")
+        if (error != null) {
+            throw OAuthException(
+                error = error,
+                errorDescription = errorDescription,
+                state = state,
+                errorURI = errorURI
+            )
+        }
+        val code = uri.getQueryParameter("code")
+            ?: throw OAuthException(
+                error = "invalid_request",
+                errorDescription = "Missing parameter: code",
+                state = state,
+                errorURI = errorURI
+            )
+        val codeVerifier = tokenRepo.getOIDCCodeVerifier(name)
+        val tokenResponse = oauthRepo.oidcTokenRequest(
+            OIDCTokenRequest(
+                grantType = GrantType.AUTHORIZATION_CODE,
+                clientId = clientId,
+                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
+                code = code,
+                redirectUri = redirectUri,
+                codeVerifier = codeVerifier ?: ""
+            )
+        )
+        val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
+        tokenResponse.idToken?.let {
+            this.idToken = it
+        }
+        return ReauthenticateResult(userInfo, uri.getQueryParameter("state"))
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
