@@ -178,6 +178,7 @@ constructor(
     @JvmOverloads
     fun reauthenticate(
         options: ReauthentcateOptions,
+        biometricOptions: BiometricOptions?,
         listener: OnReauthenticateListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
@@ -192,7 +193,7 @@ constructor(
                             }
                         }
                     })
-                val result = core.reauthenticate(options)
+                val result = core.reauthenticate(options, biometricOptions)
                 handler.post {
                     listener.onFinished(result)
                 }

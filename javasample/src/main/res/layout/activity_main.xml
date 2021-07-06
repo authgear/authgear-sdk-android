@@ -211,7 +211,16 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:layout_gravity="center_horizontal"
-                    android:text="Reauthenticate"
+                    android:text="Reauthenticate (biometric or web)"
+                    tools:ignore="HardcodedText" />
+
+                <Button
+                    android:id="@+id/reauthenticateWebOnly"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Reauthenticate (web only)"
                     tools:ignore="HardcodedText" />
 
                 <Button

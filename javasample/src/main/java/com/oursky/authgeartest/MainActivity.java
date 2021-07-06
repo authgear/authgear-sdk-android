@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private View mAuthenticateAnonymously;
     private View mPromoteAnonymousUser;
     private View mReauthenticate;
+    private View mReauthenticateWebOnly;
     private View mEnableBiometric;
     private View mDisableBiometric;
     private View mAuthenticateBiometric;
@@ -57,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mPromoteAnonymousUser = findViewById(R.id.promoteAnonymousUser);
         mReauthenticate = findViewById(R.id.reauthenticate);
+        mReauthenticateWebOnly = findViewById(R.id.reauthenticateWebOnly);
         mEnableBiometric = findViewById(R.id.enableBiometric);
         mDisableBiometric = findViewById(R.id.disableBiometric);
         mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
@@ -74,7 +76,8 @@ public class MainActivity extends AppCompatActivity {
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
-        mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate());
+        mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
+        mReauthenticateWebOnly.setOnClickListener(view -> viewModel.reauthenticateWebOnly());
         mEnableBiometric.setOnClickListener(view -> viewModel.enableBiometric(this));
         mDisableBiometric.setOnClickListener(view -> viewModel.disableBiometric());
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
@@ -144,7 +147,8 @@ public class MainActivity extends AppCompatActivity {
         mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
-        mReauthenticate.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous && canReauthenticate);
+        mReauthenticate.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous);
+        mReauthenticateWebOnly.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous && canReauthenticate);
         mEnableBiometric.setEnabled(!isLoading && isConfigured && isLoggedIn && !isBiometricEnabled);
         mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);

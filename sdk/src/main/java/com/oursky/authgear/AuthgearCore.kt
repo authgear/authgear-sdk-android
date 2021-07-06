@@ -280,9 +280,17 @@ internal class AuthgearCore(
         return finishAuthorization(deepLink)
     }
 
-    suspend fun reauthenticate(options: ReauthentcateOptions): ReauthenticateResult {
+    suspend fun reauthenticate(options: ReauthentcateOptions, biometricOptions: BiometricOptions?): ReauthenticateResult {
         requireIsInitialized()
-        // TODO: biometric
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val biometricEnabled = this.isBiometricEnabled()
+            if (biometricEnabled && biometricOptions != null) {
+                val userInfo = this.authenticateBiometric(biometricOptions)
+                return ReauthenticateResult(userInfo = userInfo, state = options.state)
+            }
+        }
+
         if (!this.canReauthenticate) {
             throw AuthgearException("canReauthenticate is false")
         }

@@ -262,7 +262,7 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void reauthenticate() {
+    public void reauthenticate(FragmentActivity activity) {
         mIsLoading.setValue(true);
 
         mAuthgear.refreshIDToken(new OnRefreshIDTokenListener() {
@@ -271,7 +271,44 @@ public class MainViewModel extends AndroidViewModel {
                 if (mAuthgear.getCanReauthenticate()) {
                     ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
-                    mAuthgear.reauthenticate(options, new OnReauthenticateListener() {
+                    mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
+                        @Override
+                        public void onFinished(@Nullable ReauthenticateResult result) {
+                            String state = result.getState();
+                            Log.d(TAG, state == null ? "No state" : state);
+                            mUserInfo.setValue(result.getUserInfo());
+                            mIsLoading.setValue(false);
+                        }
+
+                        @Override
+                        public void onFailed(@NonNull Throwable throwable) {
+                            Log.d(TAG, throwable.toString());
+                            mIsLoading.setValue(false);
+                            setError(throwable);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailed(Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
+    public void reauthenticateWebOnly() {
+        mIsLoading.setValue(true);
+
+        mAuthgear.refreshIDToken(new OnRefreshIDTokenListener() {
+            @Override
+            public void onFinished() {
+                if (mAuthgear.getCanReauthenticate()) {
+                    ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+                    options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+                    mAuthgear.reauthenticate(options, null, new OnReauthenticateListener() {
                         @Override
                         public void onFinished(@Nullable ReauthenticateResult result) {
                             String state = result.getState();
