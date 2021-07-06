@@ -30,10 +30,14 @@ import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
+import com.oursky.authgear.OnReauthenticateListener;
+import com.oursky.authgear.OnRefreshIDTokenListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.PromptOption;
+import com.oursky.authgear.ReauthentcateOptions;
+import com.oursky.authgear.ReauthenticateResult;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
@@ -58,6 +62,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Boolean> mTransientSession = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
+    final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
     final private MutableLiveData<SessionState> mSessionState = new MutableLiveData<>(SessionState.UNKNOWN);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
@@ -100,6 +105,7 @@ public class MainViewModel extends AndroidViewModel {
 
     private void resetState() {
         mIsConfigured.setValue(true);
+        mCanReauthenticate.setValue(false);
         mUserInfo.setValue(null);
         mBiometricEnable.setValue(false);
         mSessionState.setValue(SessionState.UNKNOWN);
@@ -135,6 +141,8 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public LiveData<Boolean> isBiometricEnabled() { return mBiometricEnable; }
+
+    public LiveData<Boolean> canReauthenticate() { return mCanReauthenticate; }
 
     public LiveData<UserInfo> userInfo() {
         return mUserInfo;
@@ -240,6 +248,7 @@ public class MainViewModel extends AndroidViewModel {
                 String state = result.getState();
                 Log.d(TAG, state == null ? "No state" : state);
                 mUserInfo.setValue(result.getUserInfo());
+                mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
                 mIsLoading.setValue(false);
                 updateBiometricState();
             }
@@ -253,12 +262,50 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
+    public void reauthenticate() {
+        mIsLoading.setValue(true);
+
+        mAuthgear.refreshIDToken(new OnRefreshIDTokenListener() {
+            @Override
+            public void onFinished() {
+                if (mAuthgear.getCanReauthenticate()) {
+                    ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+                    options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+                    mAuthgear.reauthenticate(options, new OnReauthenticateListener() {
+                        @Override
+                        public void onFinished(@Nullable ReauthenticateResult result) {
+                            String state = result.getState();
+                            Log.d(TAG, state == null ? "No state" : state);
+                            mUserInfo.setValue(result.getUserInfo());
+                            mIsLoading.setValue(false);
+                        }
+
+                        @Override
+                        public void onFailed(@NonNull Throwable throwable) {
+                            Log.d(TAG, throwable.toString());
+                            mIsLoading.setValue(false);
+                            setError(throwable);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailed(Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
     public void authenticateAnonymously() {
         mIsLoading.setValue(true);
         mAuthgear.authenticateAnonymously(new OnAuthenticateAnonymouslyListener() {
             @Override
             public void onAuthenticated(@NonNull UserInfo userInfo) {
                 mUserInfo.setValue(userInfo);
+                mCanReauthenticate.setValue(false);
                 mIsLoading.setValue(false);
                 updateBiometricState();
             }
@@ -331,6 +378,7 @@ public class MainViewModel extends AndroidViewModel {
                     public void onAuthenticated(UserInfo userInfo) {
                         mIsLoading.setValue(false);
                         mUserInfo.setValue(userInfo);
+                        mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
                         updateBiometricState();
                     }
 
@@ -352,6 +400,7 @@ public class MainViewModel extends AndroidViewModel {
             public void onLogout() {
                 mIsLoading.setValue(false);
                 mUserInfo.setValue(null);
+                mCanReauthenticate.setValue(false);
                 updateBiometricState();
             }
 
@@ -378,6 +427,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
                 mUserInfo.setValue(result.getUserInfo());
+                mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
                 mIsLoading.setValue(false);
             }
 
