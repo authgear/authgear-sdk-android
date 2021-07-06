@@ -17,8 +17,10 @@ import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
 import com.oursky.authgear.data.token.TokenRepoInMemory
 import com.oursky.authgear.net.toQueryParameter
+import com.oursky.authgear.oauth.OIDCAuthenticationRequest
 import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OIDCTokenResponse
+import com.oursky.authgear.oauth.toQuery
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -271,8 +273,10 @@ internal class AuthgearCore(
     @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
         requireIsInitialized()
-        val authorizeUrl = authorizeEndpoint(options)
-        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
+        val codeVerifier = this.setupVerifier()
+        val request = options.toRequest()
+        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink)
     }
 
@@ -328,13 +332,15 @@ internal class AuthgearCore(
         URLEncoder.encode(token, StandardCharsets.UTF_8.name())
         }"
         val authorizeUrl = authorizeEndpoint(
-            AuthorizeOptions(
+            OIDCAuthenticationRequest(
                 redirectUri = url.toString(),
-                prompt = listOf(PromptOption.NONE),
                 responseType = "none",
+                scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+                prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
                 wechatRedirectURI = options?.wechatRedirectURI
-            )
+            ),
+            null
         )
 
         application.startActivity(
@@ -384,15 +390,21 @@ internal class AuthgearCore(
             StandardCharsets.UTF_8.name()
         )
         }"
+
+        val codeVerifier = this.setupVerifier()
+
         val authorizeUrl = authorizeEndpoint(
-            AuthorizeOptions(
+            OIDCAuthenticationRequest(
                 redirectUri = options.redirectUri,
+                responseType = "code",
+                scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
                 wechatRedirectURI = options.wechatRedirectURI
-            )
+            ),
+            codeVerifier
         )
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
         val result = finishAuthorization(deepLink)
@@ -452,48 +464,15 @@ internal class AuthgearCore(
         }
     }
 
-    private fun authorizeEndpoint(options: AuthorizeOptions): String {
+    private fun authorizeEndpoint(request: OIDCAuthenticationRequest, codeVerifier: Verifier?): String {
         val config = oauthRepo.getOIDCConfiguration()
-        val queries = mutableMapOf<String, String>()
-
-        val responseType = options.responseType ?: "code"
-        queries["response_type"] = responseType
-
-        if (responseType == "code") {
-            val codeVerifier = setupVerifier()
-            tokenRepo.setOIDCCodeVerifier(name, codeVerifier.verifier)
-            queries["code_challenge_method"] = "S256"
-            queries["code_challenge"] = codeVerifier.challenge
-        }
-
-        queries["scope"] = "openid offline_access https://authgear.com/scopes/full-access"
-
-        queries["client_id"] = clientId
-        queries["redirect_uri"] = options.redirectUri
-        options.state?.let {
-            queries["state"] = it
-        }
-        options.prompt?.let {
-            queries["prompt"] = it.joinToString(separator = " ") { it.raw }
-        }
-        options.loginHint?.let {
-            queries["login_hint"] = it
-        }
-        options.uiLocales?.let {
-            queries["ui_locales"] = it.joinToString(separator = " ")
-        }
-        options.wechatRedirectURI?.let {
-            queries["x_wechat_redirect_uri"] = it
-        }
-        queries["x_platform"] = "android"
-        options.page?.let {
-            queries["x_page"] = it
-        }
-        return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
+        val query = request.toQuery(this.clientId, codeVerifier)
+        return "${config.authorizationEndpoint}?${query.toQueryParameter()}"
     }
 
     private fun setupVerifier(): Verifier {
         val verifier = generateCodeVerifier()
+        tokenRepo.setOIDCCodeVerifier(name, verifier)
         return Verifier(verifier, computeCodeChallenge(verifier))
     }
 
