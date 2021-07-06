@@ -420,6 +420,30 @@ constructor(
     }
 
     /**
+     * Refresh ID token.
+     */
+    @MainThread
+    @JvmOverloads
+    fun refreshIDToken(
+        listener: OnRefreshIDTokenListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.refreshIDToken()
+                handler.post {
+                    listener.onFinished()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
      * WeChat auth callback function. In WeChat login flow, after returning from the WeChat SDK,
      * this function should be called to complete the authorization.
      * @param code WeChat Authorization code.

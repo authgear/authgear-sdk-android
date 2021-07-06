@@ -232,7 +232,7 @@ internal class AuthgearCore(
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(
-            tokenResponse.accessToken
+            tokenResponse.accessToken!!
         )
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
@@ -379,6 +379,27 @@ internal class AuthgearCore(
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
+    }
+
+    suspend fun refreshIDToken() {
+        requireIsInitialized()
+        refreshAccessTokenIfNeeded()
+
+        val accessToken: String = this.accessToken
+            ?: throw UnauthenticatedUserException()
+
+        val tokenResponse = oauthRepo.oidcTokenRequest(
+            OIDCTokenRequest(
+                grantType = com.oursky.authgear.GrantType.ID_TOKEN,
+                clientId = clientId,
+                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
+                accessToken = accessToken
+            )
+        )
+
+        if (tokenResponse.idToken != null) {
+            this.idToken = tokenResponse.idToken
+        }
     }
 
     suspend fun refreshAccessTokenIfNeeded(): String? {
@@ -533,15 +554,19 @@ internal class AuthgearCore(
 
     private fun saveToken(tokenResponse: OIDCTokenResponse, reason: SessionStateChangeReason) {
         synchronized(this) {
-            accessToken = tokenResponse.accessToken
+            if (tokenResponse.accessToken != null) {
+                accessToken = tokenResponse.accessToken
+            }
             if (tokenResponse.refreshToken != null) {
                 refreshToken = tokenResponse.refreshToken
             }
             if (tokenResponse.idToken != null) {
                 idToken = tokenResponse.idToken
             }
-            expireAt =
-                Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+            if (tokenResponse.expiresIn != null) {
+                expireAt =
+                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+            }
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
         val refreshToken = this.refreshToken
@@ -611,7 +636,7 @@ internal class AuthgearCore(
                 codeVerifier = codeVerifier ?: ""
             )
         )
-        val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken)
+        val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
         return AuthorizeResult(userInfo, uri.getQueryParameter("state"))
@@ -825,7 +850,7 @@ internal class AuthgearCore(
                     )
                 )
                 val userInfo = oauthRepo.oidcUserInfoRequest(
-                    tokenResponse.accessToken
+                    tokenResponse.accessToken!!
                 )
                 saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
                 return userInfo
