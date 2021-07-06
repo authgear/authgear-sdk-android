@@ -232,7 +232,6 @@ public class MainViewModel extends AndroidViewModel {
                 .apply();
         mIsLoading.setValue(true);
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
-        options.setPrompt(Arrays.asList(PromptOption.LOGIN));
         options.setPage(page);
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
