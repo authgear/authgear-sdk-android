@@ -165,6 +165,8 @@ internal class AuthgearCore(
     private var refreshToken: String? = null
     var accessToken: String? = null
         private set
+    var idToken: String? = null
+        private set
     private var expireAt: Instant? = null
     var sessionState: SessionState = SessionState.UNKNOWN
         private set
@@ -532,7 +534,12 @@ internal class AuthgearCore(
     private fun saveToken(tokenResponse: OIDCTokenResponse, reason: SessionStateChangeReason) {
         synchronized(this) {
             accessToken = tokenResponse.accessToken
-            refreshToken = tokenResponse.refreshToken
+            if (tokenResponse.refreshToken != null) {
+                refreshToken = tokenResponse.refreshToken
+            }
+            if (tokenResponse.idToken != null) {
+                idToken = tokenResponse.idToken
+            }
             expireAt =
                 Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
             updateSessionState(SessionState.AUTHENTICATED, reason)
@@ -548,6 +555,7 @@ internal class AuthgearCore(
         synchronized(this) {
             accessToken = null
             refreshToken = null
+            idToken = null
             expireAt = null
             updateSessionState(SessionState.NO_SESSION, changeReason)
         }

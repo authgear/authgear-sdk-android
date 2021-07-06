@@ -77,6 +77,12 @@ constructor(
             return core.accessToken
         }
 
+    val idTokenHint: String?
+        @MainThread
+        get() {
+            return core.idToken
+        }
+
     var delegate: AuthgearDelegate?
         @MainThread
         get() {
