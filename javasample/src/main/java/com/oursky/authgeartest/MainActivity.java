@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private View mAuthenticateBiometric;
     private View mOpenSettings;
     private View mFetchUserInfo;
+    private View mShowAuthTime;
     private View mLogout;
 
     @Override
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
         mOpenSettings = findViewById(R.id.openSettings);
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
+        mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
 
         mConfigure.setOnClickListener(
@@ -83,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
         mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
+        mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
 
         mClientId.setText(viewModel.clientID().getValue());
@@ -154,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
         mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
+        mShowAuthTime.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mLogout.setEnabled(!isLoading && isConfigured && isLoggedIn);
     }
 }

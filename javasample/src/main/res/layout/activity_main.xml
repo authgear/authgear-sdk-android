@@ -269,6 +269,15 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
+                    android:id="@+id/showAuthTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Show auth_time"
+                    tools:ignore="HardcodedText" />
+
+                <Button
                     android:id="@+id/logout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

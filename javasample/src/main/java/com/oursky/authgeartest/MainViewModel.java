@@ -8,6 +8,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.biometric.BiometricManager;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.AndroidViewModel;
@@ -48,6 +49,7 @@ import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 import java.util.Arrays;
+import java.util.Date;
 
 @SuppressWarnings("ConstantConditions")
 public class MainViewModel extends AndroidViewModel {
@@ -490,5 +492,17 @@ public class MainViewModel extends AndroidViewModel {
                 setError(throwable);
             }
         });
+    }
+
+    public void showAuthTime(FragmentActivity activity) {
+        Date nullable = mAuthgear.getAuthTime();
+        if (nullable != null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+            builder.setTitle("auth_time");
+            builder.setMessage(nullable.toString());
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+            });
+            builder.create().show();
+        }
     }
 }
