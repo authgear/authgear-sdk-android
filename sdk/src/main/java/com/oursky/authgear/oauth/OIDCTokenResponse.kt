@@ -8,11 +8,11 @@ internal data class OIDCTokenResponse(
     @SerialName("id_token")
     val idToken: String? = null,
     @SerialName("token_type")
-    val tokenType: String,
+    val tokenType: String? = null,
     @SerialName("access_token")
-    val accessToken: String,
+    val accessToken: String? = null,
     @SerialName("expires_in")
-    val expiresIn: Long,
+    val expiresIn: Long? = null,
     @SerialName("refresh_token")
     val refreshToken: String? = null
 )

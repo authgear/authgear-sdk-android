@@ -60,12 +60,16 @@ internal class OauthRepoHttp : OauthRepo {
         request.codeVerifier?.let { body["code_verifier"] = it }
         request.refreshToken?.let { body["refresh_token"] = it }
         request.jwt?.let { body["jwt"] = it }
+        val headers = mutableMapOf(
+            "content-type" to "application/x-www-form-urlencoded"
+        )
+        request.accessToken?.let {
+            headers["authorization"] = "Bearer $it"
+        }
         return HttpClient.fetch(
             url = URL(config.tokenEndpoint),
             method = "POST",
-            headers = mutableMapOf(
-                "content-type" to "application/x-www-form-urlencoded"
-            )
+            headers = headers
         ) { conn ->
             conn.outputStream.use {
                 it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))

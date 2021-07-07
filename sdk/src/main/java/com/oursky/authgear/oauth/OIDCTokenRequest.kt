@@ -19,5 +19,8 @@ internal data class OIDCTokenRequest(
     val codeVerifier: String? = null,
     @SerialName("refresh_token")
     val refreshToken: String? = null,
+    @SerialName("access_token")
+    val accessToken: String? = null,
+    @SerialName("jwt")
     val jwt: String? = null
 )

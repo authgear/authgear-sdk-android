@@ -1,5 +1,7 @@
 package com.oursky.authgear
 
+import com.oursky.authgear.oauth.OIDCAuthenticationRequest
+
 /**
  * Authorization options.
  */
@@ -47,3 +49,19 @@ data class AuthorizeOptions @JvmOverloads constructor(
      */
     var page: String? = null
 )
+
+internal fun AuthorizeOptions.toRequest(): OIDCAuthenticationRequest {
+    return OIDCAuthenticationRequest(
+        redirectUri = this.redirectUri,
+        responseType = "code",
+        scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+        state = this.state,
+        prompt = this.prompt,
+        loginHint = this.loginHint,
+        idTokenHint = null,
+        maxAge = null,
+        uiLocales = this.uiLocales,
+        wechatRedirectURI = this.wechatRedirectURI,
+        page = this.page
+    )
+}

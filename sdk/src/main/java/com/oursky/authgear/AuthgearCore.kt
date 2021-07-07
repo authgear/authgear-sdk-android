@@ -17,12 +17,17 @@ import com.oursky.authgear.data.oauth.OauthRepo
 import com.oursky.authgear.data.token.TokenRepo
 import com.oursky.authgear.data.token.TokenRepoInMemory
 import com.oursky.authgear.net.toQueryParameter
+import com.oursky.authgear.oauth.OIDCAuthenticationRequest
 import com.oursky.authgear.oauth.OIDCTokenRequest
 import com.oursky.authgear.oauth.OIDCTokenResponse
+import com.oursky.authgear.oauth.toQuery
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -165,12 +170,39 @@ internal class AuthgearCore(
     private var refreshToken: String? = null
     var accessToken: String? = null
         private set
+    var idToken: String? = null
+        private set
     private var expireAt: Instant? = null
     var sessionState: SessionState = SessionState.UNKNOWN
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
     private var refreshTokenRepo: TokenRepo = tokenRepo
+
+    val canReauthenticate: Boolean
+        get() {
+            val idToken = this.idToken
+            if (idToken == null) {
+                return false
+            }
+            val jsonObject = decodeJWT(idToken)
+            val can = jsonObject["https://authgear.com/claims/user/can_reauthenticate"]
+            return can?.jsonPrimitive?.booleanOrNull ?: false
+        }
+
+    val authTime: Date?
+        get() {
+            val idToken = this.idToken
+            if (idToken == null) {
+                return null
+            }
+            val jsonObject = decodeJWT(idToken)
+            val authTimeValue = jsonObject["auth_time"]?.jsonPrimitive?.longOrNull
+            if (authTimeValue == null) {
+                return null
+            }
+            return Date(authTimeValue * 1000)
+        }
 
     private fun requireIsInitialized() {
         require(isInitialized) {
@@ -230,7 +262,7 @@ internal class AuthgearCore(
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(
-            tokenResponse.accessToken
+            tokenResponse.accessToken!!
         )
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
@@ -241,9 +273,36 @@ internal class AuthgearCore(
     @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
         requireIsInitialized()
-        val authorizeUrl = authorizeEndpoint(options)
-        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
+        val codeVerifier = this.setupVerifier()
+        val request = options.toRequest()
+        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink)
+    }
+
+    suspend fun reauthenticate(options: ReauthentcateOptions, biometricOptions: BiometricOptions?): ReauthenticateResult {
+        requireIsInitialized()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val biometricEnabled = this.isBiometricEnabled()
+            if (biometricEnabled && biometricOptions != null) {
+                val userInfo = this.authenticateBiometric(biometricOptions)
+                return ReauthenticateResult(userInfo = userInfo, state = options.state)
+            }
+        }
+
+        if (!this.canReauthenticate) {
+            throw AuthgearException("canReauthenticate is false")
+        }
+        val idTokenHint = this.idToken
+        if (idTokenHint == null) {
+            throw AuthgearException("Call refreshIDToken first")
+        }
+        val codeVerifier = this.setupVerifier()
+        val request = options.toRequest(idTokenHint)
+        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
+        return finishReauthentication(deepLink)
     }
 
     @Suppress("RedundantSuspendModifier")
@@ -298,13 +357,15 @@ internal class AuthgearCore(
         URLEncoder.encode(token, StandardCharsets.UTF_8.name())
         }"
         val authorizeUrl = authorizeEndpoint(
-            AuthorizeOptions(
+            OIDCAuthenticationRequest(
                 redirectUri = url.toString(),
-                prompt = listOf(PromptOption.NONE),
                 responseType = "none",
+                scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+                prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
                 wechatRedirectURI = options?.wechatRedirectURI
-            )
+            ),
+            null
         )
 
         application.startActivity(
@@ -354,15 +415,21 @@ internal class AuthgearCore(
             StandardCharsets.UTF_8.name()
         )
         }"
+
+        val codeVerifier = this.setupVerifier()
+
         val authorizeUrl = authorizeEndpoint(
-            AuthorizeOptions(
+            OIDCAuthenticationRequest(
                 redirectUri = options.redirectUri,
+                responseType = "code",
+                scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
                 wechatRedirectURI = options.wechatRedirectURI
-            )
+            ),
+            codeVerifier
         )
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
         val result = finishAuthorization(deepLink)
@@ -377,6 +444,27 @@ internal class AuthgearCore(
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
         return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
+    }
+
+    suspend fun refreshIDToken() {
+        requireIsInitialized()
+        refreshAccessTokenIfNeeded()
+
+        val accessToken: String = this.accessToken
+            ?: throw UnauthenticatedUserException()
+
+        val tokenResponse = oauthRepo.oidcTokenRequest(
+            OIDCTokenRequest(
+                grantType = com.oursky.authgear.GrantType.ID_TOKEN,
+                clientId = clientId,
+                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
+                accessToken = accessToken
+            )
+        )
+
+        if (tokenResponse.idToken != null) {
+            this.idToken = tokenResponse.idToken
+        }
     }
 
     suspend fun refreshAccessTokenIfNeeded(): String? {
@@ -401,48 +489,15 @@ internal class AuthgearCore(
         }
     }
 
-    private fun authorizeEndpoint(options: AuthorizeOptions): String {
+    private fun authorizeEndpoint(request: OIDCAuthenticationRequest, codeVerifier: Verifier?): String {
         val config = oauthRepo.getOIDCConfiguration()
-        val queries = mutableMapOf<String, String>()
-
-        val responseType = options.responseType ?: "code"
-        queries["response_type"] = responseType
-
-        if (responseType == "code") {
-            val codeVerifier = setupVerifier()
-            tokenRepo.setOIDCCodeVerifier(name, codeVerifier.verifier)
-            queries["code_challenge_method"] = "S256"
-            queries["code_challenge"] = codeVerifier.challenge
-        }
-
-        queries["scope"] = "openid offline_access https://authgear.com/scopes/full-access"
-
-        queries["client_id"] = clientId
-        queries["redirect_uri"] = options.redirectUri
-        options.state?.let {
-            queries["state"] = it
-        }
-        options.prompt?.let {
-            queries["prompt"] = it.joinToString(separator = " ") { it.raw }
-        }
-        options.loginHint?.let {
-            queries["login_hint"] = it
-        }
-        options.uiLocales?.let {
-            queries["ui_locales"] = it.joinToString(separator = " ")
-        }
-        options.wechatRedirectURI?.let {
-            queries["x_wechat_redirect_uri"] = it
-        }
-        queries["x_platform"] = "android"
-        options.page?.let {
-            queries["x_page"] = it
-        }
-        return "${config.authorizationEndpoint}?${queries.toQueryParameter()}"
+        val query = request.toQuery(this.clientId, codeVerifier)
+        return "${config.authorizationEndpoint}?${query.toQueryParameter()}"
     }
 
     private fun setupVerifier(): Verifier {
         val verifier = generateCodeVerifier()
+        tokenRepo.setOIDCCodeVerifier(name, verifier)
         return Verifier(verifier, computeCodeChallenge(verifier))
     }
 
@@ -531,10 +586,19 @@ internal class AuthgearCore(
 
     private fun saveToken(tokenResponse: OIDCTokenResponse, reason: SessionStateChangeReason) {
         synchronized(this) {
-            accessToken = tokenResponse.accessToken
-            refreshToken = tokenResponse.refreshToken
-            expireAt =
-                Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+            if (tokenResponse.accessToken != null) {
+                accessToken = tokenResponse.accessToken
+            }
+            if (tokenResponse.refreshToken != null) {
+                refreshToken = tokenResponse.refreshToken
+            }
+            if (tokenResponse.idToken != null) {
+                idToken = tokenResponse.idToken
+            }
+            if (tokenResponse.expiresIn != null) {
+                expireAt =
+                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+            }
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
         val refreshToken = this.refreshToken
@@ -548,6 +612,7 @@ internal class AuthgearCore(
         synchronized(this) {
             accessToken = null
             refreshToken = null
+            idToken = null
             expireAt = null
             updateSessionState(SessionState.NO_SESSION, changeReason)
         }
@@ -603,10 +668,50 @@ internal class AuthgearCore(
                 codeVerifier = codeVerifier ?: ""
             )
         )
-        val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken)
+        val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
         return AuthorizeResult(userInfo, uri.getQueryParameter("state"))
+    }
+
+    private fun finishReauthentication(deepLink: String): ReauthenticateResult {
+        val uri = Uri.parse(deepLink)
+        val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
+        val state = uri.getQueryParameter("state")
+        val error = uri.getQueryParameter("error")
+        val errorDescription = uri.getQueryParameter("error_description")
+        var errorURI = uri.getQueryParameter("error_uri")
+        if (error != null) {
+            throw OAuthException(
+                error = error,
+                errorDescription = errorDescription,
+                state = state,
+                errorURI = errorURI
+            )
+        }
+        val code = uri.getQueryParameter("code")
+            ?: throw OAuthException(
+                error = "invalid_request",
+                errorDescription = "Missing parameter: code",
+                state = state,
+                errorURI = errorURI
+            )
+        val codeVerifier = tokenRepo.getOIDCCodeVerifier(name)
+        val tokenResponse = oauthRepo.oidcTokenRequest(
+            OIDCTokenRequest(
+                grantType = GrantType.AUTHORIZATION_CODE,
+                clientId = clientId,
+                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
+                code = code,
+                redirectUri = redirectUri,
+                codeVerifier = codeVerifier ?: ""
+            )
+        )
+        val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
+        tokenResponse.idToken?.let {
+            this.idToken = it
+        }
+        return ReauthenticateResult(userInfo, uri.getQueryParameter("state"))
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -817,7 +922,7 @@ internal class AuthgearCore(
                     )
                 )
                 val userInfo = oauthRepo.oidcUserInfoRequest(
-                    tokenResponse.accessToken
+                    tokenResponse.accessToken!!
                 )
                 saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
                 return userInfo

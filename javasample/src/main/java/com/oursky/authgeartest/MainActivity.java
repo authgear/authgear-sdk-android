@@ -30,11 +30,14 @@ public class MainActivity extends AppCompatActivity {
     private View mAuthorize;
     private View mAuthenticateAnonymously;
     private View mPromoteAnonymousUser;
+    private View mReauthenticate;
+    private View mReauthenticateWebOnly;
     private View mEnableBiometric;
     private View mDisableBiometric;
     private View mAuthenticateBiometric;
     private View mOpenSettings;
     private View mFetchUserInfo;
+    private View mShowAuthTime;
     private View mLogout;
 
     @Override
@@ -55,11 +58,14 @@ public class MainActivity extends AppCompatActivity {
         mAuthorize = findViewById(R.id.authorize);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mPromoteAnonymousUser = findViewById(R.id.promoteAnonymousUser);
+        mReauthenticate = findViewById(R.id.reauthenticate);
+        mReauthenticateWebOnly = findViewById(R.id.reauthenticateWebOnly);
         mEnableBiometric = findViewById(R.id.enableBiometric);
         mDisableBiometric = findViewById(R.id.disableBiometric);
         mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
         mOpenSettings = findViewById(R.id.openSettings);
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
+        mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
 
         mConfigure.setOnClickListener(
@@ -72,11 +78,14 @@ public class MainActivity extends AppCompatActivity {
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
+        mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
+        mReauthenticateWebOnly.setOnClickListener(view -> viewModel.reauthenticateWebOnly());
         mEnableBiometric.setOnClickListener(view -> viewModel.enableBiometric(this));
         mDisableBiometric.setOnClickListener(view -> viewModel.disableBiometric());
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
         mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
+        mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
 
         mClientId.setText(viewModel.clientID().getValue());
@@ -135,16 +144,20 @@ public class MainActivity extends AppCompatActivity {
         boolean isAnonymous = userInfo != null && userInfo.isAnonymous();
         boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
         boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
+        boolean canReauthenticate = viewModel.canReauthenticate().getValue();
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mConfigure.setEnabled(!isLoading);
         mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
+        mReauthenticate.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous);
+        mReauthenticateWebOnly.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous && canReauthenticate);
         mEnableBiometric.setEnabled(!isLoading && isConfigured && isLoggedIn && !isBiometricEnabled);
         mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
         mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
+        mShowAuthTime.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mLogout.setEnabled(!isLoading && isConfigured && isLoggedIn);
     }
 }

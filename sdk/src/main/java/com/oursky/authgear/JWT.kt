@@ -1,10 +1,8 @@
 package com.oursky.authgear
 
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.*
+import java.nio.charset.Charset
 import java.security.Signature
 import java.time.Instant
 
@@ -62,4 +60,16 @@ internal fun signJWT(signature: Signature, header: JWTHeader, payload: JWTPayloa
     signature.update(data.toUTF8())
     val sig = signature.sign()
     return "$data.${base64UrlEncode(sig)}"
+}
+
+internal fun decodeJWT(jwt: String): JsonObject {
+    val parts = jwt.split(".")
+    if (parts.size != 3) {
+        throw AuthgearException("invalid jwt: $jwt")
+    }
+    val base64UrlEncoded = parts[1]
+    val bytes = bae64UrlDecode(base64UrlEncoded)
+    val utf8 = String(bytes, Charset.forName("UTF-8"))
+    val jsonElement = Json.parseToJsonElement(utf8)
+    return jsonElement.jsonObject
 }

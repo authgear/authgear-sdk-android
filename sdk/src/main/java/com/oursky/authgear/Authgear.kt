@@ -12,6 +12,7 @@ import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
 import kotlinx.coroutines.*
+import java.util.*
 
 /**
  * An authgear instance represents a user session. If you need multiple user sessions, simply instantiate multiple authgear instances.
@@ -75,6 +76,24 @@ constructor(
         @MainThread
         get() {
             return core.accessToken
+        }
+
+    val idTokenHint: String?
+        @MainThread
+        get() {
+            return core.idToken
+        }
+
+    val canReauthenticate: Boolean
+        @MainThread
+        get() {
+            return core.canReauthenticate
+        }
+
+    val authTime: Date?
+        @MainThread
+        get() {
+            return core.authTime
         }
 
     var delegate: AuthgearDelegate?
@@ -145,6 +164,43 @@ constructor(
                 e.printStackTrace()
                 handler.post {
                     onAuthorizeListener.onAuthorizationFailed(e)
+                }
+            } finally {
+                AuthgearCore.unregisteredWechatRedirectURI()
+            }
+        }
+    }
+
+    /**
+     * Reauthenticate the user either by biometric or web.
+     */
+    @MainThread
+    @JvmOverloads
+    fun reauthenticate(
+        options: ReauthentcateOptions,
+        biometricOptions: BiometricOptions?,
+        listener: OnReauthenticateListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                AuthgearCore.registerWechatRedirectURI(
+                    options.wechatRedirectURI,
+                    object : AuthgearCore.WechatRedirectHandler {
+                        override fun sendWechatAuthRequest(state: String) {
+                            handler.post {
+                                delegate?.sendWechatAuthRequest(state)
+                            }
+                        }
+                    })
+                val result = core.reauthenticate(options, biometricOptions)
+                handler.post {
+                    listener.onFinished(result)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onFailed(e)
                 }
             } finally {
                 AuthgearCore.unregisteredWechatRedirectURI()
@@ -408,6 +464,30 @@ constructor(
                 e.printStackTrace()
                 handler.post {
                     onFetchUserInfoListener.onFetchingUserInfoFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Refresh ID token.
+     */
+    @MainThread
+    @JvmOverloads
+    fun refreshIDToken(
+        listener: OnRefreshIDTokenListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.refreshIDToken()
+                handler.post {
+                    listener.onFinished()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onFailed(e)
                 }
             }
         }
