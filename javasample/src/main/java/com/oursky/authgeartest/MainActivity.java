@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mEndpoint;
     private EditText mPage;
     private CheckBox mTransientSession;
+    private CheckBox mUseWebView;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthorize;
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         mEndpoint = findViewById(R.id.endpointInput);
         mPage = findViewById(R.id.pageInput);
         mTransientSession = findViewById(R.id.transientSessionInput);
+        mUseWebView = findViewById(R.id.useWebViewInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthorize = findViewById(R.id.authorize);
@@ -72,14 +74,15 @@ public class MainActivity extends AppCompatActivity {
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mTransientSession.isChecked()
+                        mTransientSession.isChecked(),
+                        mUseWebView.isChecked()
                 )
         );
-        mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
+        mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString(), mUseWebView.isChecked()));
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
-        mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
-        mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
-        mReauthenticateWebOnly.setOnClickListener(view -> viewModel.reauthenticateWebOnly());
+        mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser(mUseWebView.isChecked()));
+        mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this, mUseWebView.isChecked()));
+        mReauthenticateWebOnly.setOnClickListener(view -> viewModel.reauthenticateWebOnly(mUseWebView.isChecked()));
         mEnableBiometric.setOnClickListener(view -> viewModel.enableBiometric(this));
         mDisableBiometric.setOnClickListener(view -> viewModel.disableBiometric());
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
@@ -92,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
         mEndpoint.setText(viewModel.endpoint().getValue());
         mPage.setText(viewModel.page().getValue());
         mTransientSession.setChecked(viewModel.transientSession().getValue());
+        mUseWebView.setChecked(viewModel.useWebView().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
