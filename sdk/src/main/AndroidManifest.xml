@@ -11,5 +11,8 @@
         <activity android:name=".CustomTabActivity"
             android:exported="false"
             android:launchMode="singleTask" />
+        <activity android:name=".OAuthWebViewActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
     </application>
 </manifest>
