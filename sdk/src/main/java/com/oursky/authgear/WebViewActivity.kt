@@ -27,7 +27,6 @@ internal class WebViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         webView = WebView(this).apply {
-            webViewClient = WebViewClient()
             settings.javaScriptEnabled = true
         }
         webView.webViewClient = object : WebViewClient() {
