@@ -276,11 +276,14 @@ internal class AuthgearCore(
         val codeVerifier = this.setupVerifier()
         val request = options.toRequest()
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl, options.useWebView)
         return finishAuthorization(deepLink)
     }
 
-    suspend fun reauthenticate(options: ReauthentcateOptions, biometricOptions: BiometricOptions?): ReauthenticateResult {
+    suspend fun reauthenticate(
+        options: ReauthentcateOptions,
+        biometricOptions: BiometricOptions?
+    ): ReauthenticateResult {
         requireIsInitialized()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -301,7 +304,7 @@ internal class AuthgearCore(
         val codeVerifier = this.setupVerifier()
         val request = options.toRequest(idTokenHint)
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl, options.useWebView)
         return finishReauthentication(deepLink)
     }
 
@@ -431,7 +434,7 @@ internal class AuthgearCore(
             ),
             codeVerifier
         )
-        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
+        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl, options.useWebView)
         val result = finishAuthorization(deepLink)
         tokenRepo.deleteAnonymousKeyId(name)
         return result
@@ -618,20 +621,34 @@ internal class AuthgearCore(
         }
     }
 
-    private suspend fun openAuthorizeUrl(redirectUrl: String, authorizeUrl: String): String {
+    private suspend fun openAuthorizeUrl(
+        redirectUrl: String,
+        authorizeUrl: String,
+        useWebView: Boolean?
+    ): String {
         val existingHandler = DeepLinkHandlerMap[redirectUrl]
         require(existingHandler == null) {
             "The redirect url $redirectUrl is already being handled by ${existingHandler?.name} when $name attempts to handle it"
         }
         return suspendCoroutine {
             DeepLinkHandlerMap[redirectUrl] = SuspendHolder(name, it)
-            application.startActivity(
-                OauthActivity.createAuthorizationIntent(
-                    application,
-                    redirectUrl,
-                    authorizeUrl
+            if (useWebView == true) {
+                application.startActivity(
+                    OAuthWebViewActivity.createIntent(
+                        application,
+                        redirectUrl,
+                        authorizeUrl
+                    )
                 )
-            )
+            } else {
+                application.startActivity(
+                    OauthActivity.createAuthorizationIntent(
+                        application,
+                        redirectUrl,
+                        authorizeUrl
+                    )
+                )
+            }
         }
     }
 

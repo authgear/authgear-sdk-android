@@ -13,14 +13,17 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 
-internal class WebViewActivity : AppCompatActivity() {
+internal class OAuthWebViewActivity : AppCompatActivity() {
     companion object {
         private const val MENU_ID_CANCEL = 1
+        private const val KEY_REDIRECT_URL = "redirectUrl"
+        private const val KEY_AUTHORIZATION_URL = "authorizationUrl"
 
-        fun createIntent(context: Context, uri: Uri): Intent {
-            val intent = Intent(context, WebViewActivity::class.java)
+        fun createIntent(context: Context, redirectUrl: String, url: String): Intent {
+            val intent = Intent(context, OAuthWebViewActivity::class.java)
+            intent.putExtra(KEY_REDIRECT_URL, redirectUrl)
+            intent.putExtra(KEY_AUTHORIZATION_URL, url)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            intent.data = uri
             return intent
         }
     }
@@ -43,11 +46,20 @@ internal class WebViewActivity : AppCompatActivity() {
                 if (AuthgearCore.handleWechatRedirectDeepLink(deepLink)) {
                     return true
                 }
+                intent.getStringExtra(KEY_REDIRECT_URL)?.let {
+                    val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
+                    if (deepLinkWithoutQuery == it) {
+                        AuthgearCore.handleDeepLink(deepLink, true)
+                        finish()
+                        return true
+                    }
+                }
                 return super.shouldOverrideUrlLoading(view, request)
             }
         }
-        val url = intent.data.toString()
-        webView.loadUrl(url)
+        intent.getStringExtra(KEY_AUTHORIZATION_URL)?.let {
+            webView.loadUrl(it)
+        }
         setContentView(webView)
     }
 
@@ -55,6 +67,10 @@ internal class WebViewActivity : AppCompatActivity() {
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
+            intent.getStringExtra(KEY_REDIRECT_URL)?.let {
+                // User cancelled
+                AuthgearCore.handleDeepLink(it, false)
+            }
             super.onBackPressed()
         }
     }
@@ -68,6 +84,10 @@ internal class WebViewActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
         MENU_ID_CANCEL -> {
+            intent.getStringExtra(KEY_REDIRECT_URL)?.let {
+                // User cancelled
+                AuthgearCore.handleDeepLink(it, false)
+            }
             finish()
             true
         }
@@ -75,5 +95,12 @@ internal class WebViewActivity : AppCompatActivity() {
         else -> {
             super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun getURLWithoutQuery(input: String): String {
+        val uri = Uri.parse(input)
+        var builder = uri.buildUpon().clearQuery()
+        builder = builder.fragment("")
+        return builder.build().toString()
     }
 }

@@ -47,7 +47,13 @@ data class AuthorizeOptions @JvmOverloads constructor(
     /**
      * Which page to open initially. Valid values are "login" and "signup".
      */
-    var page: String? = null
+    var page: String? = null,
+
+    /**
+     * useWebView indicates whether WebView should be used for authorization
+     * Chrome Custom Tabs are used by default.
+     */
+    var useWebView: Boolean? = false
 )
 
 internal fun AuthorizeOptions.toRequest(): OIDCAuthenticationRequest {
