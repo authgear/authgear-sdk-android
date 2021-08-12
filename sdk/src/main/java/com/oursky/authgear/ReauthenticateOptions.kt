@@ -29,13 +29,7 @@ data class ReauthentcateOptions @JvmOverloads constructor(
      * WeChat redirect uri is needed when integrating WeChat login
      * The wechatRedirectURI will be called when user click the login with WeChat button
      */
-    var wechatRedirectURI: String? = null,
-
-    /**
-     * useWebView indicates whether WebView should be used for authorization
-     * Chrome Custom Tabs are used by default.
-     */
-    var useWebView: Boolean? = false
+    var wechatRedirectURI: String? = null
 )
 
 internal fun ReauthentcateOptions.toRequest(idTokenHint: String): OIDCAuthenticationRequest {

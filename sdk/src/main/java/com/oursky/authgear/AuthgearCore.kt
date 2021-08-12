@@ -276,7 +276,7 @@ internal class AuthgearCore(
         val codeVerifier = this.setupVerifier()
         val request = options.toRequest()
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl, options.useWebView)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink)
     }
 
@@ -304,7 +304,7 @@ internal class AuthgearCore(
         val codeVerifier = this.setupVerifier()
         val request = options.toRequest(idTokenHint)
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl, options.useWebView)
+        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishReauthentication(deepLink)
     }
 
@@ -434,7 +434,7 @@ internal class AuthgearCore(
             ),
             codeVerifier
         )
-        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl, options.useWebView)
+        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
         val result = finishAuthorization(deepLink)
         tokenRepo.deleteAnonymousKeyId(name)
         return result
@@ -623,8 +623,7 @@ internal class AuthgearCore(
 
     private suspend fun openAuthorizeUrl(
         redirectUrl: String,
-        authorizeUrl: String,
-        useWebView: Boolean?
+        authorizeUrl: String
     ): String {
         val existingHandler = DeepLinkHandlerMap[redirectUrl]
         require(existingHandler == null) {
@@ -632,23 +631,13 @@ internal class AuthgearCore(
         }
         return suspendCoroutine {
             DeepLinkHandlerMap[redirectUrl] = SuspendHolder(name, it)
-            if (useWebView == true) {
-                application.startActivity(
-                    OAuthWebViewActivity.createIntent(
-                        application,
-                        redirectUrl,
-                        authorizeUrl
-                    )
+            application.startActivity(
+                OauthActivity.createAuthorizationIntent(
+                    application,
+                    redirectUrl,
+                    authorizeUrl
                 )
-            } else {
-                application.startActivity(
-                    OauthActivity.createAuthorizationIntent(
-                        application,
-                        redirectUrl,
-                        authorizeUrl
-                    )
-                )
-            }
+            )
         }
     }
 

@@ -145,13 +145,6 @@
                     android:layout_height="wrap_content"
                     android:text="Transient Session"
                     tools:ignore="HardcodedText" />
-                
-                <CheckBox
-                    android:id="@+id/useWebViewInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Use WebView"
-                    tools:ignore="HardcodedText" />
 
                 <Button
                     android:id="@+id/configure"

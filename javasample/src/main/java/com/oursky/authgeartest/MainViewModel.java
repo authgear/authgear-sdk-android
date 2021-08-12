@@ -62,7 +62,6 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mTransientSession = new MutableLiveData<>(false);
-    final private MutableLiveData<Boolean> mUseWebView = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
@@ -79,12 +78,10 @@ public class MainViewModel extends AndroidViewModel {
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
             Boolean storedTransientSession = preferences.getBoolean("transientSession", false);
-            Boolean storedUseWebView = preferences.getBoolean("useWebView", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
             mTransientSession.setValue(storedTransientSession);
-            mUseWebView.setValue(storedUseWebView);
         }
     }
 
@@ -137,8 +134,6 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<Boolean> transientSession() { return mTransientSession; }
 
-    public LiveData<Boolean> useWebView() { return mUseWebView; }
-
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
     }
@@ -161,20 +156,18 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, Boolean transientSession, Boolean useWebView) {
+    public void configure(String clientID, String endpoint, Boolean transientSession) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
         mTransientSession.setValue(transientSession);
-        mUseWebView.setValue(useWebView);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
                 .putBoolean("transientSession", transientSession)
-                .putBoolean("useWebView", useWebView)
                 .apply();
         ConfigureOptions configureOptions = new ConfigureOptions();
         configureOptions.setTransientSession(transientSession);
@@ -240,9 +233,8 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void authorize(String page, Boolean useWebView) {
+    public void authorize(String page) {
         mPage.setValue(page);
-        mUseWebView.setValue(useWebView);
         MainApplication app = getApplication();
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
@@ -251,7 +243,6 @@ public class MainViewModel extends AndroidViewModel {
         mIsLoading.setValue(true);
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
         options.setPage(page);
-        options.setUseWebView(useWebView);
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
             @Override
@@ -273,8 +264,7 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void reauthenticate(FragmentActivity activity, Boolean useWebView) {
-        mUseWebView.setValue(useWebView);
+    public void reauthenticate(FragmentActivity activity) {
         mIsLoading.setValue(true);
 
         mAuthgear.refreshIDToken(new OnRefreshIDTokenListener() {
@@ -282,7 +272,6 @@ public class MainViewModel extends AndroidViewModel {
             public void onFinished() {
                 if (mAuthgear.getCanReauthenticate()) {
                     ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
-                    options.setUseWebView(useWebView);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
                         @Override
@@ -312,8 +301,7 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void reauthenticateWebOnly(Boolean useWebView) {
-        mUseWebView.setValue(useWebView);
+    public void reauthenticateWebOnly() {
         mIsLoading.setValue(true);
 
         mAuthgear.refreshIDToken(new OnRefreshIDTokenListener() {
@@ -321,7 +309,6 @@ public class MainViewModel extends AndroidViewModel {
             public void onFinished() {
                 if (mAuthgear.getCanReauthenticate()) {
                     ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
-                    options.setUseWebView(useWebView);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     mAuthgear.reauthenticate(options, null, new OnReauthenticateListener() {
                         @Override
@@ -471,11 +458,9 @@ public class MainViewModel extends AndroidViewModel {
         mAuthgear.open(Page.Settings, options);
     }
 
-    public void promoteAnonymousUser(Boolean useWebView) {
+    public void promoteAnonymousUser() {
         mIsLoading.setValue(true);
-        mUseWebView.setValue(useWebView);
         PromoteOptions options = new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
-        options.setUseWebView(useWebView);
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.promoteAnonymousUser(options, new OnPromoteAnonymousUserListener() {
             @Override
