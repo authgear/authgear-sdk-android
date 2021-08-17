@@ -156,16 +156,13 @@
                         android:text="Session Type"
                         tools:ignore="HardcodedText" />
 
-                    <EditText
-                        android:id="@+id/sessionTypeInput"
-                        android:layout_height="wrap_content"
+                    <Spinner android:id="@+id/sessionTypeSpinner"
                         android:layout_width="0dp"
-                        android:hint="'TRANSIANT' / 'APP' / 'DEVICE'"
+                        android:layout_height="wrap_content"
                         app:layout_constraintStart_toEndOf="@+id/sessionTypeLabel"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        android:inputType="text"/>
+                        app:layout_constraintBottom_toBottomOf="parent"/>
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
