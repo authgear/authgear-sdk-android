@@ -50,6 +50,7 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
+    private val sessionType: SessionType,
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
@@ -161,10 +162,6 @@ internal class AuthgearCore(
         val challenge: String
     )
 
-    init {
-        oauthRepo.endpoint = authgearEndpoint
-    }
-
     private val name = name ?: "default"
     private var isInitialized = false
     private var refreshToken: String? = null
@@ -177,7 +174,16 @@ internal class AuthgearCore(
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
-    private var refreshTokenRepo: TokenRepo = tokenRepo
+    private val refreshTokenRepo: TokenRepo
+
+    init {
+        oauthRepo.endpoint = authgearEndpoint
+        if (sessionType == SessionType.TRANSIENT) {
+            refreshTokenRepo = GlobalMemoryStore
+        } else {
+            refreshTokenRepo = tokenRepo
+        }
+    }
 
     val canReauthenticate: Boolean
         get() {
@@ -274,7 +280,7 @@ internal class AuthgearCore(
     suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest()
+        val request = options.toRequest(shouldSuppressIDPSessionCookie())
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink)
@@ -302,20 +308,15 @@ internal class AuthgearCore(
             throw AuthgearException("Call refreshIDToken first")
         }
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(idTokenHint)
+        val request = options.toRequest(idTokenHint, shouldSuppressIDPSessionCookie())
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishReauthentication(deepLink)
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun configure(configureOptions: ConfigureOptions) {
+    suspend fun configure() {
         isInitialized = true
-        if (configureOptions.transientSession) {
-            refreshTokenRepo = GlobalMemoryStore
-        } else {
-            refreshTokenRepo = tokenRepo
-        }
         val refreshToken = refreshTokenRepo.getRefreshToken(name)
         this.refreshToken = refreshToken
         if (refreshToken != null) {
@@ -366,7 +367,8 @@ internal class AuthgearCore(
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
                 prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
-                wechatRedirectURI = options?.wechatRedirectURI
+                wechatRedirectURI = options?.wechatRedirectURI,
+                suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),
             null
         )
@@ -430,7 +432,8 @@ internal class AuthgearCore(
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
-                wechatRedirectURI = options.wechatRedirectURI
+                wechatRedirectURI = options.wechatRedirectURI,
+                suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),
             codeVerifier
         )
@@ -621,6 +624,14 @@ internal class AuthgearCore(
         }
     }
 
+    private fun shouldUseWebView(): Boolean {
+        return this.sessionType == SessionType.TRANSIENT || this.sessionType == SessionType.APP
+    }
+
+    private fun shouldSuppressIDPSessionCookie(): Boolean {
+        return this.sessionType == SessionType.TRANSIENT
+    }
+
     private suspend fun openAuthorizeUrl(
         redirectUrl: String,
         authorizeUrl: String
@@ -631,13 +642,23 @@ internal class AuthgearCore(
         }
         return suspendCoroutine {
             DeepLinkHandlerMap[redirectUrl] = SuspendHolder(name, it)
-            application.startActivity(
-                OauthActivity.createAuthorizationIntent(
-                    application,
-                    redirectUrl,
-                    authorizeUrl
+            if (shouldUseWebView() == true) {
+                application.startActivity(
+                    OAuthWebViewActivity.createIntent(
+                        application,
+                        redirectUrl,
+                        authorizeUrl
+                    )
                 )
-            )
+            } else {
+                application.startActivity(
+                    OauthActivity.createAuthorizationIntent(
+                        application,
+                        redirectUrl,
+                        authorizeUrl
+                    )
+                )
+            }
         }
     }
 

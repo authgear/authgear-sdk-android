@@ -32,7 +32,7 @@ data class ReauthentcateOptions @JvmOverloads constructor(
     var wechatRedirectURI: String? = null
 )
 
-internal fun ReauthentcateOptions.toRequest(idTokenHint: String): OIDCAuthenticationRequest {
+internal fun ReauthentcateOptions.toRequest(idTokenHint: String, suppressIDPSessionCookie: Boolean): OIDCAuthenticationRequest {
     return OIDCAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
@@ -44,6 +44,7 @@ internal fun ReauthentcateOptions.toRequest(idTokenHint: String): OIDCAuthentica
         maxAge = this.maxAge ?: 0,
         uiLocales = this.uiLocales,
         wechatRedirectURI = this.wechatRedirectURI,
-        page = null
+        page = null,
+        suppressIDPSessionCookie = suppressIDPSessionCookie
     )
 }

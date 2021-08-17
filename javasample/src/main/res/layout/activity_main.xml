@@ -139,12 +139,32 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <CheckBox
-                    android:id="@+id/transientSessionInput"
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/sessionTypeField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Transient Session"
-                    tools:ignore="HardcodedText" />
+                    >
+
+                    <TextView
+                        android:id="@+id/sessionTypeLabel"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="Session Type"
+                        tools:ignore="HardcodedText" />
+
+                    <Spinner android:id="@+id/sessionTypeSpinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintStart_toEndOf="@+id/sessionTypeLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <Button
                     android:id="@+id/configure"

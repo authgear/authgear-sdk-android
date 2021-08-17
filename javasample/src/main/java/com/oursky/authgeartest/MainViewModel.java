@@ -22,7 +22,6 @@ import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.BiometricPrivateKeyNotFoundException;
 import com.oursky.authgear.CancelException;
-import com.oursky.authgear.ConfigureOptions;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
 import com.oursky.authgear.OnAuthorizeListener;
@@ -41,6 +40,7 @@ import com.oursky.authgear.ReauthentcateOptions;
 import com.oursky.authgear.ReauthenticateResult;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
+import com.oursky.authgear.SessionType;
 import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
@@ -61,7 +61,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
-    final private MutableLiveData<Boolean> mTransientSession = new MutableLiveData<>(false);
+    final private MutableLiveData<String> mSessionType = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
@@ -77,11 +77,11 @@ public class MainViewModel extends AndroidViewModel {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
-            Boolean storedTransientSession = preferences.getBoolean("transientSession", false);
+            String storedSessionType = preferences.getString("sessionType", "");
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
-            mTransientSession.setValue(storedTransientSession);
+            mSessionType.setValue(storedSessionType);
         }
     }
 
@@ -132,7 +132,7 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> page() { return mPage; }
 
-    public LiveData<Boolean> transientSession() { return mTransientSession; }
+    public LiveData<String> sessionType() { return mSessionType; }
 
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
@@ -156,23 +156,26 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, Boolean transientSession) {
+    public void configure(String clientID, String endpoint, String sessionType) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
-        mTransientSession.setValue(transientSession);
+        mSessionType.setValue(sessionType);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
-                .putBoolean("transientSession", transientSession)
+                .putString("sessionType", sessionType)
                 .apply();
-        ConfigureOptions configureOptions = new ConfigureOptions();
-        configureOptions.setTransientSession(transientSession);
-        mAuthgear = new Authgear(getApplication(), clientID, endpoint, null);
-        mAuthgear.configure(configureOptions, new OnConfigureListener() {
+        try {
+            SessionType st = SessionType.valueOf(sessionType);
+            mAuthgear = new Authgear(getApplication(), clientID, endpoint, st);
+        } catch (IllegalArgumentException _) {
+            mAuthgear = new Authgear(getApplication(), clientID, endpoint);
+        }
+        mAuthgear.configure(new OnConfigureListener() {
             @Override
             public void onConfigured() {
                 mIsLoading.setValue(false);

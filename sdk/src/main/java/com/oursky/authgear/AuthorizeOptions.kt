@@ -50,7 +50,7 @@ data class AuthorizeOptions @JvmOverloads constructor(
     var page: String? = null
 )
 
-internal fun AuthorizeOptions.toRequest(): OIDCAuthenticationRequest {
+internal fun AuthorizeOptions.toRequest(suppressIDPSessionCookie: Boolean): OIDCAuthenticationRequest {
     return OIDCAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
@@ -62,6 +62,7 @@ internal fun AuthorizeOptions.toRequest(): OIDCAuthenticationRequest {
         maxAge = null,
         uiLocales = this.uiLocales,
         wechatRedirectURI = this.wechatRedirectURI,
-        page = this.page
+        page = this.page,
+        suppressIDPSessionCookie = suppressIDPSessionCookie
     )
 }

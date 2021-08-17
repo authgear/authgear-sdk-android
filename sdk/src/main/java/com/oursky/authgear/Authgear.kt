@@ -31,6 +31,7 @@ constructor(
     application: Application,
     clientId: String,
     authgearEndpoint: String,
+    sessionType: SessionType = SessionType.APP,
     name: String? = null
 ) {
     companion object {
@@ -44,6 +45,7 @@ constructor(
             application,
             clientId,
             authgearEndpoint,
+            sessionType,
             TokenRepoEncryptedSharedPref(application),
             OauthRepoHttp(),
             KeyRepoKeystore(),
@@ -214,28 +216,24 @@ constructor(
      * is non-null and the token is ready to be used.
      *
      * It does local IO to retrieve the refresh token.
-     * It also does network IO to refresh the access token.
      *
-     * Therefore, it is possible that configure() could fail for many reasons.
-     * If your application is offline first, be prepared for handling errors.
+     * Therefore, it is possible that configure() could fail for some reasons.
      *
      * configure() can be called more than once if it failed.
      * Otherwise, it is NOT recommended to call it more than once.
      *
-     * @param configureOptions Configure options.
      * @param onConfigureListener The listener.
      * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
     @JvmOverloads
     fun configure(
-        configureOptions: ConfigureOptions,
         onConfigureListener: OnConfigureListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
-                core.configure(configureOptions)
+                core.configure()
                 handler.post {
                     onConfigureListener.onConfigured()
                 }

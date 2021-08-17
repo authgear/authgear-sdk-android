@@ -2,8 +2,9 @@ package com.oursky.authgeartest;
 
 import android.os.Bundle;
 import android.view.View;
-import android.widget.CheckBox;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -24,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
     private EditText mPage;
-    private CheckBox mTransientSession;
+    private Spinner mSessionType;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthorize;
@@ -52,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
         mPage = findViewById(R.id.pageInput);
-        mTransientSession = findViewById(R.id.transientSessionInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthorize = findViewById(R.id.authorize);
@@ -67,12 +67,18 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
+        // Setup session type spinner
+        String[] sessionTypes = { "---", "TRANSIENT", "APP", "DEVICE" };
+        mSessionType = findViewById(R.id.sessionTypeSpinner);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sessionTypes);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mSessionType.setAdapter(adapter);
 
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mTransientSession.isChecked()
+                        mSessionType.getSelectedItem().toString()
                 )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
@@ -91,7 +97,16 @@ public class MainActivity extends AppCompatActivity {
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mPage.setText(viewModel.page().getValue());
-        mTransientSession.setChecked(viewModel.transientSession().getValue());
+
+        int sessionTypeIdx = 0;
+        String sessionTypeInitValue = viewModel.sessionType().getValue();
+        for (int i = 0; i < sessionTypes.length ; i++) {
+            if (sessionTypes[i].equals(sessionTypeInitValue)) {
+                sessionTypeIdx = i;
+                break;
+            }
+        }
+        mSessionType.setSelection(sessionTypeIdx);
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);

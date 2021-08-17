@@ -14,7 +14,8 @@ internal data class OIDCAuthenticationRequest constructor(
     var uiLocales: List<String>? = null,
     var idTokenHint: String? = null,
     var wechatRedirectURI: String? = null,
-    var page: String? = null
+    var page: String? = null,
+    var suppressIDPSessionCookie: Boolean? = null
 )
 
 internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -61,6 +62,10 @@ internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
 
     this.page?.let {
         query["x_page"] = it
+    }
+
+    if (this.suppressIDPSessionCookie == true) {
+        query["x_suppress_idp_session_cookie"] = "true"
     }
 
     return query
