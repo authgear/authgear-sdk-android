@@ -280,7 +280,7 @@ internal class AuthgearCore(
     suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest()
+        val request = options.toRequest(shouldSuppressIDPSessionCookie())
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink)
@@ -308,7 +308,7 @@ internal class AuthgearCore(
             throw AuthgearException("Call refreshIDToken first")
         }
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(idTokenHint)
+        val request = options.toRequest(idTokenHint, shouldSuppressIDPSessionCookie())
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishReauthentication(deepLink)
@@ -367,7 +367,8 @@ internal class AuthgearCore(
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
                 prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
-                wechatRedirectURI = options?.wechatRedirectURI
+                wechatRedirectURI = options?.wechatRedirectURI,
+                suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),
             null
         )
@@ -431,7 +432,8 @@ internal class AuthgearCore(
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
-                wechatRedirectURI = options.wechatRedirectURI
+                wechatRedirectURI = options.wechatRedirectURI,
+                suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),
             codeVerifier
         )
@@ -624,6 +626,10 @@ internal class AuthgearCore(
 
     private fun shouldUseWebView(): Boolean {
         return this.sessionType == SessionType.TRANSIENT || this.sessionType == SessionType.APP
+    }
+
+    private fun shouldSuppressIDPSessionCookie(): Boolean {
+        return this.sessionType == SessionType.TRANSIENT
     }
 
     private suspend fun openAuthorizeUrl(
