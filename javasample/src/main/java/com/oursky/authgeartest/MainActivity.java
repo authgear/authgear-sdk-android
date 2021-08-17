@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
     private EditText mPage;
-    private CheckBox mTransientSession;
+    private EditText mSessionType;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthorize;
@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
         mPage = findViewById(R.id.pageInput);
-        mTransientSession = findViewById(R.id.transientSessionInput);
+        mSessionType = findViewById(R.id.sessionTypeInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthorize = findViewById(R.id.authorize);
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mTransientSession.isChecked()
+                        mSessionType.getText().toString()
                 )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mPage.setText(viewModel.page().getValue());
-        mTransientSession.setChecked(viewModel.transientSession().getValue());
+        mSessionType.setText(viewModel.sessionType().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
