@@ -625,10 +625,6 @@ internal class AuthgearCore(
         }
     }
 
-    private fun shouldUseWebView(): Boolean {
-        return false
-    }
-
     private fun shouldSuppressIDPSessionCookie(): Boolean {
         return !this.shareSessionWithDeviceBrowser
     }
@@ -643,23 +639,13 @@ internal class AuthgearCore(
         }
         return suspendCoroutine {
             DeepLinkHandlerMap[redirectUrl] = SuspendHolder(name, it)
-            if (shouldUseWebView() == true) {
-                application.startActivity(
-                    OAuthWebViewActivity.createIntent(
-                        application,
-                        redirectUrl,
-                        authorizeUrl
-                    )
+            application.startActivity(
+                OauthActivity.createAuthorizationIntent(
+                    application,
+                    redirectUrl,
+                    authorizeUrl
                 )
-            } else {
-                application.startActivity(
-                    OauthActivity.createAuthorizationIntent(
-                        application,
-                        redirectUrl,
-                        authorizeUrl
-                    )
-                )
-            }
+            )
         }
     }
 
