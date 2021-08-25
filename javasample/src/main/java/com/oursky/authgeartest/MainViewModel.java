@@ -20,7 +20,6 @@ import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.BiometricOptions;
-import com.oursky.authgear.BiometricPrivateKeyNotFoundException;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
@@ -35,12 +34,11 @@ import com.oursky.authgear.OnRefreshIDTokenListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
-import com.oursky.authgear.PromptOption;
 import com.oursky.authgear.ReauthentcateOptions;
 import com.oursky.authgear.ReauthenticateResult;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
-import com.oursky.authgear.SessionType;
+import com.oursky.authgear.StorageType;
 import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
@@ -48,7 +46,6 @@ import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
-import java.util.Arrays;
 import java.util.Date;
 
 @SuppressWarnings("ConstantConditions")
@@ -170,7 +167,7 @@ public class MainViewModel extends AndroidViewModel {
                 .putString("sessionType", sessionType)
                 .apply();
         try {
-            SessionType st = SessionType.valueOf(sessionType);
+            StorageType st = StorageType.valueOf(sessionType);
             mAuthgear = new Authgear(getApplication(), clientID, endpoint, st);
         } catch (IllegalArgumentException _) {
             mAuthgear = new Authgear(getApplication(), clientID, endpoint);
