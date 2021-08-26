@@ -57,7 +57,7 @@
 
                     <TextView
                         android:id="@+id/clientIdLabel"
-                        android:layout_width="80dp"
+                        android:layout_width="100dp"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         app:layout_constraintStart_toStartOf="parent"
@@ -87,7 +87,7 @@
 
                     <TextView
                         android:id="@+id/endpointLabel"
-                        android:layout_width="80dp"
+                        android:layout_width="100dp"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         app:layout_constraintStart_toStartOf="parent"
@@ -117,7 +117,7 @@
 
                     <TextView
                         android:id="@+id/pageLabel"
-                        android:layout_width="80dp"
+                        android:layout_width="100dp"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         app:layout_constraintStart_toStartOf="parent"
@@ -140,31 +140,40 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/sessionTypeField"
+                    android:id="@+id/storageTypeField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     >
 
                     <TextView
-                        android:id="@+id/sessionTypeLabel"
-                        android:layout_width="80dp"
+                        android:id="@+id/storageTypeLabel"
+                        android:layout_width="100dp"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
-                        android:text="Session Type"
+                        android:text="Storage Type"
                         tools:ignore="HardcodedText" />
 
-                    <Spinner android:id="@+id/sessionTypeSpinner"
+                    <Spinner android:id="@+id/storageTypeSpinner"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        app:layout_constraintStart_toEndOf="@+id/sessionTypeLabel"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginBottom="10dp"
+                        app:layout_constraintStart_toEndOf="@+id/storageTypeLabel"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"/>
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <CheckBox
+                    android:id="@+id/shareSessionWithDeviceBrowser"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Share Session With Device Browser"
+                    tools:ignore="HardcodedText" />
 
                 <Button
                     android:id="@+id/configure"

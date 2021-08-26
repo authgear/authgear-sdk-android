@@ -50,7 +50,8 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
-    private val sessionType: SessionType,
+    private val storageType: StorageType,
+    private val shareSessionWithDeviceBrowser: Boolean,
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
@@ -178,7 +179,7 @@ internal class AuthgearCore(
 
     init {
         oauthRepo.endpoint = authgearEndpoint
-        if (sessionType == SessionType.TRANSIENT) {
+        if (storageType == StorageType.TRANSIENT) {
             refreshTokenRepo = GlobalMemoryStore
         } else {
             refreshTokenRepo = tokenRepo
@@ -624,12 +625,8 @@ internal class AuthgearCore(
         }
     }
 
-    private fun shouldUseWebView(): Boolean {
-        return this.sessionType == SessionType.TRANSIENT || this.sessionType == SessionType.APP
-    }
-
     private fun shouldSuppressIDPSessionCookie(): Boolean {
-        return this.sessionType == SessionType.TRANSIENT
+        return !this.shareSessionWithDeviceBrowser
     }
 
     private suspend fun openAuthorizeUrl(
@@ -642,23 +639,13 @@ internal class AuthgearCore(
         }
         return suspendCoroutine {
             DeepLinkHandlerMap[redirectUrl] = SuspendHolder(name, it)
-            if (shouldUseWebView() == true) {
-                application.startActivity(
-                    OAuthWebViewActivity.createIntent(
-                        application,
-                        redirectUrl,
-                        authorizeUrl
-                    )
+            application.startActivity(
+                OauthActivity.createAuthorizationIntent(
+                    application,
+                    redirectUrl,
+                    authorizeUrl
                 )
-            } else {
-                application.startActivity(
-                    OauthActivity.createAuthorizationIntent(
-                        application,
-                        redirectUrl,
-                        authorizeUrl
-                    )
-                )
-            }
+            )
         }
     }
 

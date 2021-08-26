@@ -20,7 +20,6 @@ import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.BiometricOptions;
-import com.oursky.authgear.BiometricPrivateKeyNotFoundException;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
@@ -35,12 +34,11 @@ import com.oursky.authgear.OnRefreshIDTokenListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PromoteOptions;
-import com.oursky.authgear.PromptOption;
 import com.oursky.authgear.ReauthentcateOptions;
 import com.oursky.authgear.ReauthenticateResult;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
-import com.oursky.authgear.SessionType;
+import com.oursky.authgear.StorageType;
 import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
@@ -48,7 +46,6 @@ import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
-import java.util.Arrays;
 import java.util.Date;
 
 @SuppressWarnings("ConstantConditions")
@@ -61,7 +58,8 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
-    final private MutableLiveData<String> mSessionType = new MutableLiveData<>("");
+    final private MutableLiveData<String> mStorageType = new MutableLiveData<>("");
+    final private MutableLiveData<Boolean> mShareSessionWithDeviceBrowser = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
@@ -78,10 +76,12 @@ public class MainViewModel extends AndroidViewModel {
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
             String storedSessionType = preferences.getString("sessionType", "");
+            Boolean sessionWithDeviceBrowser = preferences.getBoolean("sessionWithDeviceBrowser", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
-            mSessionType.setValue(storedSessionType);
+            mStorageType.setValue(storedSessionType);
+            mShareSessionWithDeviceBrowser.setValue(sessionWithDeviceBrowser);
         }
     }
 
@@ -132,7 +132,9 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> page() { return mPage; }
 
-    public LiveData<String> sessionType() { return mSessionType; }
+    public LiveData<String> storageType() { return mStorageType; }
+
+    public LiveData<Boolean> shareSessionWithDeviceBrowser() { return mShareSessionWithDeviceBrowser; }
 
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
@@ -156,24 +158,25 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, String sessionType) {
+    public void configure(String clientID, String endpoint, String storageType, Boolean shareSessionWithDeviceBrowser) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
-        mSessionType.setValue(sessionType);
+        mStorageType.setValue(storageType);
+        mShareSessionWithDeviceBrowser.setValue(shareSessionWithDeviceBrowser);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
-                .putString("sessionType", sessionType)
+                .putString("storageType", storageType)
                 .apply();
         try {
-            SessionType st = SessionType.valueOf(sessionType);
-            mAuthgear = new Authgear(getApplication(), clientID, endpoint, st);
+            StorageType st = StorageType.valueOf(storageType);
+            mAuthgear = new Authgear(getApplication(), clientID, endpoint, st, shareSessionWithDeviceBrowser);
         } catch (IllegalArgumentException _) {
-            mAuthgear = new Authgear(getApplication(), clientID, endpoint);
+            mAuthgear = new Authgear(getApplication(), clientID, endpoint, StorageType.APP, shareSessionWithDeviceBrowser);
         }
         mAuthgear.configure(new OnConfigureListener() {
             @Override

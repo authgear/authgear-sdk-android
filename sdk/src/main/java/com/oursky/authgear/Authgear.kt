@@ -31,7 +31,8 @@ constructor(
     application: Application,
     clientId: String,
     authgearEndpoint: String,
-    sessionType: SessionType = SessionType.APP,
+    storageType: StorageType = StorageType.APP,
+    shouldSuppressIDPSessionCookie: Boolean = false,
     name: String? = null
 ) {
     companion object {
@@ -45,7 +46,8 @@ constructor(
             application,
             clientId,
             authgearEndpoint,
-            sessionType,
+            storageType,
+            shouldSuppressIDPSessionCookie,
             TokenRepoEncryptedSharedPref(application),
             OauthRepoHttp(),
             KeyRepoKeystore(),

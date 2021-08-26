@@ -3,6 +3,7 @@ package com.oursky.authgeartest;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -25,7 +26,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
     private EditText mPage;
-    private Spinner mSessionType;
+    private Spinner mStorageType;
+    private CheckBox mShareSessionWithDeviceBrowser;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthorize;
@@ -67,18 +69,20 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
+        mShareSessionWithDeviceBrowser = findViewById(R.id.shareSessionWithDeviceBrowser);
         // Setup session type spinner
-        String[] sessionTypes = { "---", "TRANSIENT", "APP", "DEVICE" };
-        mSessionType = findViewById(R.id.sessionTypeSpinner);
+        String[] sessionTypes = { "---", "TRANSIENT", "APP" };
+        mStorageType = findViewById(R.id.storageTypeSpinner);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sessionTypes);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mSessionType.setAdapter(adapter);
+        mStorageType.setAdapter(adapter);
 
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mSessionType.getSelectedItem().toString()
+                        mStorageType.getSelectedItem().toString(),
+                        mShareSessionWithDeviceBrowser.isChecked()
                 )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
@@ -97,16 +101,17 @@ public class MainActivity extends AppCompatActivity {
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mPage.setText(viewModel.page().getValue());
+        mShareSessionWithDeviceBrowser.setChecked(viewModel.shareSessionWithDeviceBrowser().getValue());
 
         int sessionTypeIdx = 0;
-        String sessionTypeInitValue = viewModel.sessionType().getValue();
+        String sessionTypeInitValue = viewModel.storageType().getValue();
         for (int i = 0; i < sessionTypes.length ; i++) {
             if (sessionTypes[i].equals(sessionTypeInitValue)) {
                 sessionTypeIdx = i;
                 break;
             }
         }
-        mSessionType.setSelection(sessionTypeIdx);
+        mStorageType.setSelection(sessionTypeIdx);
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
