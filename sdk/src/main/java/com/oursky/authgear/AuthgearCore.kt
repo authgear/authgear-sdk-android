@@ -1,7 +1,10 @@
 package com.oursky.authgear
 
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -40,6 +43,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 /**
@@ -73,32 +77,6 @@ internal class AuthgearCore(
          * [EXPIRE_IN_PERCENTAGE] of [OIDCTokenResponse.expiresIn] to calculate the expiry time.
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
-
-        /**
-         * A map used to keep track of which deep link is being handled by which container.
-         */
-        private val DeepLinkHandlerMap = mutableMapOf<String, SuspendHolder<String>>()
-        fun handleDeepLink(deepLink: String, isSuccessful: Boolean) {
-            if (isSuccessful) {
-                // The deep link would contain code in query parameter so we trim it to get back the handler.
-                val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
-                val handler = requireDeepLinkHandler(deepLinkWithoutQuery)
-                handler.continuation.resume(deepLink)
-                DeepLinkHandlerMap.remove(deepLinkWithoutQuery)
-            } else {
-                val handler = requireDeepLinkHandler(deepLink)
-                handler.continuation.resumeWith(Result.failure(CancelException()))
-                DeepLinkHandlerMap.remove(deepLink)
-            }
-        }
-
-        private fun requireDeepLinkHandler(deepLink: String): SuspendHolder<String> {
-            val handler = DeepLinkHandlerMap[deepLink]
-            require(handler != null) {
-                "No handler is handling deep link $deepLink"
-            }
-            return handler
-        }
 
         /**
          * Check and handle wehchat redirect uri and trigger delegate function if needed
@@ -621,15 +599,25 @@ internal class AuthgearCore(
         redirectUrl: String,
         authorizeUrl: String
     ): String {
-        val existingHandler = DeepLinkHandlerMap[redirectUrl]
-        require(existingHandler == null) {
-            "The redirect url $redirectUrl is already being handled by ${existingHandler?.name} when $name attempts to handle it"
-        }
-        return suspendCoroutine {
-            DeepLinkHandlerMap[redirectUrl] = SuspendHolder(name, it)
+        return suspendCoroutine { k ->
+            val action = newRandomAction()
+            val intentFilter = IntentFilter(action)
+            val br = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    application.unregisterReceiver(this)
+                    val output = intent?.getStringExtra(OauthActivity.KEY_REDIRECT_URL)
+                    if (output != null) {
+                        k.resume(output)
+                    } else {
+                        k.resumeWithException(CancelException())
+                    }
+                }
+            }
+            application.registerReceiver(br, intentFilter)
             application.startActivity(
                 OauthActivity.createAuthorizationIntent(
                     application,
+                    action,
                     redirectUrl,
                     authorizeUrl
                 )
