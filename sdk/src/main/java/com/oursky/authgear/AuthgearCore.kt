@@ -14,8 +14,8 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
+import com.oursky.authgear.data.token.RefreshTokenRepo
 import com.oursky.authgear.data.token.TokenRepo
-import com.oursky.authgear.data.token.TokenRepoInMemory
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OIDCAuthenticationRequest
 import com.oursky.authgear.oauth.OIDCTokenRequest
@@ -50,8 +50,8 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
-    private val storageType: StorageType,
     private val shareSessionWithDeviceBrowser: Boolean,
+    private val refreshTokenRepo: RefreshTokenRepo,
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
@@ -74,12 +74,6 @@ internal class AuthgearCore(
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
 
-        /*
-         * GlobalMemoryStore is used when calling configure with transientSession
-         * Using same global memory store to ensure the refresh token can be retained in the whole
-         * app lifecycle
-         */
-        private var GlobalMemoryStore: TokenRepo = TokenRepoInMemory()
         /**
          * A map used to keep track of which deep link is being handled by which container.
          */
@@ -175,15 +169,9 @@ internal class AuthgearCore(
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
-    private val refreshTokenRepo: TokenRepo
 
     init {
         oauthRepo.endpoint = authgearEndpoint
-        if (storageType == StorageType.TRANSIENT) {
-            refreshTokenRepo = GlobalMemoryStore
-        } else {
-            refreshTokenRepo = tokenRepo
-        }
     }
 
     val canReauthenticate: Boolean
@@ -615,7 +603,7 @@ internal class AuthgearCore(
     }
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
-        tokenRepo.deleteRefreshToken(name)
+        refreshTokenRepo.deleteRefreshToken(name)
         synchronized(this) {
             accessToken = null
             refreshToken = null

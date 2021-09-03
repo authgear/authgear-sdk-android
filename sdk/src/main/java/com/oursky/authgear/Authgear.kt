@@ -11,6 +11,7 @@ import androidx.annotation.WorkerThread
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
 import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
+import com.oursky.authgear.data.token.TransientRefreshTokenRepo
 import kotlinx.coroutines.*
 import java.util.*
 
@@ -40,19 +41,25 @@ constructor(
         private val TAG = Authgear::class.java.simpleName
     }
 
-    internal val core =
-        AuthgearCore(
+    internal val core: AuthgearCore
+
+    init {
+        val persistentTokenRepo = TokenRepoEncryptedSharedPref(application)
+        val refreshTokenRepo = if (storageType == StorageType.TRANSIENT) { TransientRefreshTokenRepo() } else { persistentTokenRepo }
+        this.core = AuthgearCore(
             this,
             application,
             clientId,
             authgearEndpoint,
-            storageType,
             shouldSuppressIDPSessionCookie,
-            TokenRepoEncryptedSharedPref(application),
+            refreshTokenRepo,
+            persistentTokenRepo,
             OauthRepoHttp(),
             KeyRepoKeystore(),
             name
         )
+    }
+
     private val scope = CoroutineScope(Dispatchers.IO)
 
     /**

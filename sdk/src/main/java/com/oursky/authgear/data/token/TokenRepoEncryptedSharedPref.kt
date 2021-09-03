@@ -10,7 +10,7 @@ import androidx.security.crypto.MasterKey
 // Note that encrypted shared preference not thread safe and we do not know whether editing the same shared pref is
 // thread-safe so while per-field lock is more desirable this is not feasible for now.
 @SuppressLint("ApplySharedPref")
-internal class TokenRepoEncryptedSharedPref(private val applicationContext: Context) : TokenRepo {
+internal class TokenRepoEncryptedSharedPref(private val applicationContext: Context) : TokenRepo, RefreshTokenRepo {
     companion object {
         const val Verifier = "verifier"
         const val RefreshToken = "refreshToken"
