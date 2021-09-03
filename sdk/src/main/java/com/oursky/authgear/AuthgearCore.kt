@@ -11,7 +11,6 @@ import android.os.Handler
 import android.os.Looper
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
-import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -314,8 +313,7 @@ internal class AuthgearCore(
         oauthRepo.wechatAuthCallback(code, state)
     }
 
-    @MainThread
-    fun openUrl(path: String, options: SettingOptions? = null) {
+    suspend fun openUrl(path: String, options: SettingOptions? = null) {
         requireIsInitialized()
 
         val refreshToken = refreshTokenRepo.getRefreshToken(name)
@@ -340,12 +338,23 @@ internal class AuthgearCore(
             null
         )
 
-        application.startActivity(
-            WebViewActivity.createIntent(application, Uri.parse(authorizeUrl))
-        )
+        return suspendCoroutine { k ->
+            val action = newRandomAction()
+            val intentFilter = IntentFilter(action)
+            val br = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    application.unregisterReceiver(this)
+                    k.resume(Unit)
+                }
+            }
+            application.registerReceiver(br, intentFilter)
+            application.startActivity(
+                WebViewActivity.createIntent(application, action, Uri.parse(authorizeUrl))
+            )
+        }
     }
 
-    fun open(page: Page, options: SettingOptions? = null) {
+    suspend fun open(page: Page, options: SettingOptions? = null) {
         openUrl(
             when (page) {
                 Page.Settings -> "/settings"

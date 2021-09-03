@@ -351,7 +351,7 @@ constructor(
             try {
                 core.openUrl(path)
                 handler.post {
-                    listener?.onOpened()
+                    listener?.onClosed()
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -392,7 +392,7 @@ constructor(
                 )
                 core.open(page, options)
                 handler.post {
-                    listener?.onOpened()
+                    listener?.onClosed()
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()

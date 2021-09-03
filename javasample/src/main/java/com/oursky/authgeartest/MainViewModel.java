@@ -28,6 +28,7 @@ import com.oursky.authgear.OnConfigureListener;
 import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnLogoutListener;
+import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.OnReauthenticateListener;
 import com.oursky.authgear.OnRefreshIDTokenListener;
@@ -459,9 +460,23 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     public void openSettings() {
+        mIsLoading.setValue(true);
         SettingOptions options = new SettingOptions();
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
-        mAuthgear.open(Page.Settings, options);
+        mAuthgear.open(Page.Settings, options, new OnOpenURLListener() {
+            @Override
+            public void onClosed() {
+                mIsLoading.setValue(false);
+                Log.d(TAG, "openSettings closed");
+            }
+
+            @Override
+            public void onFailed(Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
     }
 
     public void promoteAnonymousUser() {

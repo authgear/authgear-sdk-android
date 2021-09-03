@@ -1,6 +1,6 @@
 package com.oursky.authgear
 
 interface OnOpenURLListener {
-    fun onOpened()
+    fun onClosed()
     fun onFailed(throwable: Throwable)
 }
