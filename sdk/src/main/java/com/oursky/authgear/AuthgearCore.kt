@@ -70,9 +70,9 @@ internal class AuthgearCore(
          *
          * To compat this, we should consider the access token expired earlier than the expiry time
          * calculated using [OIDCTokenResponse.expiresIn]. Current implementation uses
-         * [ExpireInPercentage] of [OIDCTokenResponse.expiresIn] to calculate the expiry time.
+         * [EXPIRE_IN_PERCENTAGE] of [OIDCTokenResponse.expiresIn] to calculate the expiry time.
          */
-        private const val ExpireInPercentage = 0.9
+        private const val EXPIRE_IN_PERCENTAGE = 0.9
 
         /*
          * GlobalMemoryStore is used when calling configure with transientSession
@@ -604,7 +604,7 @@ internal class AuthgearCore(
             }
             if (tokenResponse.expiresIn != null) {
                 expireAt =
-                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * EXPIRE_IN_PERCENTAGE).toLong())
             }
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
