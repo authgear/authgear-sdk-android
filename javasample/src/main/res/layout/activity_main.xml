@@ -169,10 +169,10 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <CheckBox
-                    android:id="@+id/shareSessionWithDeviceBrowser"
+                    android:id="@+id/shareSessionWithSystemBrowser"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Share Session With Device Browser"
+                    android:text="Share Session With System Browser"
                     tools:ignore="HardcodedText" />
 
                 <Button

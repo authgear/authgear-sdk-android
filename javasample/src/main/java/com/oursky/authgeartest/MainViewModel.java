@@ -61,7 +61,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
-    final private MutableLiveData<Boolean> mShareSessionWithDeviceBrowser = new MutableLiveData<>(false);
+    final private MutableLiveData<Boolean> mShareSessionWithSystemBrowser = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
@@ -78,12 +78,12 @@ public class MainViewModel extends AndroidViewModel {
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
-            Boolean sessionWithDeviceBrowser = preferences.getBoolean("sessionWithDeviceBrowser", false);
+            Boolean storedShareSessionWithSystemBrowser = preferences.getBoolean("shareSessionWithSystemBrowser", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
-            mShareSessionWithDeviceBrowser.setValue(sessionWithDeviceBrowser);
+            mShareSessionWithSystemBrowser.setValue(storedShareSessionWithSystemBrowser);
         }
     }
 
@@ -136,7 +136,7 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
-    public LiveData<Boolean> shareSessionWithDeviceBrowser() { return mShareSessionWithDeviceBrowser; }
+    public LiveData<Boolean> shareSessionWithSystemBrowser() { return mShareSessionWithSystemBrowser; }
 
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
@@ -160,19 +160,20 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, String tokenStorage, Boolean shareSessionWithDeviceBrowser) {
+    public void configure(String clientID, String endpoint, String tokenStorage, Boolean shareSessionWithSystemBrowser) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
         mTokenStorage.setValue(tokenStorage);
-        mShareSessionWithDeviceBrowser.setValue(shareSessionWithDeviceBrowser);
+        mShareSessionWithSystemBrowser.setValue(shareSessionWithSystemBrowser);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
                 .putString("tokenStorage", tokenStorage)
+                .putBoolean("shareSessionWithSystemBrowser", shareSessionWithSystemBrowser)
                 .apply();
         if (tokenStorage.equals(TransientTokenStorage.class.getSimpleName())) {
             mAuthgear = new Authgear(
@@ -180,7 +181,7 @@ public class MainViewModel extends AndroidViewModel {
                     clientID,
                     endpoint,
                     new TransientTokenStorage(),
-                    shareSessionWithDeviceBrowser
+                    shareSessionWithSystemBrowser
             );
         } else {
             mAuthgear = new Authgear(
@@ -188,7 +189,7 @@ public class MainViewModel extends AndroidViewModel {
                     clientID,
                     endpoint,
                     new PersistentTokenStorage(getApplication()),
-                    shareSessionWithDeviceBrowser
+                    shareSessionWithSystemBrowser
             );
         }
         mAuthgear.configure(new OnConfigureListener() {

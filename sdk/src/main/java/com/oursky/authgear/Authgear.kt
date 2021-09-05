@@ -19,7 +19,7 @@ constructor(
     clientId: String,
     authgearEndpoint: String,
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
-    shouldSuppressIDPSessionCookie: Boolean = false,
+    shareSessionWithSystemBrowser: Boolean = false,
     name: String? = null
 ) {
     companion object {
@@ -35,7 +35,7 @@ constructor(
             application,
             clientId,
             authgearEndpoint,
-            shouldSuppressIDPSessionCookie,
+            shareSessionWithSystemBrowser,
             tokenStorage,
             PersistentContainerStorage(application),
             OauthRepoHttp(),

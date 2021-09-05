@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mEndpoint;
     private EditText mPage;
     private Spinner mTokenStorage;
-    private CheckBox mShareSessionWithDeviceBrowser;
+    private CheckBox mShareSessionWithSystemBrowser;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthorize;
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
-        mShareSessionWithDeviceBrowser = findViewById(R.id.shareSessionWithDeviceBrowser);
+        mShareSessionWithSystemBrowser = findViewById(R.id.shareSessionWithSystemBrowser);
         // Setup session type spinner
         String[] tokenStorages = {
                 TransientTokenStorage.class.getSimpleName(),
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
                         mTokenStorage.getSelectedItem().toString(),
-                        mShareSessionWithDeviceBrowser.isChecked()
+                        mShareSessionWithSystemBrowser.isChecked()
                 )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
@@ -106,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mPage.setText(viewModel.page().getValue());
-        mShareSessionWithDeviceBrowser.setChecked(viewModel.shareSessionWithDeviceBrowser().getValue());
+        mShareSessionWithSystemBrowser.setChecked(viewModel.shareSessionWithSystemBrowser().getValue());
 
         {
             int idx = 0;

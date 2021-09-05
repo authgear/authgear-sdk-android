@@ -51,7 +51,7 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
-    private val shareSessionWithDeviceBrowser: Boolean,
+    private val shareSessionWithSystemBrowser: Boolean,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
     private val oauthRepo: OauthRepo,
@@ -599,7 +599,7 @@ internal class AuthgearCore(
     }
 
     private fun shouldSuppressIDPSessionCookie(): Boolean {
-        return !this.shareSessionWithDeviceBrowser
+        return !this.shareSessionWithSystemBrowser
     }
 
     private suspend fun openAuthorizeUrl(
