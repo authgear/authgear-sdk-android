@@ -34,13 +34,14 @@ import com.oursky.authgear.OnReauthenticateListener;
 import com.oursky.authgear.OnRefreshIDTokenListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
+import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.ReauthentcateOptions;
 import com.oursky.authgear.ReauthenticateResult;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
-import com.oursky.authgear.StorageType;
 import com.oursky.authgear.SettingOptions;
+import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
@@ -59,7 +60,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
-    final private MutableLiveData<String> mStorageType = new MutableLiveData<>("");
+    final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mShareSessionWithDeviceBrowser = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
@@ -76,12 +77,12 @@ public class MainViewModel extends AndroidViewModel {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
-            String storedSessionType = preferences.getString("sessionType", "");
+            String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
             Boolean sessionWithDeviceBrowser = preferences.getBoolean("sessionWithDeviceBrowser", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
-            mStorageType.setValue(storedSessionType);
+            mTokenStorage.setValue(storedTokenStorage);
             mShareSessionWithDeviceBrowser.setValue(sessionWithDeviceBrowser);
         }
     }
@@ -133,7 +134,7 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> page() { return mPage; }
 
-    public LiveData<String> storageType() { return mStorageType; }
+    public LiveData<String> tokenStorage() { return mTokenStorage; }
 
     public LiveData<Boolean> shareSessionWithDeviceBrowser() { return mShareSessionWithDeviceBrowser; }
 
@@ -159,25 +160,36 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, String storageType, Boolean shareSessionWithDeviceBrowser) {
+    public void configure(String clientID, String endpoint, String tokenStorage, Boolean shareSessionWithDeviceBrowser) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
-        mStorageType.setValue(storageType);
+        mTokenStorage.setValue(tokenStorage);
         mShareSessionWithDeviceBrowser.setValue(shareSessionWithDeviceBrowser);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
-                .putString("storageType", storageType)
+                .putString("tokenStorage", tokenStorage)
                 .apply();
-        try {
-            StorageType st = StorageType.valueOf(storageType);
-            mAuthgear = new Authgear(getApplication(), clientID, endpoint, st, shareSessionWithDeviceBrowser);
-        } catch (IllegalArgumentException _) {
-            mAuthgear = new Authgear(getApplication(), clientID, endpoint, StorageType.APP, shareSessionWithDeviceBrowser);
+        if (tokenStorage.equals(TransientTokenStorage.class.getSimpleName())) {
+            mAuthgear = new Authgear(
+                    getApplication(),
+                    clientID,
+                    endpoint,
+                    new TransientTokenStorage(),
+                    shareSessionWithDeviceBrowser
+            );
+        } else {
+            mAuthgear = new Authgear(
+                    getApplication(),
+                    clientID,
+                    endpoint,
+                    new PersistentTokenStorage(getApplication()),
+                    shareSessionWithDeviceBrowser
+            );
         }
         mAuthgear.configure(new OnConfigureListener() {
             @Override

@@ -18,7 +18,9 @@ import com.oursky.authgear.BiometricNoEnrollmentException;
 import com.oursky.authgear.BiometricNoPasscodeException;
 import com.oursky.authgear.BiometricNotSupportedOrPermissionDeniedException;
 import com.oursky.authgear.BiometricPrivateKeyNotFoundException;
+import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.SessionState;
+import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
@@ -26,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
     private EditText mPage;
-    private Spinner mStorageType;
+    private Spinner mTokenStorage;
     private CheckBox mShareSessionWithDeviceBrowser;
     private TextView mLoading;
     private View mConfigure;
@@ -71,17 +73,20 @@ public class MainActivity extends AppCompatActivity {
         mLogout = findViewById(R.id.logout);
         mShareSessionWithDeviceBrowser = findViewById(R.id.shareSessionWithDeviceBrowser);
         // Setup session type spinner
-        String[] sessionTypes = { "---", "TRANSIENT", "APP" };
-        mStorageType = findViewById(R.id.storageTypeSpinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sessionTypes);
+        String[] tokenStorages = {
+                TransientTokenStorage.class.getSimpleName(),
+                PersistentTokenStorage.class.getSimpleName(),
+        };
+        mTokenStorage = findViewById(R.id.tokenStorageSpinner);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, tokenStorages);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mStorageType.setAdapter(adapter);
+        mTokenStorage.setAdapter(adapter);
 
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mStorageType.getSelectedItem().toString(),
+                        mTokenStorage.getSelectedItem().toString(),
                         mShareSessionWithDeviceBrowser.isChecked()
                 )
         );
@@ -103,15 +108,17 @@ public class MainActivity extends AppCompatActivity {
         mPage.setText(viewModel.page().getValue());
         mShareSessionWithDeviceBrowser.setChecked(viewModel.shareSessionWithDeviceBrowser().getValue());
 
-        int sessionTypeIdx = 0;
-        String sessionTypeInitValue = viewModel.storageType().getValue();
-        for (int i = 0; i < sessionTypes.length ; i++) {
-            if (sessionTypes[i].equals(sessionTypeInitValue)) {
-                sessionTypeIdx = i;
-                break;
+        {
+            int idx = 0;
+            String value = viewModel.tokenStorage().getValue();
+            for (int i = 0; i < tokenStorages.length ; i++) {
+                if (tokenStorages[i].equals(value)) {
+                    idx = i;
+                    break;
+                }
             }
+            mTokenStorage.setSelection(idx);
         }
-        mStorageType.setSelection(sessionTypeIdx);
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);

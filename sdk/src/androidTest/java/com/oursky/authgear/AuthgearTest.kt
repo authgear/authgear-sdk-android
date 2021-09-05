@@ -4,8 +4,6 @@ import android.app.Application
 import androidx.test.platform.app.InstrumentationRegistry
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepo
-import com.oursky.authgear.data.token.RefreshTokenRepo
-import com.oursky.authgear.data.token.TokenRepo
 import com.oursky.authgear.oauth.*
 import com.oursky.authgear.oauth.OIDCConfiguration
 import kotlinx.coroutines.*
@@ -73,7 +71,7 @@ class AuthgearTest {
         }
     }
 
-    private class RefreshTokenRepoMock : RefreshTokenRepo {
+    private class RefreshTokenRepoMock : TokenStorage {
         override fun setRefreshToken(namespace: String, refreshToken: String) {
         }
 
@@ -85,7 +83,7 @@ class AuthgearTest {
         }
     }
 
-    private class TokenRepoMock : TokenRepo {
+    private class TokenRepoMock : ContainerStorage {
         override fun setOIDCCodeVerifier(namespace: String, verifier: String) {
         }
 

@@ -1,6 +1,6 @@
-package com.oursky.authgear.data.token
+package com.oursky.authgear
 
-internal interface TokenRepo {
+internal interface ContainerStorage {
     fun setOIDCCodeVerifier(namespace: String, verifier: String)
     fun getOIDCCodeVerifier(namespace: String): String?
 
