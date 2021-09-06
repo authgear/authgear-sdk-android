@@ -146,22 +146,22 @@
                     >
 
                     <TextView
-                        android:id="@+id/storageTypeLabel"
+                        android:id="@+id/tokenStorageLabel"
                         android:layout_width="100dp"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
-                        android:text="Storage Type"
+                        android:text="Token Storage"
                         tools:ignore="HardcodedText" />
 
-                    <Spinner android:id="@+id/storageTypeSpinner"
+                    <Spinner android:id="@+id/tokenStorageSpinner"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:layout_marginBottom="10dp"
-                        app:layout_constraintStart_toEndOf="@+id/storageTypeLabel"
+                        app:layout_constraintStart_toEndOf="@+id/tokenStorageLabel"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"/>
@@ -169,10 +169,10 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <CheckBox
-                    android:id="@+id/shareSessionWithDeviceBrowser"
+                    android:id="@+id/shareSessionWithSystemBrowser"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Share Session With Device Browser"
+                    android:text="Share Session With System Browser"
                     tools:ignore="HardcodedText" />
 
                 <Button

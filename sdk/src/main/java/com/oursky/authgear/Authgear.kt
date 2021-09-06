@@ -10,30 +10,16 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepoHttp
-import com.oursky.authgear.data.token.TokenRepoEncryptedSharedPref
-import com.oursky.authgear.data.token.TransientRefreshTokenRepo
 import kotlinx.coroutines.*
 import java.util.*
 
-/**
- * An authgear instance represents a user session. If you need multiple user sessions, simply instantiate multiple authgear instances.
- *
- * Each authgear instance must be identified by a unique name. For simplicity's sake the SDK does not enforce this requirement. Violating
- * this requirement causes undefined behavior.
- *
- * To use authgear, [configure] must be called before any other methods.
- * @param application Application.
- * @param clientId Oauth client ID.
- * @param authgearEndpoint Endpoint of the authgear server.
- * @param name The name of this authgear instance. Must be unique per instance. Default is `default`.
- */
 class Authgear @JvmOverloads
 constructor(
     application: Application,
     clientId: String,
     authgearEndpoint: String,
-    storageType: StorageType = StorageType.APP,
-    shouldSuppressIDPSessionCookie: Boolean = false,
+    tokenStorage: TokenStorage = PersistentTokenStorage(application),
+    shareSessionWithSystemBrowser: Boolean = false,
     name: String? = null
 ) {
     companion object {
@@ -44,16 +30,14 @@ constructor(
     internal val core: AuthgearCore
 
     init {
-        val persistentTokenRepo = TokenRepoEncryptedSharedPref(application)
-        val refreshTokenRepo = if (storageType == StorageType.TRANSIENT) { TransientRefreshTokenRepo() } else { persistentTokenRepo }
         this.core = AuthgearCore(
             this,
             application,
             clientId,
             authgearEndpoint,
-            shouldSuppressIDPSessionCookie,
-            refreshTokenRepo,
-            persistentTokenRepo,
+            shareSessionWithSystemBrowser,
+            tokenStorage,
+            PersistentContainerStorage(application),
             OauthRepoHttp(),
             KeyRepoKeystore(),
             name

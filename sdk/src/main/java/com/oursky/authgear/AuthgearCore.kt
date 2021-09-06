@@ -16,8 +16,6 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
-import com.oursky.authgear.data.token.RefreshTokenRepo
-import com.oursky.authgear.data.token.TokenRepo
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OIDCAuthenticationRequest
 import com.oursky.authgear.oauth.OIDCTokenRequest
@@ -53,9 +51,9 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
-    private val shareSessionWithDeviceBrowser: Boolean,
-    private val refreshTokenRepo: RefreshTokenRepo,
-    private val tokenRepo: TokenRepo,
+    private val shareSessionWithSystemBrowser: Boolean,
+    private val tokenStorage: TokenStorage,
+    private val storage: ContainerStorage,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
     name: String? = null
@@ -193,7 +191,7 @@ internal class AuthgearCore(
         requireIsInitialized()
         val challenge = oauthRepo.oauthChallenge("anonymous_request").token
 
-        var keyId = tokenRepo.getAnonymousKeyId(name)
+        var keyId = storage.getAnonymousKeyId(name)
         var keyPair: KeyPair
 
         if (keyId == null) {
@@ -238,7 +236,7 @@ internal class AuthgearCore(
         )
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
-        tokenRepo.setAnonymousKeyId(name, keyId)
+        storage.setAnonymousKeyId(name, keyId)
         return userInfo
     }
 
@@ -283,7 +281,7 @@ internal class AuthgearCore(
     @Suppress("RedundantSuspendModifier")
     suspend fun configure() {
         isInitialized = true
-        val refreshToken = refreshTokenRepo.getRefreshToken(name)
+        val refreshToken = tokenStorage.getRefreshToken(name)
         this.refreshToken = refreshToken
         if (refreshToken != null) {
             // Consider user as logged in if refresh token is available
@@ -297,7 +295,7 @@ internal class AuthgearCore(
     suspend fun logout(force: Boolean? = null) {
         requireIsInitialized()
         try {
-            val refreshToken = refreshTokenRepo.getRefreshToken(name) ?: ""
+            val refreshToken = tokenStorage.getRefreshToken(name) ?: ""
             oauthRepo.oidcRevocationRequest(refreshToken)
         } catch (e: Exception) {
             if (force != true) {
@@ -316,7 +314,7 @@ internal class AuthgearCore(
     suspend fun openUrl(path: String, options: SettingOptions? = null) {
         requireIsInitialized()
 
-        val refreshToken = refreshTokenRepo.getRefreshToken(name)
+        val refreshToken = tokenStorage.getRefreshToken(name)
             ?: throw UnauthenticatedUserException()
         val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
 
@@ -367,7 +365,7 @@ internal class AuthgearCore(
     @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
     suspend fun promoteAnonymousUser(options: PromoteOptions): AuthorizeResult {
         requireIsInitialized()
-        val keyId = tokenRepo.getAnonymousKeyId(name)
+        val keyId = storage.getAnonymousKeyId(name)
             ?: throw AnonymousUserNotFoundException()
         val keyPair = keyRepo.getAnonymousKey(keyId)
             ?: throw AnonymousUserNotFoundException()
@@ -415,7 +413,7 @@ internal class AuthgearCore(
         )
         val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
         val result = finishAuthorization(deepLink)
-        tokenRepo.deleteAnonymousKeyId(name)
+        storage.deleteAnonymousKeyId(name)
         return result
     }
 
@@ -479,7 +477,7 @@ internal class AuthgearCore(
 
     private fun setupVerifier(): Verifier {
         val verifier = generateCodeVerifier()
-        tokenRepo.setOIDCCodeVerifier(name, verifier)
+        storage.setOIDCCodeVerifier(name, verifier)
         return Verifier(verifier, computeCodeChallenge(verifier))
     }
 
@@ -539,7 +537,7 @@ internal class AuthgearCore(
 
     @Suppress("RedundantSuspendModifier")
     private suspend fun doRefreshAccessToken() {
-        val refreshToken = refreshTokenRepo.getRefreshToken(name)
+        val refreshToken = tokenStorage.getRefreshToken(name)
         if (refreshToken == null) {
             // Somehow we are asked to refresh access token but we don't have the refresh token.
             // Something went wrong, clear session.
@@ -585,12 +583,12 @@ internal class AuthgearCore(
         }
         val refreshToken = this.refreshToken
         if (refreshToken != null) {
-            refreshTokenRepo.setRefreshToken(name, refreshToken)
+            tokenStorage.setRefreshToken(name, refreshToken)
         }
     }
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
-        refreshTokenRepo.deleteRefreshToken(name)
+        tokenStorage.deleteRefreshToken(name)
         synchronized(this) {
             accessToken = null
             refreshToken = null
@@ -601,7 +599,7 @@ internal class AuthgearCore(
     }
 
     private fun shouldSuppressIDPSessionCookie(): Boolean {
-        return !this.shareSessionWithDeviceBrowser
+        return !this.shareSessionWithSystemBrowser
     }
 
     private suspend fun openAuthorizeUrl(
@@ -656,7 +654,7 @@ internal class AuthgearCore(
                 state = state,
                 errorURI = errorURI
             )
-        val codeVerifier = tokenRepo.getOIDCCodeVerifier(name)
+        val codeVerifier = storage.getOIDCCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
@@ -695,7 +693,7 @@ internal class AuthgearCore(
                 state = state,
                 errorURI = errorURI
             )
-        val codeVerifier = tokenRepo.getOIDCCodeVerifier(name)
+        val codeVerifier = storage.getOIDCCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OIDCTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
@@ -730,7 +728,7 @@ internal class AuthgearCore(
     fun isBiometricEnabled(): Boolean {
         requireIsInitialized()
 
-        val kid = this.tokenRepo.getBiometricKeyId(this.name)
+        val kid = this.storage.getBiometricKeyId(this.name)
         if (kid == null) {
             return false
         }
@@ -740,11 +738,11 @@ internal class AuthgearCore(
     fun disableBiometric() {
         requireIsInitialized()
 
-        val kid = this.tokenRepo.getBiometricKeyId(this.name)
+        val kid = this.storage.getBiometricKeyId(this.name)
         if (kid != null) {
             val alias = "com.authgear.keys.biometric.$kid"
             removePrivateKey(alias)
-            this.tokenRepo.deleteBiometricKeyId(this.name)
+            this.storage.deleteBiometricKeyId(this.name)
         }
     }
 
@@ -829,7 +827,7 @@ internal class AuthgearCore(
         }
 
         this.oauthRepo.biometricSetupRequest(accessToken, clientId, jwt)
-        tokenRepo.setBiometricKeyId(name, kid)
+        storage.setBiometricKeyId(name, kid)
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -850,7 +848,7 @@ internal class AuthgearCore(
         )
 
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
-        val kid = tokenRepo.getBiometricKeyId(name)
+        val kid = storage.getBiometricKeyId(name)
             ?: throw BiometricPrivateKeyNotFoundException()
         val alias = "com.authgear.keys.biometric.$kid"
 

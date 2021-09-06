@@ -1,6 +1,6 @@
-package com.oursky.authgear.data.token
+package com.oursky.authgear
 
-internal class TransientRefreshTokenRepo() : RefreshTokenRepo {
+class TransientTokenStorage : TokenStorage {
     private var refreshToken: MutableMap<String, String> = mutableMapOf()
 
     override fun setRefreshToken(namespace: String, refreshToken: String) {

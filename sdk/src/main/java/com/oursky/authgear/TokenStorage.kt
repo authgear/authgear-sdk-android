@@ -1,6 +1,6 @@
-package com.oursky.authgear.data.token
+package com.oursky.authgear
 
-internal interface RefreshTokenRepo {
+interface TokenStorage {
     fun setRefreshToken(namespace: String, refreshToken: String)
     fun getRefreshToken(namespace: String): String?
     fun deleteRefreshToken(namespace: String)
