@@ -4,7 +4,8 @@ import android.app.Application
 import androidx.test.platform.app.InstrumentationRegistry
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OauthRepo
-import com.oursky.authgear.data.token.TokenRepoInMemory
+import com.oursky.authgear.data.token.RefreshTokenRepo
+import com.oursky.authgear.data.token.TokenRepo
 import com.oursky.authgear.oauth.*
 import com.oursky.authgear.oauth.OIDCConfiguration
 import kotlinx.coroutines.*
@@ -72,6 +73,47 @@ class AuthgearTest {
         }
     }
 
+    private class RefreshTokenRepoMock : RefreshTokenRepo {
+        override fun setRefreshToken(namespace: String, refreshToken: String) {
+        }
+
+        override fun getRefreshToken(namespace: String): String? {
+            return null
+        }
+
+        override fun deleteRefreshToken(namespace: String) {
+        }
+    }
+
+    private class TokenRepoMock : TokenRepo {
+        override fun setOIDCCodeVerifier(namespace: String, verifier: String) {
+        }
+
+        override fun getOIDCCodeVerifier(namespace: String): String? {
+            return null
+        }
+
+        override fun getAnonymousKeyId(namespace: String): String? {
+            return null
+        }
+
+        override fun setAnonymousKeyId(namespace: String, keyId: String) {
+        }
+
+        override fun deleteAnonymousKeyId(namespace: String) {
+        }
+
+        override fun getBiometricKeyId(namespace: String): String? {
+            return null
+        }
+
+        override fun setBiometricKeyId(namespace: String, keyId: String) {
+        }
+
+        override fun deleteBiometricKeyId(namespace: String) {
+        }
+    }
+
     private lateinit var oauthMock: OauthRepoMock
     private lateinit var authgearCore: AuthgearCore
     private lateinit var authgearNotUsed: Authgear
@@ -91,7 +133,9 @@ class AuthgearTest {
             application,
             ClientId,
             "EndpointNotUsed",
-            TokenRepoInMemory(refreshTokenMap = mutableMapOf("default" to "refreshToken")),
+            false,
+            RefreshTokenRepoMock(),
+            TokenRepoMock(),
             oauthMock,
             KeyRepoKeystore()
         )
@@ -104,43 +148,6 @@ class AuthgearTest {
             ClientId,
             authgearCore.clientId
         )
-    }
-
-    @Test
-    fun concurrentRefreshAccessTokenResultInOnlyOneRefresh() {
-        runBlocking {
-            val options = ConfigureOptions()
-            authgearCore.configure(options)
-            val deferredList = mutableListOf<Deferred<String?>>()
-            repeat(10) {
-                deferredList.add(async(Dispatchers.IO) {
-                    authgearCore.refreshAccessTokenIfNeeded()
-                })
-            }
-            deferredList.awaitAll()
-            assertEquals(
-                "Concurrent refresh access token not producing a single refresh request. Request count",
-                1,
-                oauthMock.getRefreshedCount()
-            )
-        }
-    }
-
-    @Test
-    fun refreshAccessTokenWorkMultipleTimes() {
-        runBlocking {
-            val options = ConfigureOptions()
-            authgearCore.configure(options)
-            val repeatCount = 3
-            repeat(repeatCount) {
-                authgearCore.refreshAccessTokenIfNeeded()
-            }
-            assertEquals(
-                "Concurrent refresh access token not producing $repeatCount. Request count",
-                repeatCount,
-                oauthMock.getRefreshedCount()
-            )
-        }
     }
 
     @Test
@@ -157,7 +164,7 @@ class AuthgearTest {
             "Encoded OIDCTokenRequest does not match with expected JSON string",
             encoded,
             "{\"grant_type\":\"urn:authgear:params:oauth:grant-type:anonymous-request\"," +
-                    "\"client_id\":\"test\",\"x_device_info\":\"dummy\",\"redirect_uri\":null,\"code\":null,\"code_verifier\":null,\"refresh_token\":null,\"jwt\":null}"
+                    "\"client_id\":\"test\",\"x_device_info\":\"dummy\",\"redirect_uri\":null,\"code\":null,\"code_verifier\":null,\"refresh_token\":null,\"access_token\":null,\"jwt\":null}"
         )
         val decoded: OIDCTokenRequest = Json.decodeFromString(encoded)
         assertEquals(

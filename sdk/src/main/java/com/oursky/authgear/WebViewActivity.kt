@@ -16,11 +16,13 @@ import androidx.appcompat.app.AppCompatActivity
 internal class WebViewActivity : AppCompatActivity() {
     companion object {
         private const val MENU_ID_CANCEL = 1
+        private const val KEY_BROADCAST_ACTION = "broadcastAction"
 
-        fun createIntent(context: Context, uri: Uri): Intent {
+        fun createIntent(context: Context, broadcastAction: String, uri: Uri): Intent {
             val intent = Intent(context, WebViewActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.data = uri
+            intent.putExtra(KEY_BROADCAST_ACTION, broadcastAction)
             return intent
         }
     }
@@ -55,6 +57,7 @@ internal class WebViewActivity : AppCompatActivity() {
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
+            this.sendBroadcast()
             super.onBackPressed()
         }
     }
@@ -68,12 +71,20 @@ internal class WebViewActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
         MENU_ID_CANCEL -> {
+            this.sendBroadcast()
             finish()
             true
         }
 
         else -> {
             super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun sendBroadcast() {
+        this.intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
+            val broadcastIntent = Intent(broadcastAction)
+            this.sendBroadcast(broadcastIntent)
         }
     }
 }

@@ -1,21 +1,23 @@
 package com.oursky.authgear
 
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
-import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OauthRepo
+import com.oursky.authgear.data.token.RefreshTokenRepo
 import com.oursky.authgear.data.token.TokenRepo
-import com.oursky.authgear.data.token.TokenRepoInMemory
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OIDCAuthenticationRequest
 import com.oursky.authgear.oauth.OIDCTokenRequest
@@ -40,6 +42,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 /**
@@ -50,8 +53,8 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
-    private val storageType: StorageType,
     private val shareSessionWithDeviceBrowser: Boolean,
+    private val refreshTokenRepo: RefreshTokenRepo,
     private val tokenRepo: TokenRepo,
     private val oauthRepo: OauthRepo,
     private val keyRepo: KeyRepo,
@@ -70,41 +73,9 @@ internal class AuthgearCore(
          *
          * To compat this, we should consider the access token expired earlier than the expiry time
          * calculated using [OIDCTokenResponse.expiresIn]. Current implementation uses
-         * [ExpireInPercentage] of [OIDCTokenResponse.expiresIn] to calculate the expiry time.
+         * [EXPIRE_IN_PERCENTAGE] of [OIDCTokenResponse.expiresIn] to calculate the expiry time.
          */
-        private const val ExpireInPercentage = 0.9
-
-        /*
-         * GlobalMemoryStore is used when calling configure with transientSession
-         * Using same global memory store to ensure the refresh token can be retained in the whole
-         * app lifecycle
-         */
-        private var GlobalMemoryStore: TokenRepo = TokenRepoInMemory()
-        /**
-         * A map used to keep track of which deep link is being handled by which container.
-         */
-        private val DeepLinkHandlerMap = mutableMapOf<String, SuspendHolder<String>>()
-        fun handleDeepLink(deepLink: String, isSuccessful: Boolean) {
-            if (isSuccessful) {
-                // The deep link would contain code in query parameter so we trim it to get back the handler.
-                val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
-                val handler = requireDeepLinkHandler(deepLinkWithoutQuery)
-                handler.continuation.resume(deepLink)
-                DeepLinkHandlerMap.remove(deepLinkWithoutQuery)
-            } else {
-                val handler = requireDeepLinkHandler(deepLink)
-                handler.continuation.resumeWith(Result.failure(CancelException()))
-                DeepLinkHandlerMap.remove(deepLink)
-            }
-        }
-
-        private fun requireDeepLinkHandler(deepLink: String): SuspendHolder<String> {
-            val handler = DeepLinkHandlerMap[deepLink]
-            require(handler != null) {
-                "No handler is handling deep link $deepLink"
-            }
-            return handler
-        }
+        private const val EXPIRE_IN_PERCENTAGE = 0.9
 
         /**
          * Check and handle wehchat redirect uri and trigger delegate function if needed
@@ -175,15 +146,9 @@ internal class AuthgearCore(
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
-    private val refreshTokenRepo: TokenRepo
 
     init {
         oauthRepo.endpoint = authgearEndpoint
-        if (storageType == StorageType.TRANSIENT) {
-            refreshTokenRepo = GlobalMemoryStore
-        } else {
-            refreshTokenRepo = tokenRepo
-        }
     }
 
     val canReauthenticate: Boolean
@@ -348,8 +313,7 @@ internal class AuthgearCore(
         oauthRepo.wechatAuthCallback(code, state)
     }
 
-    @MainThread
-    fun openUrl(path: String, options: SettingOptions? = null) {
+    suspend fun openUrl(path: String, options: SettingOptions? = null) {
         requireIsInitialized()
 
         val refreshToken = refreshTokenRepo.getRefreshToken(name)
@@ -374,12 +338,23 @@ internal class AuthgearCore(
             null
         )
 
-        application.startActivity(
-            WebViewActivity.createIntent(application, Uri.parse(authorizeUrl))
-        )
+        return suspendCoroutine { k ->
+            val action = newRandomAction()
+            val intentFilter = IntentFilter(action)
+            val br = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    application.unregisterReceiver(this)
+                    k.resume(Unit)
+                }
+            }
+            application.registerReceiver(br, intentFilter)
+            application.startActivity(
+                WebViewActivity.createIntent(application, action, Uri.parse(authorizeUrl))
+            )
+        }
     }
 
-    fun open(page: Page, options: SettingOptions? = null) {
+    suspend fun open(page: Page, options: SettingOptions? = null) {
         openUrl(
             when (page) {
                 Page.Settings -> "/settings"
@@ -604,7 +579,7 @@ internal class AuthgearCore(
             }
             if (tokenResponse.expiresIn != null) {
                 expireAt =
-                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * ExpireInPercentage).toLong())
+                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * EXPIRE_IN_PERCENTAGE).toLong())
             }
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
@@ -615,7 +590,7 @@ internal class AuthgearCore(
     }
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
-        tokenRepo.deleteRefreshToken(name)
+        refreshTokenRepo.deleteRefreshToken(name)
         synchronized(this) {
             accessToken = null
             refreshToken = null
@@ -633,15 +608,25 @@ internal class AuthgearCore(
         redirectUrl: String,
         authorizeUrl: String
     ): String {
-        val existingHandler = DeepLinkHandlerMap[redirectUrl]
-        require(existingHandler == null) {
-            "The redirect url $redirectUrl is already being handled by ${existingHandler?.name} when $name attempts to handle it"
-        }
-        return suspendCoroutine {
-            DeepLinkHandlerMap[redirectUrl] = SuspendHolder(name, it)
+        return suspendCoroutine { k ->
+            val action = newRandomAction()
+            val intentFilter = IntentFilter(action)
+            val br = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    application.unregisterReceiver(this)
+                    val output = intent?.getStringExtra(OauthActivity.KEY_REDIRECT_URL)
+                    if (output != null) {
+                        k.resume(output)
+                    } else {
+                        k.resumeWithException(CancelException())
+                    }
+                }
+            }
+            application.registerReceiver(br, intentFilter)
             application.startActivity(
                 OauthActivity.createAuthorizationIntent(
                     application,
+                    action,
                     redirectUrl,
                     authorizeUrl
                 )
