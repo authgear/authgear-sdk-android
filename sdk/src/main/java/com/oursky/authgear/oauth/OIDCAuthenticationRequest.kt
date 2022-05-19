@@ -1,6 +1,7 @@
 package com.oursky.authgear.oauth
 
 import com.oursky.authgear.AuthgearCore
+import com.oursky.authgear.ColorScheme
 import com.oursky.authgear.PromptOption
 
 internal data class OIDCAuthenticationRequest constructor(
@@ -12,6 +13,7 @@ internal data class OIDCAuthenticationRequest constructor(
     var maxAge: Int? = null,
     var loginHint: String? = null,
     var uiLocales: List<String>? = null,
+    var colorScheme: ColorScheme? = null,
     var idTokenHint: String? = null,
     var wechatRedirectURI: String? = null,
     var page: String? = null,
@@ -33,7 +35,7 @@ internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
     }
 
     this.prompt?.let {
-        query["prompt"] = it.joinToString(separator = " ") { it.raw }
+        query["prompt"] = it.joinToString(separator = " ") { p -> p.raw }
     }
 
     this.state?.let {
@@ -46,6 +48,10 @@ internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
 
     this.uiLocales?.let {
         query["ui_locales"] = it.joinToString(separator = " ")
+    }
+
+    this.colorScheme?.let {
+        query["x_color_scheme"] = it.raw
     }
 
     this.idTokenHint?.let {

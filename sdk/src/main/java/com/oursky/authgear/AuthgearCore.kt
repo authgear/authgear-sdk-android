@@ -331,6 +331,7 @@ internal class AuthgearCore(
                 prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
                 wechatRedirectURI = options?.wechatRedirectURI,
+                colorScheme = options?.colorScheme,
                 suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),
             null
@@ -406,6 +407,7 @@ internal class AuthgearCore(
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
+                colorScheme = options.colorScheme,
                 wechatRedirectURI = options.wechatRedirectURI,
                 suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),

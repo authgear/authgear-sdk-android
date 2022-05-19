@@ -39,6 +39,10 @@ data class AuthorizeOptions @JvmOverloads constructor(
      */
     var uiLocales: List<String>? = null,
     /**
+     * Theme override
+     */
+    var colorScheme: ColorScheme? = null,
+    /**
      * WeChat redirect uri is needed when integrating WeChat login
      * The wechatRedirectURI will be called when user click the login with WeChat button
      */
@@ -61,6 +65,7 @@ internal fun AuthorizeOptions.toRequest(suppressIDPSessionCookie: Boolean): OIDC
         idTokenHint = null,
         maxAge = null,
         uiLocales = this.uiLocales,
+        colorScheme = this.colorScheme,
         wechatRedirectURI = this.wechatRedirectURI,
         page = this.page,
         suppressIDPSessionCookie = suppressIDPSessionCookie
