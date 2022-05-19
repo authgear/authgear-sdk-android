@@ -36,10 +36,10 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.authgear.example"
+                <data android:scheme="com.authgear.exampleapp.android"
                     android:host="host"
                     android:pathPrefix="/path"/>
-                <data android:scheme="com.authgear.example"
+                <data android:scheme="com.authgear.exampleapp.android"
                     android:host="host"
                     android:pathPrefix="/open_wechat_app"/>
             </intent-filter>
