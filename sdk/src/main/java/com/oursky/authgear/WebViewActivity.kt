@@ -8,6 +8,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -17,6 +19,7 @@ internal class WebViewActivity : AppCompatActivity() {
     companion object {
         private const val MENU_ID_CANCEL = 1
         private const val KEY_BROADCAST_ACTION = "broadcastAction"
+        private const val REQUEST_CODE_CHOOSE_FILE = 1
 
         fun createIntent(context: Context, broadcastAction: String, uri: Uri): Intent {
             val intent = Intent(context, WebViewActivity::class.java)
@@ -28,6 +31,7 @@ internal class WebViewActivity : AppCompatActivity() {
     }
 
     private lateinit var webView: WebView
+    private var cachedFilePathCallback: ValueCallback<Array<Uri>>? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +50,23 @@ internal class WebViewActivity : AppCompatActivity() {
                     return true
                 }
                 return super.shouldOverrideUrlLoading(view, request)
+            }
+        }
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                if (filePathCallback != null && fileChooserParams != null) {
+                    cachedFilePathCallback = filePathCallback
+                    val requestCode = REQUEST_CODE_CHOOSE_FILE
+                    val intent = fileChooserParams.createIntent()
+                    this@WebViewActivity.startActivityForResult(intent, requestCode)
+                    return true
+                }
+
+                return super.onShowFileChooser(webView, filePathCallback, fileChooserParams)
             }
         }
         val url = intent.data.toString()
@@ -78,6 +99,18 @@ internal class WebViewActivity : AppCompatActivity() {
 
         else -> {
             super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_CHOOSE_FILE) {
+            cachedFilePathCallback?.onReceiveValue(when (resultCode) {
+                RESULT_OK -> {
+                    if (data?.data != null) arrayOf(data.data!!) else null
+                }
+                else -> null
+            })
         }
     }
 
