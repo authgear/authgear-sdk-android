@@ -9,5 +9,6 @@ data class SettingOptions @JvmOverloads constructor(
     /**
      * Theme override
      */
-    var colorScheme: ColorScheme? = null
+    var colorScheme: ColorScheme? = null,
+    var uiLocales: List<String>? = null
 )
