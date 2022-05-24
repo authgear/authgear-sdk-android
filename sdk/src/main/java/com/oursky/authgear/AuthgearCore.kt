@@ -28,7 +28,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
-import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
@@ -318,7 +317,15 @@ internal class AuthgearCore(
             ?: throw UnauthenticatedUserException()
         val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
 
-        val url = URL(URL(authgearEndpoint), path).toString()
+        val builder = Uri.parse(authgearEndpoint).buildUpon()
+        builder.path(path)
+        options?.colorScheme?.let {
+            builder.appendQueryParameter("x_color_scheme", it.raw)
+        }
+        options?.uiLocales?.let {
+            builder.appendQueryParameter("ui_locales", it.joinToString(" "))
+        }
+        val url = builder.build()
 
         val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
         URLEncoder.encode(token, StandardCharsets.UTF_8.name())
@@ -331,6 +338,8 @@ internal class AuthgearCore(
                 prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
                 wechatRedirectURI = options?.wechatRedirectURI,
+                uiLocales = options?.uiLocales,
+                colorScheme = options?.colorScheme,
                 suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),
             null
@@ -406,6 +415,7 @@ internal class AuthgearCore(
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
+                colorScheme = options.colorScheme,
                 wechatRedirectURI = options.wechatRedirectURI,
                 suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
             ),

@@ -18,6 +18,10 @@ data class ReauthentcateOptions @JvmOverloads constructor(
      * UI locale tags
      */
     var uiLocales: List<String>? = null,
+    /**
+     * Theme override
+     */
+    var colorScheme: ColorScheme? = null,
 
     /**
      * OIDC max_age.
@@ -43,6 +47,7 @@ internal fun ReauthentcateOptions.toRequest(idTokenHint: String, suppressIDPSess
         idTokenHint = idTokenHint,
         maxAge = this.maxAge ?: 0,
         uiLocales = this.uiLocales,
+        colorScheme = this.colorScheme,
         wechatRedirectURI = this.wechatRedirectURI,
         page = null,
         suppressIDPSessionCookie = suppressIDPSessionCookie

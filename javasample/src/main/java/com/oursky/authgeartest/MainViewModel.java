@@ -3,6 +3,7 @@ package com.oursky.authgeartest;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.util.Log;
 
@@ -21,6 +22,7 @@ import com.oursky.authgear.AuthorizeOptions;
 import com.oursky.authgear.AuthorizeResult;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
+import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
 import com.oursky.authgear.OnAuthorizeListener;
@@ -262,6 +264,7 @@ public class MainViewModel extends AndroidViewModel {
                 .apply();
         mIsLoading.setValue(true);
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+        options.setColorScheme(getColorScheme());
         options.setPage(page);
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
@@ -293,6 +296,7 @@ public class MainViewModel extends AndroidViewModel {
                 if (mAuthgear.getCanReauthenticate()) {
                     ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+                    options.setColorScheme(getColorScheme());
                     mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
                         @Override
                         public void onFinished(@Nullable ReauthenticateResult result) {
@@ -390,6 +394,15 @@ public class MainViewModel extends AndroidViewModel {
         );
     }
 
+    private ColorScheme getColorScheme()
+    {
+        int currentNightMode = getApplication().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+            return ColorScheme.Dark;
+        }
+        return ColorScheme.Light;
+    }
+
     public void enableBiometric(FragmentActivity activity) {
         mIsLoading.setValue(true);
 
@@ -475,6 +488,7 @@ public class MainViewModel extends AndroidViewModel {
     public void openSettings() {
         mIsLoading.setValue(true);
         SettingOptions options = new SettingOptions();
+        options.setColorScheme(getColorScheme());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.open(Page.Settings, options, new OnOpenURLListener() {
             @Override
@@ -496,6 +510,7 @@ public class MainViewModel extends AndroidViewModel {
         mIsLoading.setValue(true);
         PromoteOptions options = new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        options.setColorScheme(getColorScheme());
         mAuthgear.promoteAnonymousUser(options, new OnPromoteAnonymousUserListener() {
             @Override
             public void onPromoted(@NonNull AuthorizeResult result) {
