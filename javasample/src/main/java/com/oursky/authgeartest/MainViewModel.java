@@ -127,6 +127,10 @@ public class MainViewModel extends AndroidViewModel {
         }
     }
 
+    public void setPage(String page) {
+        mPage.setValue(page);
+    }
+
     public void setTokenStorage(String tokenStorage) {
         mTokenStorage.setValue(tokenStorage);
     }
@@ -142,8 +146,6 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<String> endpoint() {
         return mEndpoint;
     }
-
-    public LiveData<String> page() { return mPage; }
 
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
@@ -262,17 +264,11 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void authorize(String page) {
-        mPage.setValue(page);
-        MainApplication app = getApplication();
-        app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
-                .edit()
-                .putString("page", page)
-                .apply();
+    public void authorize() {
         mIsLoading.setValue(true);
         AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
         options.setColorScheme(getColorScheme());
-        options.setPage(page);
+        options.setPage(mPage.getValue());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authorize(options, new OnAuthorizeListener() {
             @Override

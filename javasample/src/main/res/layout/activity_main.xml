@@ -126,16 +126,15 @@
                         android:text="Page"
                         tools:ignore="HardcodedText" />
 
-                    <EditText
-                        android:id="@+id/pageInput"
-                        android:layout_height="wrap_content"
+                    <Spinner android:id="@+id/pageSpinner"
                         android:layout_width="0dp"
-                        android:hint="'login' or 'signup'"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginBottom="10dp"
                         app:layout_constraintStart_toEndOf="@+id/pageLabel"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        android:inputType="text"/>
+                        app:layout_constraintBottom_toBottomOf="parent"/>
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

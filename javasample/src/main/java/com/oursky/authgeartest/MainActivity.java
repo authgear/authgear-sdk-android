@@ -28,10 +28,11 @@ import com.oursky.authgear.UserInfo;
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
     private static final String COLOR_SCHEME_USE_SYSTEM = "Use System";
+    private static final String PAGE_UNSET = "Unset";
 
     private EditText mClientId;
     private EditText mEndpoint;
-    private EditText mPage;
+    private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
     private CheckBox mShareSessionWithSystemBrowser;
@@ -61,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
-        mPage = findViewById(R.id.pageInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthorize = findViewById(R.id.authorize);
@@ -77,6 +77,17 @@ public class MainActivity extends AppCompatActivity {
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
         mShareSessionWithSystemBrowser = findViewById(R.id.shareSessionWithSystemBrowser);
+
+        String[] pages = {
+            PAGE_UNSET,
+            "login",
+            "signup",
+        };
+        mPage = findViewById(R.id.pageSpinner);
+        ArrayAdapter<String> pageAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, pages);
+        pageAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mPage.setAdapter(pageAdapter);
+
         // Setup session type spinner
         String[] tokenStorages = {
                 TransientTokenStorage.class.getSimpleName(),
@@ -104,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
                         mShareSessionWithSystemBrowser.isChecked()
                 )
         );
-        mAuthorize.setOnClickListener(view -> viewModel.authorize(mPage.getText().toString()));
+        mAuthorize.setOnClickListener(view -> viewModel.authorize());
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
         mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
@@ -117,6 +128,22 @@ public class MainActivity extends AppCompatActivity {
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
 
+        mPage.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String value = (String) parent.getItemAtPosition(position);
+                if (PAGE_UNSET.equals(value)) {
+                    viewModel.setPage("");
+                } else {
+                    viewModel.setPage(value);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
         mTokenStorage.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -150,7 +177,6 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
-        mPage.setText(viewModel.page().getValue());
         mShareSessionWithSystemBrowser.setChecked(viewModel.shareSessionWithSystemBrowser().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
