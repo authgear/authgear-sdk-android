@@ -63,6 +63,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
+    final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
     final private MutableLiveData<Boolean> mShareSessionWithSystemBrowser = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
@@ -126,6 +127,14 @@ public class MainViewModel extends AndroidViewModel {
         }
     }
 
+    public void setTokenStorage(String tokenStorage) {
+        mTokenStorage.setValue(tokenStorage);
+    }
+
+    public void setColorScheme(ColorScheme colorScheme) {
+        mColorScheme.setValue(colorScheme);
+    }
+
     public LiveData<String> clientID() {
         return mClientID;
     }
@@ -162,22 +171,20 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, String tokenStorage, Boolean shareSessionWithSystemBrowser) {
+    public void configure(String clientID, String endpoint, Boolean shareSessionWithSystemBrowser) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
-        mTokenStorage.setValue(tokenStorage);
         mShareSessionWithSystemBrowser.setValue(shareSessionWithSystemBrowser);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
-                .putString("tokenStorage", tokenStorage)
                 .putBoolean("shareSessionWithSystemBrowser", shareSessionWithSystemBrowser)
                 .apply();
-        if (tokenStorage.equals(TransientTokenStorage.class.getSimpleName())) {
+        if (mTokenStorage.getValue().equals(TransientTokenStorage.class.getSimpleName())) {
             mAuthgear = new Authgear(
                     getApplication(),
                     clientID,
@@ -394,8 +401,15 @@ public class MainViewModel extends AndroidViewModel {
         );
     }
 
-    private ColorScheme getColorScheme()
-    {
+    private ColorScheme getColorScheme() {
+        ColorScheme explicit = mColorScheme.getValue();
+        if (explicit != null) {
+            return explicit;
+        }
+        return getSystemColorScheme();
+    }
+
+    private ColorScheme getSystemColorScheme() {
         int currentNightMode = getApplication().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
             return ColorScheme.Dark;

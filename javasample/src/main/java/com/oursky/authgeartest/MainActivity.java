@@ -2,6 +2,7 @@ package com.oursky.authgeartest;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -18,6 +19,7 @@ import com.oursky.authgear.BiometricNoEnrollmentException;
 import com.oursky.authgear.BiometricNoPasscodeException;
 import com.oursky.authgear.BiometricNotSupportedOrPermissionDeniedException;
 import com.oursky.authgear.BiometricPrivateKeyNotFoundException;
+import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.TransientTokenStorage;
@@ -25,10 +27,13 @@ import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
+    private static final String COLOR_SCHEME_USE_SYSTEM = "Use System";
+
     private EditText mClientId;
     private EditText mEndpoint;
     private EditText mPage;
     private Spinner mTokenStorage;
+    private Spinner mColorScheme;
     private CheckBox mShareSessionWithSystemBrowser;
     private TextView mLoading;
     private View mConfigure;
@@ -78,15 +83,24 @@ public class MainActivity extends AppCompatActivity {
                 PersistentTokenStorage.class.getSimpleName(),
         };
         mTokenStorage = findViewById(R.id.tokenStorageSpinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, tokenStorages);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mTokenStorage.setAdapter(adapter);
+        ArrayAdapter<String> tokenStorageAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, tokenStorages);
+        tokenStorageAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mTokenStorage.setAdapter(tokenStorageAdapter);
+
+        String[] colorSchemes = {
+                COLOR_SCHEME_USE_SYSTEM,
+                ColorScheme.Light.name(),
+                ColorScheme.Dark.name(),
+        };
+        mColorScheme = findViewById(R.id.colorSchemeSpinner);
+        ArrayAdapter<String> colorSchemeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, colorSchemes);
+        colorSchemeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mColorScheme.setAdapter(colorSchemeAdapter);
 
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mTokenStorage.getSelectedItem().toString(),
                         mShareSessionWithSystemBrowser.isChecked()
                 )
         );
@@ -103,22 +117,41 @@ public class MainActivity extends AppCompatActivity {
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
 
+        mTokenStorage.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String value = (String) parent.getItemAtPosition(position);
+                viewModel.setTokenStorage(value);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+        mColorScheme.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String value = (String) parent.getItemAtPosition(position);
+                if (COLOR_SCHEME_USE_SYSTEM.equals(value)) {
+                    viewModel.setColorScheme(null);
+                } else if (ColorScheme.Light.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.Light);
+                } else if (ColorScheme.Dark.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.Dark);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mPage.setText(viewModel.page().getValue());
         mShareSessionWithSystemBrowser.setChecked(viewModel.shareSessionWithSystemBrowser().getValue());
-
-        {
-            int idx = 0;
-            String value = viewModel.tokenStorage().getValue();
-            for (int i = 0; i < tokenStorages.length ; i++) {
-                if (tokenStorages[i].equals(value)) {
-                    idx = i;
-                    break;
-                }
-            }
-            mTokenStorage.setSelection(idx);
-        }
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
