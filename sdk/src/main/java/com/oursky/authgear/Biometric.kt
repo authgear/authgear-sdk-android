@@ -47,7 +47,7 @@ internal fun makeGenerateKeyPairSpec(alias: String, allowed: Int, invalidatedByB
         // - Unlock the device with credentials
         // - Create a Signature with a PrivateKey with setUnlockedDeviceRequired(true)
         // - Call Signature.initSign, UserNotAuthenticatedException will be thrown.
-        //builder.setUnlockedDeviceRequired(true)
+        // builder.setUnlockedDeviceRequired(true)
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
