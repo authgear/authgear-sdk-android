@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
-    private CheckBox mShareSessionWithSystemBrowser;
+    private CheckBox mSSOEnabled;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthorize;
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
-        mShareSessionWithSystemBrowser = findViewById(R.id.shareSessionWithSystemBrowser);
+        mSSOEnabled = findViewById(R.id.ssoEnabled);
 
         String[] pages = {
             PAGE_UNSET,
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mShareSessionWithSystemBrowser.isChecked()
+                        mSSOEnabled.isChecked()
                 )
         );
         mAuthorize.setOnClickListener(view -> viewModel.authorize());
@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
-        mShareSessionWithSystemBrowser.setChecked(viewModel.shareSessionWithSystemBrowser().getValue());
+        mSSOEnabled.setChecked(viewModel.ssoEnabled().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);

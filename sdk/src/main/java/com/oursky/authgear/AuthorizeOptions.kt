@@ -54,11 +54,12 @@ data class AuthorizeOptions @JvmOverloads constructor(
     var page: String? = null
 )
 
-internal fun AuthorizeOptions.toRequest(suppressIDPSessionCookie: Boolean): OIDCAuthenticationRequest {
+internal fun AuthorizeOptions.toRequest(ssoEnabled: Boolean): OIDCAuthenticationRequest {
     return OIDCAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
         scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+        ssoEnabled = ssoEnabled,
         state = this.state,
         prompt = this.prompt,
         loginHint = this.loginHint,
@@ -67,7 +68,6 @@ internal fun AuthorizeOptions.toRequest(suppressIDPSessionCookie: Boolean): OIDC
         uiLocales = this.uiLocales,
         colorScheme = this.colorScheme,
         wechatRedirectURI = this.wechatRedirectURI,
-        page = this.page,
-        suppressIDPSessionCookie = suppressIDPSessionCookie
+        page = this.page
     )
 }
