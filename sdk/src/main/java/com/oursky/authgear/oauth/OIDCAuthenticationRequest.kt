@@ -8,6 +8,7 @@ internal data class OIDCAuthenticationRequest constructor(
     var redirectUri: String,
     var responseType: String,
     var scope: List<String>,
+    var ssoEnabled: Boolean,
     var state: String? = null,
     var prompt: List<PromptOption>? = null,
     var maxAge: Int? = null,
@@ -16,8 +17,7 @@ internal data class OIDCAuthenticationRequest constructor(
     var colorScheme: ColorScheme? = null,
     var idTokenHint: String? = null,
     var wechatRedirectURI: String? = null,
-    var page: String? = null,
-    var suppressIDPSessionCookie: Boolean? = null
+    var page: String? = null
 )
 
 internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -70,9 +70,13 @@ internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
         query["x_page"] = it
     }
 
-    if (this.suppressIDPSessionCookie == true) {
+    if (!this.ssoEnabled) {
+        // For backward compatibility
+        // If the developer updates the SDK but not the server
         query["x_suppress_idp_session_cookie"] = "true"
     }
+
+    query["x_sso_enabled"] = if (this.ssoEnabled) "true" else "false"
 
     return query
 }

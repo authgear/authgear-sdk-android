@@ -50,7 +50,7 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
-    private val shareSessionWithSystemBrowser: Boolean,
+    private val ssoEnabled: Boolean,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
     private val oauthRepo: OauthRepo,
@@ -243,7 +243,7 @@ internal class AuthgearCore(
     suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(shouldSuppressIDPSessionCookie())
+        val request = options.toRequest(this.ssoEnabled)
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink)
@@ -271,7 +271,7 @@ internal class AuthgearCore(
             throw AuthgearException("Call refreshIDToken first")
         }
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(idTokenHint, shouldSuppressIDPSessionCookie())
+        val request = options.toRequest(idTokenHint, this.ssoEnabled)
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishReauthentication(deepLink)
@@ -335,12 +335,12 @@ internal class AuthgearCore(
                 redirectUri = url.toString(),
                 responseType = "none",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+                ssoEnabled = this.ssoEnabled,
                 prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
                 wechatRedirectURI = options?.wechatRedirectURI,
                 uiLocales = options?.uiLocales,
-                colorScheme = options?.colorScheme,
-                suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
+                colorScheme = options?.colorScheme
             ),
             null
         )
@@ -411,13 +411,13 @@ internal class AuthgearCore(
                 redirectUri = options.redirectUri,
                 responseType = "code",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+                ssoEnabled = this.ssoEnabled,
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
                 state = options.state,
                 uiLocales = options.uiLocales,
                 colorScheme = options.colorScheme,
-                wechatRedirectURI = options.wechatRedirectURI,
-                suppressIDPSessionCookie = shouldSuppressIDPSessionCookie()
+                wechatRedirectURI = options.wechatRedirectURI
             ),
             codeVerifier
         )
@@ -606,10 +606,6 @@ internal class AuthgearCore(
             expireAt = null
             updateSessionState(SessionState.NO_SESSION, changeReason)
         }
-    }
-
-    private fun shouldSuppressIDPSessionCookie(): Boolean {
-        return !this.shareSessionWithSystemBrowser
     }
 
     private suspend fun openAuthorizeUrl(

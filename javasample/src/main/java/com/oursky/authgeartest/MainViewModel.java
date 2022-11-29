@@ -64,7 +64,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
-    final private MutableLiveData<Boolean> mShareSessionWithSystemBrowser = new MutableLiveData<>(false);
+    final private MutableLiveData<Boolean> mSSOEnabled = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
@@ -81,12 +81,12 @@ public class MainViewModel extends AndroidViewModel {
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
-            Boolean storedShareSessionWithSystemBrowser = preferences.getBoolean("shareSessionWithSystemBrowser", false);
+            Boolean storedSSOEnabled = preferences.getBoolean("ssoEnabled", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
-            mShareSessionWithSystemBrowser.setValue(storedShareSessionWithSystemBrowser);
+            mSSOEnabled.setValue(storedSSOEnabled);
         }
     }
 
@@ -149,7 +149,7 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
-    public LiveData<Boolean> shareSessionWithSystemBrowser() { return mShareSessionWithSystemBrowser; }
+    public LiveData<Boolean> ssoEnabled() { return mSSOEnabled; }
 
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
@@ -173,18 +173,18 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, Boolean shareSessionWithSystemBrowser) {
+    public void configure(String clientID, String endpoint, Boolean ssoEnabled) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
-        mShareSessionWithSystemBrowser.setValue(shareSessionWithSystemBrowser);
+        mSSOEnabled.setValue(ssoEnabled);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
-                .putBoolean("shareSessionWithSystemBrowser", shareSessionWithSystemBrowser)
+                .putBoolean("ssoEnabled", ssoEnabled)
                 .apply();
         if (mTokenStorage.getValue().equals(TransientTokenStorage.class.getSimpleName())) {
             mAuthgear = new Authgear(
@@ -192,7 +192,7 @@ public class MainViewModel extends AndroidViewModel {
                     clientID,
                     endpoint,
                     new TransientTokenStorage(),
-                    shareSessionWithSystemBrowser
+                    ssoEnabled
             );
         } else {
             mAuthgear = new Authgear(
@@ -200,7 +200,7 @@ public class MainViewModel extends AndroidViewModel {
                     clientID,
                     endpoint,
                     new PersistentTokenStorage(getApplication()),
-                    shareSessionWithSystemBrowser
+                    ssoEnabled
             );
         }
         mAuthgear.configure(new OnConfigureListener() {

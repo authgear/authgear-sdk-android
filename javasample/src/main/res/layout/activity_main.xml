@@ -197,10 +197,10 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <CheckBox
-                    android:id="@+id/shareSessionWithSystemBrowser"
+                    android:id="@+id/ssoEnabled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Share Session With System Browser"
+                    android:text="SSO Enabled"
                     tools:ignore="HardcodedText" />
 
                 <Button
