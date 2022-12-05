@@ -50,7 +50,7 @@ internal class AuthgearCore(
     private val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
-    private val ssoEnabled: Boolean,
+    private val isSsoEnabled: Boolean,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
     private val oauthRepo: OauthRepo,
@@ -243,7 +243,7 @@ internal class AuthgearCore(
     suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(this.ssoEnabled)
+        val request = options.toRequest(this.isSsoEnabled)
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishAuthorization(deepLink)
@@ -271,7 +271,7 @@ internal class AuthgearCore(
             throw AuthgearException("Call refreshIDToken first")
         }
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(idTokenHint, this.ssoEnabled)
+        val request = options.toRequest(idTokenHint, this.isSsoEnabled)
         val authorizeUrl = authorizeEndpoint(request, codeVerifier)
         val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
         return finishReauthentication(deepLink)
@@ -335,7 +335,7 @@ internal class AuthgearCore(
                 redirectUri = url.toString(),
                 responseType = "none",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
-                ssoEnabled = this.ssoEnabled,
+                isSsoEnabled = this.isSsoEnabled,
                 prompt = listOf(PromptOption.NONE),
                 loginHint = loginHint,
                 wechatRedirectURI = options?.wechatRedirectURI,
@@ -411,7 +411,7 @@ internal class AuthgearCore(
                 redirectUri = options.redirectUri,
                 responseType = "code",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
-                ssoEnabled = this.ssoEnabled,
+                isSsoEnabled = this.isSsoEnabled,
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
                 state = options.state,

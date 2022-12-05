@@ -19,7 +19,7 @@ constructor(
     clientId: String,
     authgearEndpoint: String,
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
-    ssoEnabled: Boolean = false,
+    isSsoEnabled: Boolean = false,
     name: String? = null
 ) {
     companion object {
@@ -35,7 +35,7 @@ constructor(
             application,
             clientId,
             authgearEndpoint,
-            ssoEnabled,
+            isSsoEnabled,
             tokenStorage,
             PersistentContainerStorage(application),
             OauthRepoHttp(),

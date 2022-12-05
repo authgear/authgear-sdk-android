@@ -8,7 +8,7 @@ internal data class OIDCAuthenticationRequest constructor(
     var redirectUri: String,
     var responseType: String,
     var scope: List<String>,
-    var ssoEnabled: Boolean,
+    var isSsoEnabled: Boolean,
     var state: String? = null,
     var prompt: List<PromptOption>? = null,
     var maxAge: Int? = null,
@@ -70,13 +70,13 @@ internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
         query["x_page"] = it
     }
 
-    if (!this.ssoEnabled) {
+    if (!this.isSsoEnabled) {
         // For backward compatibility
         // If the developer updates the SDK but not the server
         query["x_suppress_idp_session_cookie"] = "true"
     }
 
-    query["x_sso_enabled"] = if (this.ssoEnabled) "true" else "false"
+    query["x_sso_enabled"] = if (this.isSsoEnabled) "true" else "false"
 
     return query
 }

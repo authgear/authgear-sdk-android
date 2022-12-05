@@ -36,12 +36,12 @@ data class ReauthentcateOptions @JvmOverloads constructor(
     var wechatRedirectURI: String? = null
 )
 
-internal fun ReauthentcateOptions.toRequest(idTokenHint: String, ssoEnabled: Boolean): OIDCAuthenticationRequest {
+internal fun ReauthentcateOptions.toRequest(idTokenHint: String, isSsoEnabled: Boolean): OIDCAuthenticationRequest {
     return OIDCAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
         scope = listOf("openid", "https://authgear.com/scopes/full-access"),
-        ssoEnabled = ssoEnabled,
+        isSsoEnabled = isSsoEnabled,
         state = this.state,
         prompt = null,
         loginHint = null,
