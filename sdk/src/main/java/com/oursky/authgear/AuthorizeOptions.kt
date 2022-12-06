@@ -54,12 +54,12 @@ data class AuthorizeOptions @JvmOverloads constructor(
     var page: String? = null
 )
 
-internal fun AuthorizeOptions.toRequest(ssoEnabled: Boolean): OIDCAuthenticationRequest {
+internal fun AuthorizeOptions.toRequest(isSsoEnabled: Boolean): OIDCAuthenticationRequest {
     return OIDCAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
         scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
-        ssoEnabled = ssoEnabled,
+        isSsoEnabled = isSsoEnabled,
         state = this.state,
         prompt = this.prompt,
         loginHint = this.loginHint,

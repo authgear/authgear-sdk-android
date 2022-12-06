@@ -197,10 +197,10 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <CheckBox
-                    android:id="@+id/ssoEnabled"
+                    android:id="@+id/isSsoEnabled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="SSO Enabled"
+                    android:text="Is SSO Enabled"
                     tools:ignore="HardcodedText" />
 
                 <Button
