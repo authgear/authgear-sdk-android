@@ -10,7 +10,7 @@ import com.oursky.authgear.oauth.OIDCTokenResponse
 /**
  * A thread-safe oauth repository.
  */
-internal interface OauthRepo {
+internal interface OAuthRepo {
     var endpoint: String?
     fun getOIDCConfiguration(): OIDCConfiguration
     fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse

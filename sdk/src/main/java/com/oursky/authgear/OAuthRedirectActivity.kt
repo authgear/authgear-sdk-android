@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 /**
  * An activity to be declared by user in their app's manifest to handle redirect deep link.
  */
-class OauthRedirectActivity : AppCompatActivity() {
+class OAuthRedirectActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val deepLink = intent.data?.toString()
@@ -15,7 +15,7 @@ class OauthRedirectActivity : AppCompatActivity() {
             finish()
             return
         }
-        startActivity(OauthActivity.createHandleDeepLinkIntent(this, intent.data))
+        startActivity(OAuthActivity.createHandleDeepLinkIntent(this, intent.data))
         finish()
     }
 }

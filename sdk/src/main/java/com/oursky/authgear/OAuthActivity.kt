@@ -6,10 +6,10 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 
-internal class OauthActivity : AppCompatActivity() {
+internal class OAuthActivity : AppCompatActivity() {
     companion object {
         @Suppress("unused")
-        private val TAG = OauthActivity::class.java.simpleName
+        private val TAG = OAuthActivity::class.java.simpleName
         const val KEY_REDIRECT_URL = "redirectUrl"
         private const val KEY_AUTHORIZATION_URL = "authorizationUrl"
         private const val KEY_BROADCAST_ACTION = "broadcastAction"
@@ -17,7 +17,7 @@ internal class OauthActivity : AppCompatActivity() {
          * Create an intent to open a browser to perform login.
          */
         fun createAuthorizationIntent(context: Context, broadcastAction: String, redirectUrl: String, url: String): Intent {
-            val intent = Intent(context, OauthActivity::class.java)
+            val intent = Intent(context, OAuthActivity::class.java)
             intent.putExtra(KEY_BROADCAST_ACTION, broadcastAction)
             intent.putExtra(KEY_REDIRECT_URL, redirectUrl)
             intent.putExtra(KEY_AUTHORIZATION_URL, url)
@@ -28,7 +28,7 @@ internal class OauthActivity : AppCompatActivity() {
          * Create an intent to handle a deep link launched from browser.
          */
         fun createHandleDeepLinkIntent(context: Context, uri: Uri?): Intent {
-            val intent = Intent(context, OauthActivity::class.java)
+            val intent = Intent(context, OAuthActivity::class.java)
             intent.data = uri
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             return intent

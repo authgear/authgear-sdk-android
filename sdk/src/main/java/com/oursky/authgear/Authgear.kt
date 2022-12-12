@@ -9,7 +9,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import com.oursky.authgear.data.key.KeyRepoKeystore
-import com.oursky.authgear.data.oauth.OauthRepoHttp
+import com.oursky.authgear.data.oauth.OAuthRepoHttp
 import kotlinx.coroutines.*
 import java.util.*
 
@@ -38,7 +38,7 @@ constructor(
             isSsoEnabled,
             tokenStorage,
             PersistentContainerStorage(application),
-            OauthRepoHttp(),
+            OAuthRepoHttp(),
             KeyRepoKeystore(),
             name
         )
@@ -47,7 +47,7 @@ constructor(
     private val scope = CoroutineScope(Dispatchers.IO)
 
     /**
-     * Oauth client ID.
+     * OAuth client ID.
      */
     val clientId: String
         @MainThread

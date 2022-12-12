@@ -15,7 +15,7 @@ import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.data.key.KeyRepo
-import com.oursky.authgear.data.oauth.OauthRepo
+import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OIDCAuthenticationRequest
 import com.oursky.authgear.oauth.OIDCTokenRequest
@@ -53,7 +53,7 @@ internal class AuthgearCore(
     private val isSsoEnabled: Boolean,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
-    private val oauthRepo: OauthRepo,
+    private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
     name: String? = null
 ) {
@@ -618,7 +618,7 @@ internal class AuthgearCore(
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     application.unregisterReceiver(this)
-                    val output = intent?.getStringExtra(OauthActivity.KEY_REDIRECT_URL)
+                    val output = intent?.getStringExtra(OAuthActivity.KEY_REDIRECT_URL)
                     if (output != null) {
                         k.resume(output)
                     } else {
@@ -628,7 +628,7 @@ internal class AuthgearCore(
             }
             application.registerReceiver(br, intentFilter)
             application.startActivity(
-                OauthActivity.createAuthorizationIntent(
+                OAuthActivity.createAuthorizationIntent(
                     application,
                     action,
                     redirectUrl,

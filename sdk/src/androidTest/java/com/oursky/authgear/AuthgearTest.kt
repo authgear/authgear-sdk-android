@@ -3,7 +3,7 @@ package com.oursky.authgear
 import android.app.Application
 import androidx.test.platform.app.InstrumentationRegistry
 import com.oursky.authgear.data.key.KeyRepoKeystore
-import com.oursky.authgear.data.oauth.OauthRepo
+import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.oauth.*
 import com.oursky.authgear.oauth.OIDCConfiguration
 import kotlinx.coroutines.*
@@ -25,7 +25,7 @@ class AuthgearTest {
     }
     // Currently the mock is test specific, if it gains sufficient generic features, can move it
     // back to data layer.
-    private class OauthRepoMock : OauthRepo {
+    private class OAuthRepoMock : OAuthRepo {
         private val refreshedCount = AtomicInteger(0)
         override var endpoint: String? = null
 
@@ -112,7 +112,7 @@ class AuthgearTest {
         }
     }
 
-    private lateinit var oauthMock: OauthRepoMock
+    private lateinit var oauthMock: OAuthRepoMock
     private lateinit var authgearCore: AuthgearCore
     private lateinit var authgearNotUsed: Authgear
 
@@ -120,7 +120,7 @@ class AuthgearTest {
     fun setup() {
         val application =
             InstrumentationRegistry.getInstrumentation().context.applicationContext as Application
-        oauthMock = OauthRepoMock()
+        oauthMock = OAuthRepoMock()
         authgearNotUsed = Authgear(
             application,
             ClientId,

@@ -10,10 +10,10 @@ import kotlinx.serialization.encodeToString
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
-internal class OauthRepoHttp : OauthRepo {
+internal class OAuthRepoHttp : OAuthRepo {
     companion object {
         @Suppress("unused")
-        private val TAG = OauthRepoHttp::class.java.simpleName
+        private val TAG = OAuthRepoHttp::class.java.simpleName
     }
 
     private var config: OIDCConfiguration? = null
