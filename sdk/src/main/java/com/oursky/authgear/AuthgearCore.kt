@@ -240,7 +240,7 @@ internal class AuthgearCore(
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    suspend fun authorize(options: AuthorizeOptions): AuthorizeResult {
+    suspend fun authenticate(options: AuthenticateOptions): AuthenticateResult {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
         val request = options.toRequest(this.isSsoEnabled)
@@ -372,7 +372,7 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
-    suspend fun promoteAnonymousUser(options: PromoteOptions): AuthorizeResult {
+    suspend fun promoteAnonymousUser(options: PromoteOptions): AuthenticateResult {
         requireIsInitialized()
         val keyId = storage.getAnonymousKeyId(name)
             ?: throw AnonymousUserNotFoundException()
@@ -638,7 +638,7 @@ internal class AuthgearCore(
         }
     }
 
-    private fun finishAuthorization(deepLink: String): AuthorizeResult {
+    private fun finishAuthorization(deepLink: String): AuthenticateResult {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val state = uri.getQueryParameter("state")
@@ -674,7 +674,7 @@ internal class AuthgearCore(
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
-        return AuthorizeResult(userInfo, uri.getQueryParameter("state"))
+        return AuthenticateResult(userInfo, uri.getQueryParameter("state"))
     }
 
     private fun finishReauthentication(deepLink: String): ReauthenticateResult {

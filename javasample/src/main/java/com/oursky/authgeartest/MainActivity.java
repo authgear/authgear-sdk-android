@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private CheckBox mIsSsoEnabled;
     private TextView mLoading;
     private View mConfigure;
-    private View mAuthorize;
+    private View mAuthenticate;
     private View mAuthenticateAnonymously;
     private View mPromoteAnonymousUser;
     private View mReauthenticate;
@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         mEndpoint = findViewById(R.id.endpointInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
-        mAuthorize = findViewById(R.id.authorize);
+        mAuthenticate = findViewById(R.id.authenticate);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mPromoteAnonymousUser = findViewById(R.id.promoteAnonymousUser);
         mReauthenticate = findViewById(R.id.reauthenticate);
@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
                         mIsSsoEnabled.isChecked()
                 )
         );
-        mAuthorize.setOnClickListener(view -> viewModel.authorize());
+        mAuthenticate.setOnClickListener(view -> viewModel.authenticate());
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
         mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
@@ -233,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         boolean canReauthenticate = viewModel.canReauthenticate().getValue();
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mConfigure.setEnabled(!isLoading);
-        mAuthorize.setEnabled(!isLoading && isConfigured && !isLoggedIn);
+        mAuthenticate.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
         mReauthenticate.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous);

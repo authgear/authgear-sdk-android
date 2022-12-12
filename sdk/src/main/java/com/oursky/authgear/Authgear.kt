@@ -128,16 +128,16 @@ constructor(
     }
 
     /**
-     * Authorize a user by directing the user to an external browser to authenticate.
-     * @param options Authorize options.
-     * @param onAuthorizeListener The listener.
+     * Authenticate a user by directing the user to an external browser to authenticate.
+     * @param options Authenticate options.
+     * @param onAuthenticateListener The listener.
      * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
     @JvmOverloads
-    fun authorize(
-        options: AuthorizeOptions,
-        onAuthorizeListener: OnAuthorizeListener,
+    fun authenticate(
+        options: AuthenticateOptions,
+        onAuthenticateListener: OnAuthenticateListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
@@ -151,14 +151,14 @@ constructor(
                             }
                     }
                 })
-                val result = core.authorize(options)
+                val result = core.authenticate(options)
                 handler.post {
-                    onAuthorizeListener.onAuthorized(result)
+                    onAuthenticateListener.onAuthenticated(result)
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
                 handler.post {
-                    onAuthorizeListener.onAuthorizationFailed(e)
+                    onAuthenticateListener.onAuthenticationFailed(e)
                 }
             } finally {
                 AuthgearCore.unregisteredWechatRedirectURI()
@@ -242,7 +242,7 @@ constructor(
     /**
      * Logout the current session by revoking the refresh token and access token. It works for both
      * normal user and anonymous user. For both cases, you can obtain the session again via
-     * [authorize] or [authenticateAnonymously].
+     * [authenticate] or [authenticateAnonymously].
      *
      * Note that for anonymous user, calling [authenticateAnonymously] after [logout] would login
      * to the same anonymous user.

@@ -5,7 +5,7 @@ import com.oursky.authgear.oauth.OIDCAuthenticationRequest
 /**
  * Authorization options.
  */
-data class AuthorizeOptions @JvmOverloads constructor(
+data class AuthenticateOptions @JvmOverloads constructor(
     /**
      * Redirection URI to which the response will be sent after authorization.
      */
@@ -54,7 +54,7 @@ data class AuthorizeOptions @JvmOverloads constructor(
     var page: String? = null
 )
 
-internal fun AuthorizeOptions.toRequest(isSsoEnabled: Boolean): OIDCAuthenticationRequest {
+internal fun AuthenticateOptions.toRequest(isSsoEnabled: Boolean): OIDCAuthenticationRequest {
     return OIDCAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
