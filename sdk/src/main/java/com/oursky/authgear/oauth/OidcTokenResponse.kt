@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class OIDCTokenResponse(
+internal data class OidcTokenResponse(
     @SerialName("id_token")
     val idToken: String? = null,
     @SerialName("token_type")

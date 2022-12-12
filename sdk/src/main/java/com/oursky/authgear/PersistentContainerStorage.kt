@@ -16,13 +16,13 @@ internal class PersistentContainerStorage(val context: Context) : ContainerStora
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
 
-    override fun setOIDCCodeVerifier(namespace: String, verifier: String) {
+    override fun setOidcCodeVerifier(namespace: String, verifier: String) {
         getPref(namespace).edit()
             .putString(Verifier, verifier)
             .commit()
     }
 
-    override fun getOIDCCodeVerifier(namespace: String): String? {
+    override fun getOidcCodeVerifier(namespace: String): String? {
         return getPref(namespace).getString(Verifier, null)
     }
 

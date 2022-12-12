@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class OIDCTokenRequest(
+internal data class OidcTokenRequest(
     @SerialName("grant_type")
     val grantType: GrantType,
     @SerialName("client_id")

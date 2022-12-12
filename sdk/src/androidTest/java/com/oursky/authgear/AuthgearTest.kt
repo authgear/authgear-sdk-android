@@ -5,7 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.oauth.*
-import com.oursky.authgear.oauth.OIDCConfiguration
+import com.oursky.authgear.oauth.OidcConfiguration
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -33,18 +33,18 @@ class AuthgearTest {
             return refreshedCount.get()
         }
 
-        override fun getOIDCConfiguration(): OIDCConfiguration {
-            return OIDCConfiguration("/authorize", "/token", "/userInfo", "/revoke", "logout")
+        override fun getOidcConfiguration(): OidcConfiguration {
+            return OidcConfiguration("/authorize", "/token", "/userInfo", "/revoke", "logout")
         }
 
-        override fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse {
+        override fun oidcTokenRequest(request: OidcTokenRequest): OidcTokenResponse {
             if (request.grantType == GrantType.REFRESH_TOKEN) {
                 refreshedCount.accumulateAndGet(1) { a, b ->
                     a + b
                 }
             }
             Thread.sleep(RefreshTokenWaitMs)
-            return OIDCTokenResponse("idToken", "code", "accessToken", 0, "refreshToken")
+            return OidcTokenResponse("idToken", "code", "accessToken", 0, "refreshToken")
         }
 
         override fun oidcRevocationRequest(refreshToken: String) {
@@ -84,10 +84,10 @@ class AuthgearTest {
     }
 
     private class TokenRepoMock : ContainerStorage {
-        override fun setOIDCCodeVerifier(namespace: String, verifier: String) {
+        override fun setOidcCodeVerifier(namespace: String, verifier: String) {
         }
 
-        override fun getOIDCCodeVerifier(namespace: String): String? {
+        override fun getOidcCodeVerifier(namespace: String): String? {
             return null
         }
 
@@ -150,25 +150,25 @@ class AuthgearTest {
 
     @Test
     fun serializeGrantType() {
-        val testOIDCTokenRequest = OIDCTokenRequest(
+        val testOidcTokenRequest = OidcTokenRequest(
             grantType = GrantType.ANONYMOUS,
             clientId = "test",
             xDeviceInfo = "dummy"
         )
         val encoded = Json.encodeToString(
-            testOIDCTokenRequest
+            testOidcTokenRequest
         )
         assertEquals(
-            "Encoded OIDCTokenRequest does not match with expected JSON string",
+            "Encoded OidcTokenRequest does not match with expected JSON string",
             encoded,
             "{\"grant_type\":\"urn:authgear:params:oauth:grant-type:anonymous-request\"," +
                     "\"client_id\":\"test\",\"x_device_info\":\"dummy\",\"redirect_uri\":null,\"code\":null,\"code_verifier\":null,\"refresh_token\":null,\"access_token\":null,\"jwt\":null}"
         )
-        val decoded: OIDCTokenRequest = Json.decodeFromString(encoded)
+        val decoded: OidcTokenRequest = Json.decodeFromString(encoded)
         assertEquals(
             "Expect serializing and deserializing with recover the same object",
             decoded,
-            testOIDCTokenRequest
+            testOidcTokenRequest
         )
     }
 }

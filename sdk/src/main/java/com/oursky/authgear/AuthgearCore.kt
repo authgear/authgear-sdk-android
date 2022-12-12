@@ -17,9 +17,9 @@ import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.net.toQueryParameter
-import com.oursky.authgear.oauth.OIDCAuthenticationRequest
-import com.oursky.authgear.oauth.OIDCTokenRequest
-import com.oursky.authgear.oauth.OIDCTokenResponse
+import com.oursky.authgear.oauth.OidcAuthenticationRequest
+import com.oursky.authgear.oauth.OidcTokenRequest
+import com.oursky.authgear.oauth.OidcTokenResponse
 import com.oursky.authgear.oauth.toQuery
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -64,13 +64,13 @@ internal class AuthgearCore(
         /**
          * To prevent user from using expired access token, we have to check in advance
          * whether it had expired and refresh it accordingly in [refreshAccessTokenIfNeeded]. If we
-         * use the expiry time in [OIDCTokenResponse] directly to check for expiry, it is possible
+         * use the expiry time in [OidcTokenResponse] directly to check for expiry, it is possible
          * that the access token had passed the check but ends up being expired when it arrives at
          * the server due to slow traffic or unfair scheduler.
          *
          * To compat this, we should consider the access token expired earlier than the expiry time
-         * calculated using [OIDCTokenResponse.expiresIn]. Current implementation uses
-         * [EXPIRE_IN_PERCENTAGE] of [OIDCTokenResponse.expiresIn] to calculate the expiry time.
+         * calculated using [OidcTokenResponse.expiresIn]. Current implementation uses
+         * [EXPIRE_IN_PERCENTAGE] of [OidcTokenResponse.expiresIn] to calculate the expiry time.
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
 
@@ -223,7 +223,7 @@ internal class AuthgearCore(
         val jwt = signJWT(signature, header, payload)
 
         val tokenResponse = oauthRepo.oidcTokenRequest(
-            OIDCTokenRequest(
+            OidcTokenRequest(
                 grantType = GrantType.ANONYMOUS,
                 clientId = clientId,
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
@@ -331,7 +331,7 @@ internal class AuthgearCore(
         URLEncoder.encode(token, StandardCharsets.UTF_8.name())
         }"
         val authorizeUrl = authorizeEndpoint(
-            OIDCAuthenticationRequest(
+            OidcAuthenticationRequest(
                 redirectUri = url.toString(),
                 responseType = "none",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
@@ -407,7 +407,7 @@ internal class AuthgearCore(
         val codeVerifier = this.setupVerifier()
 
         val authorizeUrl = authorizeEndpoint(
-            OIDCAuthenticationRequest(
+            OidcAuthenticationRequest(
                 redirectUri = options.redirectUri,
                 responseType = "code",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
@@ -444,7 +444,7 @@ internal class AuthgearCore(
             ?: throw UnauthenticatedUserException()
 
         val tokenResponse = oauthRepo.oidcTokenRequest(
-            OIDCTokenRequest(
+            OidcTokenRequest(
                 grantType = com.oursky.authgear.GrantType.ID_TOKEN,
                 clientId = clientId,
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
@@ -479,15 +479,15 @@ internal class AuthgearCore(
         }
     }
 
-    private fun authorizeEndpoint(request: OIDCAuthenticationRequest, codeVerifier: Verifier?): String {
-        val config = oauthRepo.getOIDCConfiguration()
+    private fun authorizeEndpoint(request: OidcAuthenticationRequest, codeVerifier: Verifier?): String {
+        val config = oauthRepo.getOidcConfiguration()
         val query = request.toQuery(this.clientId, codeVerifier)
         return "${config.authorizationEndpoint}?${query.toQueryParameter()}"
     }
 
     private fun setupVerifier(): Verifier {
         val verifier = generateCodeVerifier()
-        storage.setOIDCCodeVerifier(name, verifier)
+        storage.setOidcCodeVerifier(name, verifier)
         return Verifier(verifier, computeCodeChallenge(verifier))
     }
 
@@ -554,10 +554,10 @@ internal class AuthgearCore(
             clearSession(SessionStateChangeReason.NO_TOKEN)
             return
         }
-        val tokenResponse: OIDCTokenResponse?
+        val tokenResponse: OidcTokenResponse?
         try {
             tokenResponse = oauthRepo.oidcTokenRequest(
-                OIDCTokenRequest(
+                OidcTokenRequest(
                     grantType = GrantType.REFRESH_TOKEN,
                     clientId = clientId,
                     xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
@@ -574,7 +574,7 @@ internal class AuthgearCore(
         saveToken(tokenResponse, SessionStateChangeReason.FOUND_TOKEN)
     }
 
-    private fun saveToken(tokenResponse: OIDCTokenResponse, reason: SessionStateChangeReason) {
+    private fun saveToken(tokenResponse: OidcTokenResponse, reason: SessionStateChangeReason) {
         synchronized(this) {
             if (tokenResponse.accessToken != null) {
                 accessToken = tokenResponse.accessToken
@@ -660,9 +660,9 @@ internal class AuthgearCore(
                 state = state,
                 errorURI = errorURI
             )
-        val codeVerifier = storage.getOIDCCodeVerifier(name)
+        val codeVerifier = storage.getOidcCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
-            OIDCTokenRequest(
+            OidcTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
                 clientId = clientId,
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
@@ -699,9 +699,9 @@ internal class AuthgearCore(
                 state = state,
                 errorURI = errorURI
             )
-        val codeVerifier = storage.getOIDCCodeVerifier(name)
+        val codeVerifier = storage.getOidcCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
-            OIDCTokenRequest(
+            OidcTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
                 clientId = clientId,
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
@@ -917,7 +917,7 @@ internal class AuthgearCore(
 
             try {
                 val tokenResponse = oauthRepo.oidcTokenRequest(
-                    OIDCTokenRequest(
+                    OidcTokenRequest(
                         grantType = com.oursky.authgear.GrantType.BIOMETRIC,
                         clientId = clientId,
                         xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),

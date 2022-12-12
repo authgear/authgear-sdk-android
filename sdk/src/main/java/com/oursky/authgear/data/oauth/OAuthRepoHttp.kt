@@ -16,12 +16,12 @@ internal class OAuthRepoHttp : OAuthRepo {
         private val TAG = OAuthRepoHttp::class.java.simpleName
     }
 
-    private var config: OIDCConfiguration? = null
+    private var config: OidcConfiguration? = null
 
     // Variable assignment is atomic in kotlin so no need to guard
     // If memory ordering becomes a problem, use AtomicReference (instead of synchronize)
     override var endpoint: String? = null
-    override fun getOIDCConfiguration(): OIDCConfiguration {
+    override fun getOidcConfiguration(): OidcConfiguration {
         require(endpoint != null) {
             "Missing endpoint in oauth repository"
         }
@@ -33,7 +33,7 @@ internal class OAuthRepoHttp : OAuthRepo {
             val configAfterAcquire = this.config
             if (configAfterAcquire != null) return configAfterAcquire
             val url = URL(URL(endpoint), "/.well-known/openid-configuration")
-            val newConfig: OIDCConfiguration = HttpClient.fetch(url = url, method = "GET", headers = emptyMap()) { conn ->
+            val newConfig: OidcConfiguration = HttpClient.fetch(url = url, method = "GET", headers = emptyMap()) { conn ->
                 conn.errorStream?.use {
                     val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
                     HttpClient.throwErrorIfNeeded(conn, responseString)
@@ -49,8 +49,8 @@ internal class OAuthRepoHttp : OAuthRepo {
         }
     }
 
-    override fun oidcTokenRequest(request: OIDCTokenRequest): OIDCTokenResponse {
-        val config = getOIDCConfiguration()
+    override fun oidcTokenRequest(request: OidcTokenRequest): OidcTokenResponse {
+        val config = getOidcConfiguration()
         val body = mutableMapOf<String, String>()
         body["grant_type"] = request.grantType.raw
         body["client_id"] = request.clientId
@@ -87,7 +87,7 @@ internal class OAuthRepoHttp : OAuthRepo {
     }
 
     override fun biometricSetupRequest(accessToken: String, clientId: String, jwt: String) {
-        val config = getOIDCConfiguration()
+        val config = getOidcConfiguration()
         val body = mutableMapOf<String, String>()
         body["client_id"] = clientId
         body["grant_type"] = GrantType.BIOMETRIC.raw
@@ -115,7 +115,7 @@ internal class OAuthRepoHttp : OAuthRepo {
     }
 
     override fun oidcRevocationRequest(refreshToken: String) {
-        val config = getOIDCConfiguration()
+        val config = getOidcConfiguration()
         val body = mutableMapOf<String, String>()
         body["token"] = refreshToken
         HttpClient.fetch(
@@ -140,7 +140,7 @@ internal class OAuthRepoHttp : OAuthRepo {
     }
 
     override fun oidcUserInfoRequest(accessToken: String): UserInfo {
-        val config = getOIDCConfiguration()
+        val config = getOidcConfiguration()
         return HttpClient.fetch(
             url = URL(config.userInfoEndpoint),
             method = "GET",
