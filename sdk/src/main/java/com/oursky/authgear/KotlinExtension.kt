@@ -17,10 +17,10 @@ suspend fun Authgear.refreshTokenIfNeeded(): String? {
 }
 
 /**
- * @see [Authgear.authorize].
+ * @see [Authgear.authenticate].
  */
-suspend fun Authgear.authorize(options: AuthorizeOptions): AuthorizeResult {
-    return core.authorize(options)
+suspend fun Authgear.authenticate(options: AuthenticateOptions): AuthenticateResult {
+    return core.authenticate(options)
 }
 
 /**
@@ -40,7 +40,7 @@ suspend fun Authgear.logout(force: Boolean? = null) {
 /**
  * @see [Authgear.promoteAnonymousUser].
  */
-suspend fun Authgear.promoteAnonymousUser(options: PromoteOptions): AuthorizeResult {
+suspend fun Authgear.promoteAnonymousUser(options: PromoteOptions): AuthenticateResult {
     return core.promoteAnonymousUser(options)
 }
 

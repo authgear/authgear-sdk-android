@@ -4,7 +4,7 @@ import com.oursky.authgear.AuthgearCore
 import com.oursky.authgear.ColorScheme
 import com.oursky.authgear.PromptOption
 
-internal data class OIDCAuthenticationRequest constructor(
+internal data class OidcAuthenticationRequest constructor(
     var redirectUri: String,
     var responseType: String,
     var scope: List<String>,
@@ -20,7 +20,7 @@ internal data class OIDCAuthenticationRequest constructor(
     var page: String? = null
 )
 
-internal fun OIDCAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
+internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
     val query = mutableMapOf(
         "client_id" to clientID,
         "response_type" to this.responseType,

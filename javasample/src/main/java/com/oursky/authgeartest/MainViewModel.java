@@ -18,14 +18,14 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
-import com.oursky.authgear.AuthorizeOptions;
-import com.oursky.authgear.AuthorizeResult;
+import com.oursky.authgear.AuthenticateOptions;
+import com.oursky.authgear.AuthenticateResult;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
-import com.oursky.authgear.OnAuthorizeListener;
+import com.oursky.authgear.OnAuthenticateListener;
 import com.oursky.authgear.OnConfigureListener;
 import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
@@ -264,15 +264,15 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void authorize() {
+    public void authenticate() {
         mIsLoading.setValue(true);
-        AuthorizeOptions options = new AuthorizeOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+        AuthenticateOptions options = new AuthenticateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
         options.setColorScheme(getColorScheme());
         options.setPage(mPage.getValue());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
-        mAuthgear.authorize(options, new OnAuthorizeListener() {
+        mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
-            public void onAuthorized(@Nullable AuthorizeResult result) {
+            public void onAuthenticated(@Nullable AuthenticateResult result) {
                 String state = result.getState();
                 Log.d(TAG, state == null ? "No state" : state);
                 mUserInfo.setValue(result.getUserInfo());
@@ -282,7 +282,7 @@ public class MainViewModel extends AndroidViewModel {
             }
 
             @Override
-            public void onAuthorizationFailed(@NonNull Throwable throwable) {
+            public void onAuthenticationFailed(@NonNull Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
                 setError(throwable);
@@ -523,7 +523,7 @@ public class MainViewModel extends AndroidViewModel {
         options.setColorScheme(getColorScheme());
         mAuthgear.promoteAnonymousUser(options, new OnPromoteAnonymousUserListener() {
             @Override
-            public void onPromoted(@NonNull AuthorizeResult result) {
+            public void onPromoted(@NonNull AuthenticateResult result) {
                 mUserInfo.setValue(result.getUserInfo());
                 mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
                 mIsLoading.setValue(false);

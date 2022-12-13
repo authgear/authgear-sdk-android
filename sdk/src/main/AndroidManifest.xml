@@ -2,7 +2,7 @@
     package="com.oursky.authgear">
     <uses-permission android:name="android.permission.INTERNET"/>
     <application>
-        <activity android:name=".OauthActivity"
+        <activity android:name=".OAuthActivity"
             android:exported="false"
             android:launchMode="singleTask" />
         <activity android:name=".WebViewActivity"

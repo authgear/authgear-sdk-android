@@ -1,8 +1,8 @@
 package com.oursky.authgear
 
 internal interface ContainerStorage {
-    fun setOIDCCodeVerifier(namespace: String, verifier: String)
-    fun getOIDCCodeVerifier(namespace: String): String?
+    fun setOidcCodeVerifier(namespace: String, verifier: String)
+    fun getOidcCodeVerifier(namespace: String): String?
 
     fun getAnonymousKeyId(namespace: String): String?
     fun setAnonymousKeyId(namespace: String, keyId: String)
