@@ -587,7 +587,7 @@ internal class AuthgearCore(
             }
             if (tokenResponse.expiresIn != null) {
                 expireAt =
-                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * EXPIRE_IN_PERCENTAGE).toLong())
+                    Instant.now() + Duration.ofSeconds((tokenResponse.expiresIn * EXPIRE_IN_PERCENTAGE).toLong())
             }
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
