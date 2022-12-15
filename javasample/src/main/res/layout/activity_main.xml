@@ -203,11 +203,43 @@
                     android:text="Is SSO Enabled"
                     tools:ignore="HardcodedText" />
 
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/sessionStateFeild"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingVertical="24dp"
+                    >
+
+                    <TextView
+                        android:id="@+id/sessionStateLabel"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="SessionState"
+                        tools:ignore="HardcodedText" />
+
+                    <EditText
+                        android:id="@+id/sessionStateInput"
+                        android:layout_height="wrap_content"
+                        android:layout_width="0dp"
+                        android:background="@null"
+                        app:layout_constraintStart_toEndOf="@+id/sessionStateLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="SessionState"
+                        android:inputType="text"
+                        android:enabled="false"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
                 <Button
                     android:id="@+id/configure"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
                     android:layout_gravity="center_horizontal"
                     android:text="Configure" />
 

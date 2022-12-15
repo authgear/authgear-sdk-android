@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
     private CheckBox mIsSsoEnabled;
+    private TextView mSessionState;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthenticate;
@@ -77,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
         mIsSsoEnabled = findViewById(R.id.isSsoEnabled);
+        mSessionState = findViewById(R.id.sessionStateInput);
 
         String[] pages = {
             PAGE_UNSET,
@@ -178,11 +180,14 @@ public class MainActivity extends AppCompatActivity {
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mIsSsoEnabled.setChecked(viewModel.isSsoEnabled().getValue());
+        mSessionState.setText(viewModel.sessionState().getValue().toString());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
             mLoading.setText(isConfigured ? "Loading..." : "Configuring...");
         });
+
+        viewModel.sessionState().observe(this, sessionState -> mSessionState.setText(viewModel.sessionState().getValue().toString()));
 
         viewModel.isLoading().observe(this, isLoading -> updateButtonDisabledState(viewModel));
         viewModel.isBiometricEnabled().observe(this, isEnabled -> updateButtonDisabledState(viewModel));
