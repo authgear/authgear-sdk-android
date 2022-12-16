@@ -315,7 +315,14 @@ internal class AuthgearCore(
 
         val refreshToken = tokenStorage.getRefreshToken(name)
             ?: throw UnauthenticatedUserException()
-        val token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+
+        val token: String
+        try {
+            token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+        } catch (e: Exception) {
+            handleInvalidGrantError(e)
+            throw e
+        }
 
         val builder = Uri.parse(authgearEndpoint).buildUpon()
         builder.path(path)
@@ -433,7 +440,12 @@ internal class AuthgearCore(
 
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
-        return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
+        try {
+            return oauthRepo.oidcUserInfoRequest(accessToken ?: "")
+        } catch (e: Exception) {
+            handleInvalidGrantError(e)
+            throw e
+        }
     }
 
     suspend fun refreshIDToken() {
@@ -443,17 +455,22 @@ internal class AuthgearCore(
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
 
-        val tokenResponse = oauthRepo.oidcTokenRequest(
-            OidcTokenRequest(
-                grantType = com.oursky.authgear.GrantType.ID_TOKEN,
-                clientId = clientId,
-                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                accessToken = accessToken
+        try {
+            val tokenResponse = oauthRepo.oidcTokenRequest(
+                OidcTokenRequest(
+                    grantType = com.oursky.authgear.GrantType.ID_TOKEN,
+                    clientId = clientId,
+                    xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
+                    accessToken = accessToken
+                )
             )
-        )
 
-        if (tokenResponse.idToken != null) {
-            this.idToken = tokenResponse.idToken
+            if (tokenResponse.idToken != null) {
+                this.idToken = tokenResponse.idToken
+            }
+        } catch (e: Exception) {
+            handleInvalidGrantError(e)
+            throw e
         }
     }
 
@@ -565,8 +582,8 @@ internal class AuthgearCore(
                 )
             )
         } catch (e: Exception) {
+            handleInvalidGrantError(e)
             if (e is OAuthException && e.error == "invalid_grant") {
-                clearSession(SessionStateChangeReason.INVALID)
                 return
             }
             throw e
@@ -587,7 +604,7 @@ internal class AuthgearCore(
             }
             if (tokenResponse.expiresIn != null) {
                 expireAt =
-                    Instant.now() + Duration.ofMillis((tokenResponse.expiresIn * EXPIRE_IN_PERCENTAGE).toLong())
+                    Instant.now() + Duration.ofSeconds((tokenResponse.expiresIn * EXPIRE_IN_PERCENTAGE).toLong())
             }
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
@@ -717,6 +734,16 @@ internal class AuthgearCore(
         return ReauthenticateResult(userInfo, uri.getQueryParameter("state"))
     }
 
+    private fun handleInvalidGrantError(e: Exception) {
+        if (e is OAuthException && e.error == "invalid_grant") {
+            clearSession(SessionStateChangeReason.INVALID)
+            return
+        } else if (e is ServerException && e.reason == "InvalidGrant") {
+            clearSession(SessionStateChangeReason.INVALID)
+            return
+        }
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     fun checkBiometricSupported(context: Context, allowed: Int) {
         requireIsInitialized()
@@ -832,8 +859,13 @@ internal class AuthgearCore(
             }
         }
 
-        this.oauthRepo.biometricSetupRequest(accessToken, clientId, jwt)
-        storage.setBiometricKeyId(name, kid)
+        try {
+            this.oauthRepo.biometricSetupRequest(accessToken, clientId, jwt)
+            storage.setBiometricKeyId(name, kid)
+        } catch (e: Exception) {
+            handleInvalidGrantError(e)
+            throw e
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
