@@ -74,6 +74,8 @@ internal class AuthgearCore(
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
 
+        const val KEY_REDIRECT_URL = "redirectUrl"
+
         /**
          * Check and handle wehchat redirect uri and trigger delegate function if needed
          */
@@ -634,7 +636,7 @@ internal class AuthgearCore(
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     application.unregisterReceiver(this)
-                    val output = intent?.getStringExtra(OAuthActivity.KEY_REDIRECT_URL)
+                    val output = intent?.getStringExtra(KEY_REDIRECT_URL)
                     if (output != null) {
                         k.resume(output)
                     } else {
