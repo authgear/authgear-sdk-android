@@ -42,6 +42,7 @@ import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.TransientTokenStorage;
+import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
@@ -62,6 +63,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
+    final private MutableLiveData<UIVariant> mUIVariant = new MutableLiveData<>(UIVariant.CUSTOM_TABS);
     final private MutableLiveData<Boolean> mIsSsoEnabled = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
@@ -137,6 +139,10 @@ public class MainViewModel extends AndroidViewModel {
         mColorScheme.setValue(colorScheme);
     }
 
+    public void setUIVariant(UIVariant uiVariant) {
+        mUIVariant.setValue(uiVariant);
+    }
+
     public LiveData<String> clientID() {
         return mClientID;
     }
@@ -190,7 +196,8 @@ public class MainViewModel extends AndroidViewModel {
                     clientID,
                     endpoint,
                     new TransientTokenStorage(),
-                    isSsoEnabled
+                    isSsoEnabled,
+                    mUIVariant.getValue()
             );
         } else {
             mAuthgear = new Authgear(
@@ -198,7 +205,8 @@ public class MainViewModel extends AndroidViewModel {
                     clientID,
                     endpoint,
                     new PersistentTokenStorage(getApplication()),
-                    isSsoEnabled
+                    isSsoEnabled,
+                    mUIVariant.getValue()
             );
         }
         mAuthgear.configure(new OnConfigureListener() {
