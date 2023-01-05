@@ -14,15 +14,18 @@ import java.util.concurrent.atomic.AtomicInteger
 class OAuthWebViewActivity : AppCompatActivity() {
 
     companion object {
-        private const val KEY_REDIRECT_URI = "redirect_uri"
+        private const val KEY_REDIRECT_URI = "redirectUri"
+        private const val KEY_BROADCAST_ACTION = "broadcastAction"
         private const val MENU_ID_CANCEL = 1
-        fun createIntent(ctx: Context?, uri: Uri?, redirectUri: Uri?): Intent {
+        fun createIntent(ctx: Context?, broadcastAction: String, uri: Uri?, redirectUri: Uri?): Intent {
             val intent = Intent(ctx, OAuthWebViewActivity::class.java)
             // It is important to keep activity launch mode as standard.
             // Other launch modes such as singleTask will make onActivityResult called immediately
             // with RESULT_CANCELED.
             intent.data = uri
+            intent.putExtra(KEY_BROADCAST_ACTION, broadcastAction)
             intent.putExtra(KEY_REDIRECT_URI, redirectUri)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             return intent
         }
     }
@@ -34,6 +37,7 @@ class OAuthWebViewActivity : AppCompatActivity() {
 
     override fun finish() {
         // finish() is overridden to ALWAYS set activity result.
+        this.sendBroadcast()
         if (mResult == null) {
             this.setResult(RESULT_CANCELED)
         } else {
@@ -154,5 +158,15 @@ class OAuthWebViewActivity : AppCompatActivity() {
 
     private fun removeQueryAndFragment(uri: Uri): Uri {
         return uri.buildUpon().query(null).fragment(null).build()
+    }
+
+    private fun sendBroadcast() {
+        intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
+            val broadcastIntent = Intent(broadcastAction)
+            mResult?.data?.toString()?.let {
+                broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, it)
+            }
+            this.sendBroadcast(broadcastIntent)
+        }
     }
 }
