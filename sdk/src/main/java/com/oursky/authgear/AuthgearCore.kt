@@ -373,8 +373,8 @@ internal class AuthgearCore(
     suspend fun open(page: Page, options: SettingOptions? = null) {
         openUrl(
             when (page) {
-                Page.Settings -> "/settings"
-                Page.Identity -> "/settings/identities"
+                Page.SETTINGS -> "/settings"
+                Page.IDENTITY -> "/settings/identities"
             },
             options
         )

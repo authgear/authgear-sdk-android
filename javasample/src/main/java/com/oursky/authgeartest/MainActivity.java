@@ -104,8 +104,8 @@ public class MainActivity extends AppCompatActivity {
 
         String[] colorSchemes = {
                 COLOR_SCHEME_USE_SYSTEM,
-                ColorScheme.Light.name(),
-                ColorScheme.Dark.name(),
+                ColorScheme.LIGHT.name(),
+                ColorScheme.DARK.name(),
         };
         mColorScheme = findViewById(R.id.colorSchemeSpinner);
         ArrayAdapter<String> colorSchemeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, colorSchemes);
@@ -175,10 +175,10 @@ public class MainActivity extends AppCompatActivity {
                 String value = (String) parent.getItemAtPosition(position);
                 if (COLOR_SCHEME_USE_SYSTEM.equals(value)) {
                     viewModel.setColorScheme(null);
-                } else if (ColorScheme.Light.name().equals(value)) {
-                    viewModel.setColorScheme(ColorScheme.Light);
-                } else if (ColorScheme.Dark.name().equals(value)) {
-                    viewModel.setColorScheme(ColorScheme.Dark);
+                } else if (ColorScheme.LIGHT.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.LIGHT);
+                } else if (ColorScheme.DARK.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.DARK);
                 }
             }
 

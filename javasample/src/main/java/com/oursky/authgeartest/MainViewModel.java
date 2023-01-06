@@ -408,9 +408,9 @@ public class MainViewModel extends AndroidViewModel {
     private ColorScheme getSystemColorScheme() {
         int currentNightMode = getApplication().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
-            return ColorScheme.Dark;
+            return ColorScheme.DARK;
         }
-        return ColorScheme.Light;
+        return ColorScheme.LIGHT;
     }
 
     public void enableBiometric(FragmentActivity activity) {
@@ -500,7 +500,7 @@ public class MainViewModel extends AndroidViewModel {
         SettingOptions options = new SettingOptions();
         options.setColorScheme(getColorScheme());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
-        mAuthgear.open(Page.Settings, options, new OnOpenURLListener() {
+        mAuthgear.open(Page.SETTINGS, options, new OnOpenURLListener() {
             @Override
             public void onClosed() {
                 mIsLoading.setValue(false);
