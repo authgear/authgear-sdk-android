@@ -115,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         String[] uiVariants = {
                 UIVariant.CUSTOM_TABS.name(),
                 UIVariant.WEB_VIEW.name(),
+                UIVariant.WEB_VIEW_FULL_SCREEN.name(),
         };
         mUIVariant = findViewById(R.id.uiVariantSpinner);
         ArrayAdapter<String> mUIVariantAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, uiVariants);
@@ -195,6 +196,8 @@ public class MainActivity extends AppCompatActivity {
                     viewModel.setUIVariant(UIVariant.CUSTOM_TABS);
                 } else if (UIVariant.WEB_VIEW.name().equals(value)) {
                     viewModel.setUIVariant(UIVariant.WEB_VIEW);
+                } else if (UIVariant.WEB_VIEW_FULL_SCREEN.name().equals(value)) {
+                    viewModel.setUIVariant(UIVariant.WEB_VIEW_FULL_SCREEN);
                 }
             }
 

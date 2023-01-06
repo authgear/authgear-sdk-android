@@ -15,5 +15,9 @@
         <activity
             android:name=".OAuthWebViewActivity"
             android:exported="false" />
+        <activity
+            android:name=".OAuthWebViewFullScreenActivity"
+            android:theme="@style/AuthgearTheme.FullScreen"
+            android:exported="false" />
     </application>
 </manifest>
