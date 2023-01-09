@@ -23,6 +23,7 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar"></activity>
         <activity
             android:name=".MainActivity"
+            android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -31,7 +32,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.oursky.authgear.OAuthRedirectActivity">
+        <activity
+            android:name="com.oursky.authgear.OAuthRedirectActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
