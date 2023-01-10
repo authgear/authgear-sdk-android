@@ -1,6 +1,8 @@
 package com.oursky.authgeartest;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -38,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mColorScheme;
     private Spinner mUIVariant;
     private CheckBox mIsSsoEnabled;
+    private EditText mCustomUIQuery;
     private TextView mSessionState;
     private TextView mLoading;
     private View mConfigure;
@@ -81,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         mLogout = findViewById(R.id.logout);
         mIsSsoEnabled = findViewById(R.id.isSsoEnabled);
         mSessionState = findViewById(R.id.sessionStateInput);
+        mCustomUIQuery = findViewById(R.id.customUIQueryInput);
 
         String[] pages = {
             PAGE_UNSET,
@@ -205,6 +209,20 @@ public class MainActivity extends AppCompatActivity {
             public void onNothingSelected(AdapterView<?> parent) {
 
             }
+        });
+
+        mCustomUIQuery.setText(viewModel.customUIQuery().getValue());
+        mCustomUIQuery.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                viewModel.setCustomUIQuery(charSequence.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {}
         });
 
         mClientId.setText(viewModel.clientID().getValue());

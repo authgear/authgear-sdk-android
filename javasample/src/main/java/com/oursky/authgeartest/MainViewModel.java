@@ -64,6 +64,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
     final private MutableLiveData<UIVariant> mUIVariant = new MutableLiveData<>(UIVariant.CUSTOM_TABS);
+    final private MutableLiveData<String> mCustomUIQuery = new MutableLiveData<>("");
     final private MutableLiveData<Boolean> mIsSsoEnabled = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
@@ -82,11 +83,13 @@ public class MainViewModel extends AndroidViewModel {
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
             Boolean storedIsSsoEnabled = preferences.getBoolean("isSsoEnabled", false);
+            String storedCustomUIQuery = preferences.getString("customUIQuery", "");
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
             mIsSsoEnabled.setValue(storedIsSsoEnabled);
+            mCustomUIQuery.setValue(storedCustomUIQuery);
         }
     }
 
@@ -143,6 +146,15 @@ public class MainViewModel extends AndroidViewModel {
         mUIVariant.setValue(uiVariant);
     }
 
+    public void setCustomUIQuery(String customUIQuery) {
+        MainApplication app = getApplication();
+        app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
+                .edit()
+                .putString("customUIQuery", customUIQuery)
+                .apply();
+        mCustomUIQuery.setValue(customUIQuery);
+    }
+
     public LiveData<String> clientID() {
         return mClientID;
     }
@@ -154,6 +166,8 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
     public LiveData<Boolean> isSsoEnabled() { return mIsSsoEnabled; }
+
+    public LiveData<String> customUIQuery() { return mCustomUIQuery; }
 
     public LiveData<Boolean> isConfigured() {
         return mIsConfigured;
@@ -275,6 +289,7 @@ public class MainViewModel extends AndroidViewModel {
         AuthenticateOptions options = new AuthenticateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
         options.setColorScheme(getColorScheme());
         options.setPage(mPage.getValue());
+        options.setCustomUIQuery(getCustomUIQuery());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
@@ -304,6 +319,7 @@ public class MainViewModel extends AndroidViewModel {
                     ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     options.setColorScheme(getColorScheme());
+                    options.setCustomUIQuery(getCustomUIQuery());
                     mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
                         @Override
                         public void onFinished(@Nullable UserInfo userInfo) {
@@ -403,6 +419,14 @@ public class MainViewModel extends AndroidViewModel {
             return explicit;
         }
         return getSystemColorScheme();
+    }
+
+    private String getCustomUIQuery() {
+        String customUIQuery = mCustomUIQuery.getValue();
+        if (customUIQuery != null && !customUIQuery.isEmpty()) {
+            return customUIQuery;
+        }
+        return null;
     }
 
     private ColorScheme getSystemColorScheme() {

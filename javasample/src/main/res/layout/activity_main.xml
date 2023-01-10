@@ -225,6 +225,35 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/customUIQuery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/customUIQueryLabel"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="Custom UI Query"
+                        tools:ignore="HardcodedText" />
+
+                    <EditText
+                        android:id="@+id/customUIQueryInput"
+                        android:layout_height="wrap_content"
+                        android:layout_width="0dp"
+                        android:hint="e.g. x=1&amp;y=2&amp;z=3"
+                        app:layout_constraintStart_toEndOf="@+id/customUIQueryLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:inputType="text"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
                 <CheckBox
                     android:id="@+id/isSsoEnabled"
                     android:layout_width="match_parent"
