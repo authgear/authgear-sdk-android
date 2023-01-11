@@ -151,9 +151,9 @@ constructor(
                             }
                     }
                 })
-                val result = core.authenticate(options)
+                val userInfo = core.authenticate(options)
                 handler.post {
-                    onAuthenticateListener.onAuthenticated(result)
+                    onAuthenticateListener.onAuthenticated(userInfo)
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -188,9 +188,9 @@ constructor(
                             }
                         }
                     })
-                val result = core.reauthenticate(options, biometricOptions)
+                val userInfo = core.reauthenticate(options, biometricOptions)
                 handler.post {
-                    listener.onFinished(result)
+                    listener.onFinished(userInfo)
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -418,9 +418,9 @@ constructor(
                         }
                     }
                 )
-                val result = core.promoteAnonymousUser(options)
+                val userInfo = core.promoteAnonymousUser(options)
                 handler.post {
-                    onPromoteAnonymousUserListener.onPromoted(result)
+                    onPromoteAnonymousUserListener.onPromoted(userInfo)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
