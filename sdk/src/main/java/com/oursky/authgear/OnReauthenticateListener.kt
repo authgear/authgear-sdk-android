@@ -1,6 +1,6 @@
 package com.oursky.authgear
 
 interface OnReauthenticateListener {
-    fun onFinished(result: ReauthenticateResult)
+    fun onFinished(userInfo: UserInfo)
     fun onFailed(throwable: Throwable)
 }

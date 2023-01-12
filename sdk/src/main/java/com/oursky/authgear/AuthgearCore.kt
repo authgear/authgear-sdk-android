@@ -240,7 +240,7 @@ internal class AuthgearCore(
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    suspend fun authenticate(options: AuthenticateOptions): AuthenticateResult {
+    suspend fun authenticate(options: AuthenticateOptions): UserInfo {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
         val request = options.toRequest(this.isSsoEnabled)
@@ -252,14 +252,13 @@ internal class AuthgearCore(
     suspend fun reauthenticate(
         options: ReauthentcateOptions,
         biometricOptions: BiometricOptions?
-    ): ReauthenticateResult {
+    ): UserInfo {
         requireIsInitialized()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val biometricEnabled = this.isBiometricEnabled()
             if (biometricEnabled && biometricOptions != null) {
-                val userInfo = this.authenticateBiometric(biometricOptions)
-                return ReauthenticateResult(userInfo = userInfo, state = options.state)
+                return this.authenticateBiometric(biometricOptions)
             }
         }
 
@@ -379,7 +378,7 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
-    suspend fun promoteAnonymousUser(options: PromoteOptions): AuthenticateResult {
+    suspend fun promoteAnonymousUser(options: PromoteOptions): UserInfo {
         requireIsInitialized()
         val keyId = storage.getAnonymousKeyId(name)
             ?: throw AnonymousUserNotFoundException()
@@ -655,7 +654,7 @@ internal class AuthgearCore(
         }
     }
 
-    private fun finishAuthorization(deepLink: String): AuthenticateResult {
+    private fun finishAuthorization(deepLink: String): UserInfo {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val state = uri.getQueryParameter("state")
@@ -691,10 +690,10 @@ internal class AuthgearCore(
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
-        return AuthenticateResult(userInfo, uri.getQueryParameter("state"))
+        return userInfo
     }
 
-    private fun finishReauthentication(deepLink: String): ReauthenticateResult {
+    private fun finishReauthentication(deepLink: String): UserInfo {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val state = uri.getQueryParameter("state")
@@ -731,7 +730,7 @@ internal class AuthgearCore(
         tokenResponse.idToken?.let {
             this.idToken = it
         }
-        return ReauthenticateResult(userInfo, uri.getQueryParameter("state"))
+        return userInfo
     }
 
     private fun handleInvalidGrantError(e: Exception) {

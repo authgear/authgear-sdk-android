@@ -19,7 +19,7 @@ suspend fun Authgear.refreshTokenIfNeeded(): String? {
 /**
  * @see [Authgear.authenticate].
  */
-suspend fun Authgear.authenticate(options: AuthenticateOptions): AuthenticateResult {
+suspend fun Authgear.authenticate(options: AuthenticateOptions): UserInfo {
     return core.authenticate(options)
 }
 
@@ -40,7 +40,7 @@ suspend fun Authgear.logout(force: Boolean? = null) {
 /**
  * @see [Authgear.promoteAnonymousUser].
  */
-suspend fun Authgear.promoteAnonymousUser(options: PromoteOptions): AuthenticateResult {
+suspend fun Authgear.promoteAnonymousUser(options: PromoteOptions): UserInfo {
     return core.promoteAnonymousUser(options)
 }
 

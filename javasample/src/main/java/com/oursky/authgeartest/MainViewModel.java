@@ -19,7 +19,6 @@ import androidx.lifecycle.MutableLiveData;
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthenticateOptions;
-import com.oursky.authgear.AuthenticateResult;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ColorScheme;
@@ -39,7 +38,6 @@ import com.oursky.authgear.Page;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.PromoteOptions;
 import com.oursky.authgear.ReauthentcateOptions;
-import com.oursky.authgear.ReauthenticateResult;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
@@ -272,10 +270,8 @@ public class MainViewModel extends AndroidViewModel {
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
-            public void onAuthenticated(@Nullable AuthenticateResult result) {
-                String state = result.getState();
-                Log.d(TAG, state == null ? "No state" : state);
-                mUserInfo.setValue(result.getUserInfo());
+            public void onAuthenticated(@Nullable UserInfo userInfo) {
+                mUserInfo.setValue(userInfo);
                 mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
                 mIsLoading.setValue(false);
                 updateBiometricState();
@@ -302,10 +298,8 @@ public class MainViewModel extends AndroidViewModel {
                     options.setColorScheme(getColorScheme());
                     mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
                         @Override
-                        public void onFinished(@Nullable ReauthenticateResult result) {
-                            String state = result.getState();
-                            Log.d(TAG, state == null ? "No state" : state);
-                            mUserInfo.setValue(result.getUserInfo());
+                        public void onFinished(@Nullable UserInfo userInfo) {
+                            mUserInfo.setValue(userInfo);
                             mIsLoading.setValue(false);
                         }
 
@@ -339,10 +333,8 @@ public class MainViewModel extends AndroidViewModel {
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     mAuthgear.reauthenticate(options, null, new OnReauthenticateListener() {
                         @Override
-                        public void onFinished(@Nullable ReauthenticateResult result) {
-                            String state = result.getState();
-                            Log.d(TAG, state == null ? "No state" : state);
-                            mUserInfo.setValue(result.getUserInfo());
+                        public void onFinished(@Nullable UserInfo userInfo) {
+                            mUserInfo.setValue(userInfo);
                             mIsLoading.setValue(false);
                         }
 
@@ -523,8 +515,8 @@ public class MainViewModel extends AndroidViewModel {
         options.setColorScheme(getColorScheme());
         mAuthgear.promoteAnonymousUser(options, new OnPromoteAnonymousUserListener() {
             @Override
-            public void onPromoted(@NonNull AuthenticateResult result) {
-                mUserInfo.setValue(result.getUserInfo());
+            public void onPromoted(@NonNull UserInfo userInfo) {
+                mUserInfo.setValue(userInfo);
                 mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
                 mIsLoading.setValue(false);
             }
