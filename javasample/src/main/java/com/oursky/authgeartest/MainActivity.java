@@ -1,6 +1,8 @@
 package com.oursky.authgeartest;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -23,6 +25,7 @@ import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.TransientTokenStorage;
+import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
@@ -35,7 +38,9 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
+    private Spinner mUIVariant;
     private CheckBox mIsSsoEnabled;
+    private EditText mCustomUIQuery;
     private TextView mSessionState;
     private TextView mLoading;
     private View mConfigure;
@@ -79,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         mLogout = findViewById(R.id.logout);
         mIsSsoEnabled = findViewById(R.id.isSsoEnabled);
         mSessionState = findViewById(R.id.sessionStateInput);
+        mCustomUIQuery = findViewById(R.id.customUIQueryInput);
 
         String[] pages = {
             PAGE_UNSET,
@@ -102,13 +108,23 @@ public class MainActivity extends AppCompatActivity {
 
         String[] colorSchemes = {
                 COLOR_SCHEME_USE_SYSTEM,
-                ColorScheme.Light.name(),
-                ColorScheme.Dark.name(),
+                ColorScheme.LIGHT.name(),
+                ColorScheme.DARK.name(),
         };
         mColorScheme = findViewById(R.id.colorSchemeSpinner);
         ArrayAdapter<String> colorSchemeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, colorSchemes);
         colorSchemeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mColorScheme.setAdapter(colorSchemeAdapter);
+
+        String[] uiVariants = {
+                UIVariant.CUSTOM_TABS.name(),
+                UIVariant.WEB_VIEW.name(),
+                UIVariant.WEB_VIEW_FULL_SCREEN.name(),
+        };
+        mUIVariant = findViewById(R.id.uiVariantSpinner);
+        ArrayAdapter<String> mUIVariantAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, uiVariants);
+        mUIVariantAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mUIVariant.setAdapter(mUIVariantAdapter);
 
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
@@ -164,10 +180,10 @@ public class MainActivity extends AppCompatActivity {
                 String value = (String) parent.getItemAtPosition(position);
                 if (COLOR_SCHEME_USE_SYSTEM.equals(value)) {
                     viewModel.setColorScheme(null);
-                } else if (ColorScheme.Light.name().equals(value)) {
-                    viewModel.setColorScheme(ColorScheme.Light);
-                } else if (ColorScheme.Dark.name().equals(value)) {
-                    viewModel.setColorScheme(ColorScheme.Dark);
+                } else if (ColorScheme.LIGHT.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.LIGHT);
+                } else if (ColorScheme.DARK.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.DARK);
                 }
             }
 
@@ -175,6 +191,38 @@ public class MainActivity extends AppCompatActivity {
             public void onNothingSelected(AdapterView<?> parent) {
 
             }
+        });
+        mUIVariant.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String value = (String) parent.getItemAtPosition(position);
+                if (UIVariant.CUSTOM_TABS.name().equals(value)) {
+                    viewModel.setUIVariant(UIVariant.CUSTOM_TABS);
+                } else if (UIVariant.WEB_VIEW.name().equals(value)) {
+                    viewModel.setUIVariant(UIVariant.WEB_VIEW);
+                } else if (UIVariant.WEB_VIEW_FULL_SCREEN.name().equals(value)) {
+                    viewModel.setUIVariant(UIVariant.WEB_VIEW_FULL_SCREEN);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+        mCustomUIQuery.setText(viewModel.customUIQuery().getValue());
+        mCustomUIQuery.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                viewModel.setCustomUIQuery(charSequence.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {}
         });
 
         mClientId.setText(viewModel.clientID().getValue());

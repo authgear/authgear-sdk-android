@@ -20,6 +20,7 @@ constructor(
     authgearEndpoint: String,
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
     isSsoEnabled: Boolean = false,
+    uiVariant: UIVariant = UIVariant.CUSTOM_TABS,
     name: String? = null
 ) {
     companion object {
@@ -36,6 +37,7 @@ constructor(
             clientId,
             authgearEndpoint,
             isSsoEnabled,
+            uiVariant,
             tokenStorage,
             PersistentContainerStorage(application),
             OAuthRepoHttp(),

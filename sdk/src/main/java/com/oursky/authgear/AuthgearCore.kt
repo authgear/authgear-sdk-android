@@ -51,6 +51,7 @@ internal class AuthgearCore(
     val clientId: String,
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
+    private val uiVariant: UIVariant,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
@@ -73,6 +74,8 @@ internal class AuthgearCore(
          * [EXPIRE_IN_PERCENTAGE] of [OidcTokenResponse.expiresIn] to calculate the expiry time.
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
+
+        const val KEY_REDIRECT_URL = "redirectUrl"
 
         /**
          * Check and handle wehchat redirect uri and trigger delegate function if needed
@@ -370,8 +373,8 @@ internal class AuthgearCore(
     suspend fun open(page: Page, options: SettingOptions? = null) {
         openUrl(
             when (page) {
-                Page.Settings -> "/settings"
-                Page.Identity -> "/settings/identities"
+                Page.SETTINGS -> "/settings"
+                Page.IDENTITY -> "/settings/identities"
             },
             options
         )
@@ -634,7 +637,7 @@ internal class AuthgearCore(
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     application.unregisterReceiver(this)
-                    val output = intent?.getStringExtra(OAuthActivity.KEY_REDIRECT_URL)
+                    val output = intent?.getStringExtra(KEY_REDIRECT_URL)
                     if (output != null) {
                         k.resume(output)
                     } else {
@@ -643,14 +646,36 @@ internal class AuthgearCore(
                 }
             }
             application.registerReceiver(br, intentFilter)
-            application.startActivity(
-                OAuthActivity.createAuthorizationIntent(
-                    application,
-                    action,
-                    redirectUrl,
-                    authorizeUrl
+            val redirectUri = Uri.parse(redirectUrl)
+            val authorizeUri = Uri.parse(authorizeUrl)
+            if (uiVariant == UIVariant.WEB_VIEW) {
+                application.startActivity(
+                    OAuthWebViewActivity.createIntent(
+                        application,
+                        action,
+                        authorizeUri,
+                        redirectUri
+                    )
                 )
-            )
+            } else if (uiVariant == UIVariant.WEB_VIEW_FULL_SCREEN) {
+                application.startActivity(
+                    OAuthWebViewFullScreenActivity.createIntent(
+                        application,
+                        action,
+                        authorizeUri,
+                        redirectUri
+                    )
+                )
+            } else {
+                application.startActivity(
+                    OAuthActivity.createAuthorizationIntent(
+                        application,
+                        action,
+                        redirectUrl,
+                        authorizeUrl
+                    )
+                )
+            }
         }
     }
 
