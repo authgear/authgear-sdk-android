@@ -6,17 +6,12 @@ import android.os.Bundle
 import android.util.SparseArray
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.graphics.Insets
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 
 internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
@@ -31,8 +26,6 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
     private val mFileChooserCallback = SparseArray<ValueCallback<Array<Uri>>>()
     private val mRequestCode = AtomicInteger()
     private var mResult: Intent? = null
-    private var safeAreaInsets: Insets = Insets.NONE
-    private var isPageVisible = false
 
     override fun finish() {
         // finish() is overridden to ALWAYS set activity result.
@@ -90,12 +83,6 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
 
         // Override URL navigation
         mWebView!!.webViewClient = object : WebViewClient() {
-            override fun onPageCommitVisible(view: WebView?, url: String?) {
-                this@OAuthWebViewBaseActivity.isPageVisible = true
-                updateSafeArea()
-                super.onPageCommitVisible(view, url)
-            }
-
             override fun onPageFinished(view: WebView, url: String) {
                 if (mWebView!!.canGoBack()) {
                     // Show back button in the toolbar.
@@ -146,19 +133,6 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
         val data = this.intent.data
         mWebView!!.loadUrl(data.toString())
         this.setContentView(mWebView)
-
-        ViewCompat.setOnApplyWindowInsetsListener(
-            mWebView!!
-        ) { view: View?, windowInsetsCompat: WindowInsetsCompat ->
-            safeAreaInsets = windowInsetsCompat.getInsets(
-                WindowInsetsCompat.Type.statusBars() or
-                        WindowInsetsCompat.Type.navigationBars() or
-                        WindowInsetsCompat.Type.displayCutout() or
-                        WindowInsetsCompat.Type.ime()
-            )
-            updateSafeArea()
-            windowInsetsCompat
-        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -186,43 +160,5 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
             }
             this.sendBroadcast(broadcastIntent)
         }
-    }
-
-    private fun updateSafeArea() {
-        if (!this.isPageVisible) {
-            return
-        }
-
-        // https://bugs.chromium.org/p/chromium/issues/detail?id=1094366
-        val pixelRatio = resources.displayMetrics.density
-        val setStyle = "document.documentElement.style.setProperty('%s', '%fpx')"
-        val js = java.lang.String.join(
-            ";",
-            java.lang.String.format(
-                Locale.ROOT,
-                setStyle,
-                "--safe-area-inset-top",
-                safeAreaInsets.top / pixelRatio
-            ),
-            java.lang.String.format(
-                Locale.ROOT,
-                setStyle,
-                "--safe-area-inset-left",
-                safeAreaInsets.left / pixelRatio
-            ),
-            java.lang.String.format(
-                Locale.ROOT,
-                setStyle,
-                "--safe-area-inset-right",
-                safeAreaInsets.right / pixelRatio
-            ),
-            java.lang.String.format(
-                Locale.ROOT,
-                setStyle,
-                "--safe-area-inset-bottom",
-                safeAreaInsets.bottom / pixelRatio
-            )
-        )
-        mWebView!!.evaluateJavascript(js, null)
     }
 }
