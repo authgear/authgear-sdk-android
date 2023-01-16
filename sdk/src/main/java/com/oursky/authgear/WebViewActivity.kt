@@ -30,14 +30,14 @@ internal class WebViewActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var webView: WebView
+    private lateinit var webView: AuthgearWebView
     private var cachedFilePathCallback: ValueCallback<Array<Uri>>? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        webView = WebView(this).apply {
+        webView = AuthgearWebView(this).apply {
             settings.javaScriptEnabled = true
         }
         webView.webViewClient = object : WebViewClient() {

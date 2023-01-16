@@ -10,7 +10,6 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -22,7 +21,7 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
         private const val MENU_ID_CANCEL = 1
     }
 
-    private var mWebView: WebView? = null
+    private var mWebView: AuthgearWebView? = null
     private val mFileChooserCallback = SparseArray<ValueCallback<Array<Uri>>>()
     private val mRequestCode = AtomicInteger()
     private var mResult: Intent? = null
@@ -78,11 +77,11 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mWebView = WebView(this)
+        mWebView = AuthgearWebView(this)
         mWebView!!.settings.javaScriptEnabled = true
 
         // Override URL navigation
-        mWebView!!.webViewClient = object : WebViewClient() {
+        val webViewClient = object : AuthgearWebView.Client() {
             override fun onPageFinished(view: WebView, url: String) {
                 if (mWebView!!.canGoBack()) {
                     // Show back button in the toolbar.
@@ -111,6 +110,7 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
                 return super.shouldOverrideUrlLoading(view, request)
             }
         }
+        mWebView!!.setAuthgearWebViewClient(webViewClient)
         mWebView!!.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView,
