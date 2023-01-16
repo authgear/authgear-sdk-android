@@ -261,6 +261,11 @@ public class MainViewModel extends AndroidViewModel {
                 req.state = state;
                 wechatAPI.sendReq(req);
             }
+
+            @Override
+            public void onOpenEmailClient(@NonNull Context context) {
+                Log.d("MainViewModel", "onOpenEmailClient");
+            }
         });
 
         resetState();

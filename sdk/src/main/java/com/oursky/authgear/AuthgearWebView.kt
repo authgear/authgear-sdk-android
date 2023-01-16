@@ -1,12 +1,14 @@
 package com.oursky.authgear
 
 import android.content.Context
-import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 
-class AuthgearWebView(context: Context) : WebView(context) {
+class AuthgearWebView(
+    context: Context,
+    private val listener: AuthgearWebViewListener
+) : WebView(context) {
     companion object {
         private const val jsBridgeName = "authgear"
         private val script = """
@@ -24,7 +26,7 @@ class AuthgearWebView(context: Context) : WebView(context) {
     private val jSBridge = object {
         @JavascriptInterface
         fun onOpenEmailClient() {
-            Log.d("AuthgearWebView", "onOpenEmailClient")
+            listener.onOpenEmailClient()
         }
     }
 

@@ -75,6 +75,7 @@ internal class AuthgearCore(
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
 
+        const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
         const val KEY_REDIRECT_URL = "redirectUrl"
 
         /**
@@ -636,12 +637,20 @@ internal class AuthgearCore(
             val intentFilter = IntentFilter(action)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    application.unregisterReceiver(this)
-                    val output = intent?.getStringExtra(KEY_REDIRECT_URL)
-                    if (output != null) {
-                        k.resume(output)
-                    } else {
-                        k.resumeWithException(CancelException())
+                    val type = intent?.getStringExtra(KEY_OAUTH_BOARDCAST_TYPE) ?: return
+                    when (type) {
+                        OAuthBoardcastType.REDIRECT_URL.name -> {
+                            application.unregisterReceiver(this)
+                            val output = intent.getStringExtra(KEY_REDIRECT_URL)
+                            if (output != null) {
+                                k.resume(output)
+                            } else {
+                                k.resumeWithException(CancelException())
+                            }
+                        }
+                        OAuthBoardcastType.OPEN_EMAIL_CLIENT.name -> {
+                            delegate?.onOpenEmailClient(application)
+                        }
                     }
                 }
             }

@@ -37,7 +37,7 @@ internal class WebViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        webView = AuthgearWebView(this).apply {
+        webView = AuthgearWebView(this, object : AuthgearWebViewListener {}).apply {
             settings.javaScriptEnabled = true
         }
         webView.webViewClient = object : WebViewClient() {

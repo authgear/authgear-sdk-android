@@ -28,7 +28,7 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
 
     override fun finish() {
         // finish() is overridden to ALWAYS set activity result.
-        this.sendBroadcast()
+        this.sendRedirectURLBroadcast()
         if (mResult == null) {
             this.setResult(RESULT_CANCELED)
         } else {
@@ -77,8 +77,11 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mWebView = AuthgearWebView(this)
-        mWebView!!.settings.javaScriptEnabled = true
+        mWebView = AuthgearWebView(this, object : AuthgearWebViewListener {
+            override fun onOpenEmailClient() {
+                sendOpenEmailClientBroadcast()
+            }
+        })
 
         // Override URL navigation
         val webViewClient = object : AuthgearWebView.Client() {
@@ -152,12 +155,24 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
         return uri.buildUpon().query(null).fragment(null).build()
     }
 
-    private fun sendBroadcast() {
+    private fun sendRedirectURLBroadcast() {
         intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBoardcastType.REDIRECT_URL.name)
             mResult?.data?.toString()?.let {
                 broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, it)
             }
+            this.sendBroadcast(broadcastIntent)
+        }
+    }
+
+    private fun sendOpenEmailClientBroadcast() {
+        intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
+            val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.putExtra(
+                AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE,
+                OAuthBoardcastType.OPEN_EMAIL_CLIENT.name
+            )
             this.sendBroadcast(broadcastIntent)
         }
     }
