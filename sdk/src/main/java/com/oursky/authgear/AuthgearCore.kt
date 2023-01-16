@@ -687,6 +687,9 @@ internal class AuthgearCore(
         val errorDescription = uri.getQueryParameter("error_description")
         var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
+            if (error == "cancel") {
+                throw CancelException()
+            }
             throw OAuthException(
                 error = error,
                 errorDescription = errorDescription,
@@ -726,6 +729,9 @@ internal class AuthgearCore(
         val errorDescription = uri.getQueryParameter("error_description")
         var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
+            if (error == "cancel") {
+                throw CancelException()
+            }
             throw OAuthException(
                 error = error,
                 errorDescription = errorDescription,
