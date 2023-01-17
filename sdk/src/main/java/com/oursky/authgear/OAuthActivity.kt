@@ -48,7 +48,7 @@ internal class OAuthActivity : AppCompatActivity() {
 
         intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
-            broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBoardcastType.REDIRECT_URL.name)
+            broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBroadcastType.REDIRECT_URL.name)
             this.intent.data?.toString()?.let {
                 broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, it)
             }

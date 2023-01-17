@@ -158,7 +158,7 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
     private fun sendRedirectURLBroadcast() {
         intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
-            broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBoardcastType.REDIRECT_URL.name)
+            broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBroadcastType.REDIRECT_URL.name)
             mResult?.data?.toString()?.let {
                 broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, it)
             }
@@ -171,7 +171,7 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
             val broadcastIntent = Intent(broadcastAction)
             broadcastIntent.putExtra(
                 AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE,
-                OAuthBoardcastType.OPEN_EMAIL_CLIENT.name
+                OAuthBroadcastType.OPEN_EMAIL_CLIENT.name
             )
             this.sendBroadcast(broadcastIntent)
         }

@@ -648,7 +648,7 @@ internal class AuthgearCore(
                 override fun onReceive(context: Context?, intent: Intent?) {
                     val type = intent?.getStringExtra(KEY_OAUTH_BOARDCAST_TYPE) ?: return
                     when (type) {
-                        OAuthBoardcastType.REDIRECT_URL.name -> {
+                        OAuthBroadcastType.REDIRECT_URL.name -> {
                             application.unregisterReceiver(this)
                             val output = intent.getStringExtra(KEY_REDIRECT_URL)
                             if (output != null) {
@@ -657,7 +657,7 @@ internal class AuthgearCore(
                                 k.resumeWithException(CancelException())
                             }
                         }
-                        OAuthBoardcastType.OPEN_EMAIL_CLIENT.name -> {
+                        OAuthBroadcastType.OPEN_EMAIL_CLIENT.name -> {
                             if (context == null) return
                             delegate?.onOpenEmailClient(context)
                         }
