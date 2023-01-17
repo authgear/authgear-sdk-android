@@ -24,6 +24,7 @@ import com.oursky.authgear.AuthenticateOptions;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ColorScheme;
+import com.oursky.authgear.EmailClient;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
 import com.oursky.authgear.OnAuthenticateListener;
@@ -51,6 +52,7 @@ import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
+import java.util.Arrays;
 import java.util.Date;
 
 @SuppressWarnings("ConstantConditions")
@@ -266,7 +268,14 @@ public class MainViewModel extends AndroidViewModel {
 
             @Override
             public void onOpenEmailClient(@NonNull Context context) {
-                Intent intent = Authgear.Companion.makeEmailClientIntentChooser(context, "Open mail app");
+                Intent intent = Authgear.Companion.makeEmailClientIntentChooser(
+                        context,
+                        "Open mail app",
+                        Arrays.asList(
+                                EmailClient.getGmail(),
+                                EmailClient.getOutlook()
+                        )
+                );
                 if (intent != null) {
                     context.startActivity(intent);
                 } else {

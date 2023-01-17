@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.LabeledIntent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -30,30 +29,26 @@ constructor(
     companion object {
         @Suppress("unused")
         private val TAG = Authgear::class.java.simpleName
-        fun makeEmailClientIntentChooser(ctx: Context, title: String): Intent? {
-            // ref: https://github.com/includable/react-native-email-link/blob/46e3354e36ba4c7ea9b77822db2210b58a60c35e/android/src/main/java/agency/flexible/react/modules/email/EmailModule.java#L31
-            val emailIntent = Intent(Intent.ACTION_VIEW, Uri.parse("mailto:"))
+        fun makeEmailClientIntentChooser(ctx: Context, title: String, clients: List<EmailClient>): Intent? {
+            val launchIntents: MutableList<Intent> = mutableListOf()
             val pm: PackageManager = ctx.packageManager
-            val resInfo = pm.queryIntentActivities(emailIntent, 0)
-            if (resInfo.size == 0) {
+            for (client in clients) {
+                val intent = pm.getLaunchIntentForPackage(client.packageName) ?: continue
+                val info = pm.resolveActivity(intent, 0) ?: continue
+                launchIntents.add(LabeledIntent(
+                    intent,
+                    client.packageName,
+                    info.loadLabel(pm),
+                    info.icon))
+            }
+            if (launchIntents.size == 0) {
                 return null
             }
-            val firstRi = resInfo[0]
-            val intentChooser: Intent = pm.getLaunchIntentForPackage(
-                firstRi.activityInfo.packageName) ?: return null
-            val intentList: MutableList<LabeledIntent> = ArrayList()
-            for (i in 1 until resInfo.size) {
-                val ri = resInfo[i]
-                val packageName = ri.activityInfo.packageName
-                val intent = pm.getLaunchIntentForPackage(packageName)
-                if (intent != null) {
-                    intentList.add(LabeledIntent(intent, packageName, ri.loadLabel(pm), ri.icon))
-                }
-            }
-            val openInChooser = Intent.createChooser(intentChooser, title)
-            openInChooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray())
-            openInChooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            return openInChooser
+            val firstIntent = launchIntents[0]
+            val chooser = Intent.createChooser(firstIntent, title)
+            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, launchIntents.toTypedArray())
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            return chooser
         }
     }
 
