@@ -2,10 +2,12 @@ package com.oursky.authgeartest;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -264,7 +266,13 @@ public class MainViewModel extends AndroidViewModel {
 
             @Override
             public void onOpenEmailClient(@NonNull Context context) {
-                Log.d("MainViewModel", "onOpenEmailClient");
+                Intent intent = Authgear.Companion.makeEmailClientIntentChooser(context, "Open mail app");
+                if (intent != null) {
+                    context.startActivity(intent);
+                } else {
+                    Toast toast = Toast.makeText(context, "No email client installed", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
             }
         });
 

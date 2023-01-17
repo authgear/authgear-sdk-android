@@ -649,7 +649,8 @@ internal class AuthgearCore(
                             }
                         }
                         OAuthBoardcastType.OPEN_EMAIL_CLIENT.name -> {
-                            delegate?.onOpenEmailClient(application)
+                            if (context == null) return
+                            delegate?.onOpenEmailClient(context)
                         }
                     }
                 }
