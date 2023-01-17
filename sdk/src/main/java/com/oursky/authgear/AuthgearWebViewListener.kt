@@ -1,6 +1,6 @@
 package com.oursky.authgear
 
-interface AuthgearWebViewListener {
+internal interface AuthgearWebViewListener {
     @JvmDefault
     fun onOpenEmailClient() {}
 }

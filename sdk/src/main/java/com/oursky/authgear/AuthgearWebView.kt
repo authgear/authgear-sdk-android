@@ -5,7 +5,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 
-class AuthgearWebView(
+internal class AuthgearWebView(
     context: Context,
     private val listener: AuthgearWebViewListener
 ) : WebView(context) {
