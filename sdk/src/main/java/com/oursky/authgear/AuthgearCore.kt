@@ -360,8 +360,17 @@ internal class AuthgearCore(
             val intentFilter = IntentFilter(action)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    application.unregisterReceiver(this)
-                    k.resume(Unit)
+                    val type = intent?.getStringExtra(WebViewActivity.KEY_BROADCAST_TYPE) ?: return
+                    when (type) {
+                        WebViewActivity.BroadcastType.END.name -> {
+                            application.unregisterReceiver(this)
+                            k.resume(Unit)
+                        }
+                        WebViewActivity.BroadcastType.OPEN_EMAIL_CLIENT.name -> {
+                            if (context == null) return
+                            delegate?.onOpenEmailClient(context)
+                        }
+                    }
                 }
             }
             application.registerReceiver(br, intentFilter)

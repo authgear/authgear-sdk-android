@@ -12,7 +12,6 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 
 internal class WebViewActivity : AppCompatActivity() {
@@ -20,6 +19,7 @@ internal class WebViewActivity : AppCompatActivity() {
         private const val MENU_ID_CANCEL = 1
         private const val KEY_BROADCAST_ACTION = "broadcastAction"
         private const val REQUEST_CODE_CHOOSE_FILE = 1
+        const val KEY_BROADCAST_TYPE = "broadcastType"
 
         fun createIntent(context: Context, broadcastAction: String, uri: Uri): Intent {
             val intent = Intent(context, WebViewActivity::class.java)
@@ -37,10 +37,12 @@ internal class WebViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        webView = AuthgearWebView(this, object : AuthgearWebViewListener {}).apply {
-            settings.javaScriptEnabled = true
-        }
-        webView.webViewClient = object : WebViewClient() {
+        webView = AuthgearWebView(this, object : AuthgearWebViewListener {
+            override fun onOpenEmailClient() {
+                sendOpenEmailClientBroadcast()
+            }
+        })
+        webView.setAuthgearWebViewClient(object : AuthgearWebView.Client() {
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest?
@@ -51,7 +53,7 @@ internal class WebViewActivity : AppCompatActivity() {
                 }
                 return super.shouldOverrideUrlLoading(view, request)
             }
-        }
+        })
         webView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView?,
@@ -78,7 +80,7 @@ internal class WebViewActivity : AppCompatActivity() {
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
-            this.sendBroadcast()
+            this.sendEndBroadcast()
             super.onBackPressed()
         }
     }
@@ -92,7 +94,7 @@ internal class WebViewActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
         MENU_ID_CANCEL -> {
-            this.sendBroadcast()
+            this.sendEndBroadcast()
             finish()
             true
         }
@@ -114,10 +116,24 @@ internal class WebViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendBroadcast() {
+    private fun sendEndBroadcast() {
         this.intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.putExtra(KEY_BROADCAST_TYPE, BroadcastType.END.name)
             this.sendBroadcast(broadcastIntent)
         }
+    }
+
+    private fun sendOpenEmailClientBroadcast() {
+        this.intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
+            val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.putExtra(KEY_BROADCAST_TYPE, BroadcastType.OPEN_EMAIL_CLIENT.name)
+            this.sendBroadcast(broadcastIntent)
+        }
+    }
+
+    enum class BroadcastType {
+        END,
+        OPEN_EMAIL_CLIENT
     }
 }
