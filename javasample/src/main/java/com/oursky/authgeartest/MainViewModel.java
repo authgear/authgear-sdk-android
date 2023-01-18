@@ -268,12 +268,12 @@ public class MainViewModel extends AndroidViewModel {
 
             @Override
             public void onOpenEmailClient(@NonNull Context context) {
-                Intent intent = Authgear.Companion.makeEmailClientIntentChooser(
+                Intent intent = Authgear.makeEmailClientIntentChooser(
                         context,
                         "Open mail app",
                         Arrays.asList(
-                                EmailClient.getGmail(),
-                                EmailClient.getOutlook()
+                                EmailClient.GMAIL,
+                                EmailClient.OUTLOOK
                         )
                 );
                 if (intent != null) {

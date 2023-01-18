@@ -29,6 +29,8 @@ constructor(
     companion object {
         @Suppress("unused")
         private val TAG = Authgear::class.java.simpleName
+
+        @JvmStatic
         fun makeEmailClientIntentChooser(ctx: Context, title: String, clients: List<EmailClient>): Intent? {
             val launchIntents: MutableList<Intent> = mutableListOf()
             val pm: PackageManager = ctx.packageManager
