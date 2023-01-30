@@ -75,6 +75,7 @@ internal class AuthgearCore(
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
 
+        const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
         const val KEY_REDIRECT_URL = "redirectUrl"
 
         /**
@@ -359,8 +360,17 @@ internal class AuthgearCore(
             val intentFilter = IntentFilter(action)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    application.unregisterReceiver(this)
-                    k.resume(Unit)
+                    val type = intent?.getStringExtra(WebViewActivity.KEY_BROADCAST_TYPE) ?: return
+                    when (type) {
+                        WebViewActivity.BroadcastType.END.name -> {
+                            application.unregisterReceiver(this)
+                            k.resume(Unit)
+                        }
+                        WebViewActivity.BroadcastType.OPEN_EMAIL_CLIENT.name -> {
+                            if (context == null) return
+                            delegate?.onOpenEmailClient(context)
+                        }
+                    }
                 }
             }
             application.registerReceiver(br, intentFilter)
@@ -636,12 +646,21 @@ internal class AuthgearCore(
             val intentFilter = IntentFilter(action)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    application.unregisterReceiver(this)
-                    val output = intent?.getStringExtra(KEY_REDIRECT_URL)
-                    if (output != null) {
-                        k.resume(output)
-                    } else {
-                        k.resumeWithException(CancelException())
+                    val type = intent?.getStringExtra(KEY_OAUTH_BOARDCAST_TYPE) ?: return
+                    when (type) {
+                        OAuthBroadcastType.REDIRECT_URL.name -> {
+                            application.unregisterReceiver(this)
+                            val output = intent.getStringExtra(KEY_REDIRECT_URL)
+                            if (output != null) {
+                                k.resume(output)
+                            } else {
+                                k.resumeWithException(CancelException())
+                            }
+                        }
+                        OAuthBroadcastType.OPEN_EMAIL_CLIENT.name -> {
+                            if (context == null) return
+                            delegate?.onOpenEmailClient(context)
+                        }
                     }
                 }
             }

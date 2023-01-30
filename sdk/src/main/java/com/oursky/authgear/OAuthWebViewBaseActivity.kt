@@ -10,7 +10,6 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -22,14 +21,14 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
         private const val MENU_ID_CANCEL = 1
     }
 
-    private var mWebView: WebView? = null
+    private var mWebView: AuthgearWebView? = null
     private val mFileChooserCallback = SparseArray<ValueCallback<Array<Uri>>>()
     private val mRequestCode = AtomicInteger()
     private var mResult: Intent? = null
 
     override fun finish() {
         // finish() is overridden to ALWAYS set activity result.
-        this.sendBroadcast()
+        this.sendRedirectURLBroadcast()
         if (mResult == null) {
             this.setResult(RESULT_CANCELED)
         } else {
@@ -78,11 +77,14 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mWebView = WebView(this)
-        mWebView!!.settings.javaScriptEnabled = true
+        mWebView = AuthgearWebView(this, object : AuthgearWebViewListener {
+            override fun onOpenEmailClient() {
+                sendOpenEmailClientBroadcast()
+            }
+        })
 
         // Override URL navigation
-        mWebView!!.webViewClient = object : WebViewClient() {
+        val webViewClient = object : AuthgearWebView.Client() {
             override fun onPageFinished(view: WebView, url: String) {
                 if (mWebView!!.canGoBack()) {
                     // Show back button in the toolbar.
@@ -111,6 +113,7 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
                 return super.shouldOverrideUrlLoading(view, request)
             }
         }
+        mWebView!!.setAuthgearWebViewClient(webViewClient)
         mWebView!!.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView,
@@ -152,12 +155,24 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
         return uri.buildUpon().query(null).fragment(null).build()
     }
 
-    private fun sendBroadcast() {
+    private fun sendRedirectURLBroadcast() {
         intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBroadcastType.REDIRECT_URL.name)
             mResult?.data?.toString()?.let {
                 broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, it)
             }
+            this.sendBroadcast(broadcastIntent)
+        }
+    }
+
+    private fun sendOpenEmailClientBroadcast() {
+        intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
+            val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.putExtra(
+                AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE,
+                OAuthBroadcastType.OPEN_EMAIL_CLIENT.name
+            )
             this.sendBroadcast(broadcastIntent)
         }
     }
