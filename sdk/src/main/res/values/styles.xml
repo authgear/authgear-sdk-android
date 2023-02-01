@@ -1,5 +1,3 @@
 <resources>
-
-    <style name="AuthgearTheme" parent="Theme.AppCompat.DayNight.DarkActionBar"></style>
-
+    <style name="AuthgearTheme" parent="Theme.AppCompat.DayNight.DarkActionBar" />
 </resources>
