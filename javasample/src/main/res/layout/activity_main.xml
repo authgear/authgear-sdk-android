@@ -407,6 +407,15 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
+                    android:id="@+id/verifyEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Verify Email"
+                    tools:ignore="HardcodedText" />
+
+                <Button
                     android:id="@+id/fetchUserInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

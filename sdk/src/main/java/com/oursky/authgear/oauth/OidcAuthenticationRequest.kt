@@ -3,6 +3,7 @@ package com.oursky.authgear.oauth
 import com.oursky.authgear.AuthgearCore
 import com.oursky.authgear.ColorScheme
 import com.oursky.authgear.PromptOption
+import com.oursky.authgear.SettingsAction
 
 internal data class OidcAuthenticationRequest constructor(
     var redirectUri: String,
@@ -18,7 +19,8 @@ internal data class OidcAuthenticationRequest constructor(
     var idTokenHint: String? = null,
     var wechatRedirectURI: String? = null,
     var page: String? = null,
-    var customUIQuery: String? = null
+    var customUIQuery: String? = null,
+    var settingsAction: SettingsAction? = null
 )
 
 internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -73,6 +75,10 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
 
     this.customUIQuery?.let {
         query["x_custom_ui_query"] = it
+    }
+
+    this.settingsAction?.let {
+        query["x_settings_action"] = it.raw
     }
 
     if (!this.isSsoEnabled) {

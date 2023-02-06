@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private View mDisableBiometric;
     private View mAuthenticateBiometric;
     private View mOpenSettings;
+    private View mVerifyEmail;
     private View mFetchUserInfo;
     private View mShowAuthTime;
     private View mLogout;
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         mDisableBiometric = findViewById(R.id.disableBiometric);
         mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
         mOpenSettings = findViewById(R.id.openSettings);
+        mVerifyEmail = findViewById(R.id.verifyEmail);
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
@@ -142,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
         mDisableBiometric.setOnClickListener(view -> viewModel.disableBiometric());
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
         mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
+        mVerifyEmail.setOnClickListener(view -> viewModel.verifyEmail());
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
@@ -295,6 +298,7 @@ public class MainActivity extends AppCompatActivity {
         mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
         mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);
+        mVerifyEmail.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mShowAuthTime.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mLogout.setEnabled(!isLoading && isConfigured && isLoggedIn);

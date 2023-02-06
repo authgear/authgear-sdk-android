@@ -390,6 +390,59 @@ internal class AuthgearCore(
         )
     }
 
+    suspend fun performAction(action: SettingsAction, options: SettingsActionOptions) {
+        requireIsInitialized()
+
+        val refreshToken = tokenStorage.getRefreshToken(name)
+            ?: throw UnauthenticatedUserException()
+
+        val token: String
+        try {
+            token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+        } catch (e: Exception) {
+            handleInvalidGrantError(e)
+            throw e
+        }
+        val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
+            URLEncoder.encode(token, StandardCharsets.UTF_8.name())
+        }"
+        val authorizeUrl = authorizeEndpoint(
+            OidcAuthenticationRequest(
+                redirectUri = options.redirectUri,
+                responseType = "none",
+                scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+                isSsoEnabled = this.isSsoEnabled,
+                prompt = listOf(PromptOption.NONE),
+                loginHint = loginHint,
+                uiLocales = options?.uiLocales,
+                colorScheme = options?.colorScheme,
+                settingsAction = action
+            ),
+            null
+        )
+        val deepLink = openAuthorizeUrl(options.redirectUri, authorizeUrl)
+        finishPerformAction(deepLink)
+    }
+
+    private fun finishPerformAction(deepLink: String) {
+        val uri = Uri.parse(deepLink)
+        val state = uri.getQueryParameter("state")
+        val error = uri.getQueryParameter("error")
+        val errorDescription = uri.getQueryParameter("error_description")
+        var errorURI = uri.getQueryParameter("error_uri")
+        if (error != null) {
+            if (error == "cancel") {
+                throw CancelException()
+            }
+            throw OAuthException(
+                error = error,
+                errorDescription = errorDescription,
+                state = state,
+                errorURI = errorURI
+            )
+        }
+    }
+
     @Suppress("RedundantSuspendModifier", "BlockingMethodInNonBlockingContext")
     suspend fun promoteAnonymousUser(options: PromoteOptions): UserInfo {
         requireIsInitialized()

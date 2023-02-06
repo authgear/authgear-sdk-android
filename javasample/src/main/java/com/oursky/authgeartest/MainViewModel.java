@@ -36,6 +36,7 @@ import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.OnReauthenticateListener;
 import com.oursky.authgear.OnRefreshIDTokenListener;
+import com.oursky.authgear.OnVerifyEmailListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PersistentTokenStorage;
@@ -47,6 +48,7 @@ import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
+import com.oursky.authgear.oauth.VerifyEmailOptions;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
@@ -555,6 +557,44 @@ public class MainViewModel extends AndroidViewModel {
 
             @Override
             public void onFailed(Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
+    public void verifyEmail() {
+        mIsLoading.setValue(true);
+
+        mAuthgear.fetchUserInfo(new OnFetchUserInfoListener() {
+            @Override
+            public void onFetchedUserInfo(UserInfo userInfo) {
+                if (userInfo.getEmail() == null || userInfo.getEmailVerified() == true) {
+                    mIsLoading.setValue(false);
+                    setError(new RuntimeException("Unverified email not found"));
+                    return;
+                }
+
+                VerifyEmailOptions options = new VerifyEmailOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+                options.setColorScheme(getColorScheme());
+                mAuthgear.verifyEmail(options, new OnVerifyEmailListener() {
+                    @Override
+                    public void onFinished() {
+                        mIsLoading.setValue(false);
+                    }
+
+                    @Override
+                    public void onFailed(Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        mIsLoading.setValue(false);
+                        setError(throwable);
+                    }
+                });
+            }
+
+            @Override
+            public void onFetchingUserInfoFailed(Throwable throwable) {
                 Log.d(TAG, throwable.toString());
                 mIsLoading.setValue(false);
                 setError(throwable);

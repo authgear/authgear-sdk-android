@@ -13,6 +13,8 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
+import com.oursky.authgear.oauth.VerifyEmailOptions
+import com.oursky.authgear.oauth.toSettingsActionOptions
 import kotlinx.coroutines.*
 import java.util.*
 
@@ -405,6 +407,35 @@ constructor(
                 core.open(page, options)
                 handler.post {
                     listener?.onClosed()
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener?.onFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Verify email in web view.
+     *
+     * @param options Verify email options.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    fun verifyEmail(
+        options: VerifyEmailOptions,
+        listener: OnVerifyEmailListener? = null,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.performAction(SettingsAction.VERIFY_EMAIL, options.toSettingsActionOptions())
+                handler.post {
+                    listener?.onFinished()
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
