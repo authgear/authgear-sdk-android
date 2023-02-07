@@ -20,4 +20,5 @@ internal interface OAuthRepo {
     fun oauthChallenge(purpose: String): ChallengeResponse
     fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse
     fun wechatAuthCallback(code: String, state: String)
+    fun magicLinkVerificationRequest(code: String, clientId: String)
 }

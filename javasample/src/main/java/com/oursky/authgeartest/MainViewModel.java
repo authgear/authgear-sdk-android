@@ -610,4 +610,9 @@ public class MainViewModel extends AndroidViewModel {
             builder.create().show();
         }
     }
+
+    public void verifyLoginLink(Intent intent) {
+        String deepLink = intent.getData().toString();
+        mAuthgear.verifyLoginLink(deepLink);
+    }
 }

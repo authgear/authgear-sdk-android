@@ -542,6 +542,23 @@ constructor(
     }
 
     /**
+     * Login link verification function. In Login link flow, after deep link from generated link,
+     * this function should be called to verify and complete the approval.
+     * @param deepLink Deep link
+     */
+    @MainThread
+    @JvmOverloads
+    fun verifyLoginLink(deepLink: String, handler: Handler = Handler(Looper.getMainLooper())) {
+        scope.launch {
+            try {
+                core.verifyLoginLinkWithDeepLink(deepLink)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    /**
      * Check if biometric is supported. If not supported, an exception will be thrown.
      */
     @MainThread

@@ -237,4 +237,29 @@ internal class OAuthRepoHttp : OAuthRepo {
             }
         }
     }
+
+    override fun magicLinkVerificationRequest(code: String, clientId: String) {
+        val body = mutableMapOf<String, String>()
+        body["code"] = code
+        body["client_id"] = clientId
+        HttpClient.fetch(
+            url = URL(URL(endpoint), "/api/login_link/verification"),
+            method = "POST",
+            headers = mutableMapOf(
+                "content-type" to "application/json"
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(HttpClient.json.encodeToString(body).toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+        }
+    }
 }

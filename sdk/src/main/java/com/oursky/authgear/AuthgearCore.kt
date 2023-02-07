@@ -1025,4 +1025,29 @@ internal class AuthgearCore(
             throw wrapException(e)
         }
     }
+
+    fun verifyLoginLinkWithDeepLink(deepLink: String): Boolean {
+        requireIsInitialized()
+        val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
+        if (!deepLinkWithoutQuery.endsWith("/flows/verify_login_link")) {
+            return false
+        }
+        val uri = Uri.parse(deepLink)
+        val code = uri.getQueryParameter("token")
+        if (code != null) {
+            try {
+                oauthRepo.magicLinkVerificationRequest(code, clientId)
+            } catch (e: Exception) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun getURLWithoutQuery(input: String): String {
+        val uri = Uri.parse(input)
+        var builder = uri.buildUpon().clearQuery()
+        builder = builder.fragment("")
+        return builder.build().toString()
+    }
 }

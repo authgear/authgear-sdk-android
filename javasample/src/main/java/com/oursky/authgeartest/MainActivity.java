@@ -274,6 +274,8 @@ public class MainActivity extends AppCompatActivity {
             });
             builder.create().show();
         });
+
+        viewModel.verifyLoginLink(getIntent());
     }
 
     private void updateButtonDisabledState(MainViewModel viewModel) {
