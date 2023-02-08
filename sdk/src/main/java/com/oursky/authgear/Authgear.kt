@@ -324,6 +324,32 @@ constructor(
     }
 
     /**
+     * Generate URL for opening webpage with current session.
+     *
+     * @param redirectURI URI to be opened in web view
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    @ExperimentalAuthgearApi
+    fun generateUrl(redirectURI: String, listener: OnGenerateURLListener? = null, handler: Handler = Handler(Looper.getMainLooper())) {
+        scope.launch {
+            try {
+                val url = core.generateUrl(redirectURI)
+                handler.post {
+                    listener?.onGenerated(url)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener?.onFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
      * Open the specific path on the authgear server.
      *
      * @param path Path to be opened in web view
