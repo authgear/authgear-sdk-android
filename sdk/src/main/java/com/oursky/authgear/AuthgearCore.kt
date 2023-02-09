@@ -313,7 +313,8 @@ internal class AuthgearCore(
         oauthRepo.wechatAuthCallback(code, state)
     }
 
-    suspend fun openUrl(path: String, options: SettingOptions? = null) {
+    @Suppress("RedundantSuspendModifier")
+    suspend fun generateUrl(redirectUri: String, options: SettingOptions? = null): String {
         requireIsInitialized()
 
         val refreshToken = tokenStorage.getRefreshToken(name)
@@ -327,22 +328,13 @@ internal class AuthgearCore(
             throw e
         }
 
-        val builder = Uri.parse(authgearEndpoint).buildUpon()
-        builder.path(path)
-        options?.colorScheme?.let {
-            builder.appendQueryParameter("x_color_scheme", it.raw)
-        }
-        options?.uiLocales?.let {
-            builder.appendQueryParameter("ui_locales", it.joinToString(" "))
-        }
-        val url = builder.build()
-
         val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
-        URLEncoder.encode(token, StandardCharsets.UTF_8.name())
+            URLEncoder.encode(token, StandardCharsets.UTF_8.name())
         }"
-        val authorizeUrl = authorizeEndpoint(
+
+        return authorizeEndpoint(
             OidcAuthenticationRequest(
-                redirectUri = url.toString(),
+                redirectUri = redirectUri,
                 responseType = "none",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
                 isSsoEnabled = this.isSsoEnabled,
@@ -354,6 +346,22 @@ internal class AuthgearCore(
             ),
             null
         )
+    }
+
+    suspend fun openUrl(path: String, options: SettingOptions? = null) {
+        requireIsInitialized()
+
+        val builder = Uri.parse(authgearEndpoint).buildUpon()
+        builder.path(path)
+        options?.colorScheme?.let {
+            builder.appendQueryParameter("x_color_scheme", it.raw)
+        }
+        options?.uiLocales?.let {
+            builder.appendQueryParameter("ui_locales", it.joinToString(" "))
+        }
+        val url = builder.build()
+
+        val authorizeUrl = generateUrl(url.toString(), options)
 
         return suspendCoroutine { k ->
             val action = newRandomAction()
