@@ -138,7 +138,6 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
         this.setContentView(mWebView)
     }
 
-    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         val callback = mFileChooserCallback[requestCode] ?: return
