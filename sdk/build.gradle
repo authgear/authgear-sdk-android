@@ -37,7 +37,7 @@ android {
         preBuild.dependsOn ktlint
     }
     kotlinOptions {
-        freeCompilerArgs = ['-Xjvm-default=enable']
+        freeCompilerArgs = ['-Xjvm-default=enable', '-Xopt-in=kotlin.RequiresOptIn']
         jvmTarget = '1.8'
     }
 }
