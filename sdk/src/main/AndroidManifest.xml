@@ -19,6 +19,10 @@
             android:name=".OAuthWebViewFullScreenActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:exported="false" />
+        <activity
+            android:name=".latte.LatteActivity"
+            android:theme="@style/LatteTheme"
+            android:exported="false" />
     </application>
     <queries>
         <intent>
