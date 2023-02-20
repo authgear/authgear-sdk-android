@@ -194,6 +194,57 @@ constructor(
         }
     }
 
+    @MainThread
+    @JvmOverloads
+    @ExperimentalAuthgearApi
+    fun createAuthenticateRequest(
+        options: AuthenticateOptions,
+        listener: OnCreateAuthenticationRequestListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val request = core.createAuthenticateRequest(options)
+                handler.post {
+                    listener.onCreated(request)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onFailed(e)
+                }
+            } finally {
+                AuthgearCore.unregisteredWechatRedirectURI()
+            }
+        }
+    }
+
+    @MainThread
+    @JvmOverloads
+    @ExperimentalAuthgearApi
+    fun finishAuthentication(
+        finishUri: String,
+        request: AuthenticationRequest,
+        listener: OnAuthenticateListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val userInfo = core.finishAuthorization(finishUri, request.verifier)
+                handler.post {
+                    listener.onAuthenticated(userInfo)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onAuthenticationFailed(e)
+                }
+            } finally {
+                AuthgearCore.unregisteredWechatRedirectURI()
+            }
+        }
+    }
+
     /**
      * Reauthenticate the user either by biometric or web.
      */
