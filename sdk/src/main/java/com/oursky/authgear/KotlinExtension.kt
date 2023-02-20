@@ -101,5 +101,7 @@ suspend fun Authgear.authenticateBiometric(options: BiometricOptions): UserInfo 
  */
 @ExperimentalAuthgearApi
 suspend fun Authgear.generateUrl(redirectURI: String): Uri {
-    return core.generateUrl(redirectURI)
+    return withContext(Dispatchers.IO) {
+        core.generateUrl(redirectURI)
+    }
 }

@@ -384,7 +384,7 @@ constructor(
     @MainThread
     @JvmOverloads
     @ExperimentalAuthgearApi
-    fun generateUrl(redirectURI: String, listener: OnGenerateURLListener? = null, handler: Handler = Handler(Looper.getMainLooper())) {
+    fun generateUrl(redirectURI: String, listener: OnGenerateURLListener, handler: Handler = Handler(Looper.getMainLooper())) {
         scope.launch {
             try {
                 val url = core.generateUrl(redirectURI)
