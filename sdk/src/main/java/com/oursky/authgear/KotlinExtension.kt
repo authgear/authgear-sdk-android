@@ -2,11 +2,16 @@
 
 package com.oursky.authgear
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 /**
  * @see [Authgear.configure].
  */
 suspend fun Authgear.configure() {
-    return core.configure()
+    return withContext(Dispatchers.IO) {
+        core.configure()
+    }
 }
 
 /**
@@ -48,7 +53,9 @@ suspend fun Authgear.promoteAnonymousUser(options: PromoteOptions): UserInfo {
  * @see [Authgear.fetchUserInfo].
  */
 suspend fun Authgear.fetchUserInfo(): UserInfo {
-    return core.fetchUserInfo()
+    return withContext(Dispatchers.IO) {
+        core.fetchUserInfo()
+    }
 }
 
 /**
