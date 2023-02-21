@@ -2,11 +2,17 @@
 
 package com.oursky.authgear
 
+import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 /**
  * @see [Authgear.configure].
  */
 suspend fun Authgear.configure() {
-    return core.configure()
+    return withContext(Dispatchers.IO) {
+        core.configure()
+    }
 }
 
 /**
@@ -21,6 +27,29 @@ suspend fun Authgear.refreshTokenIfNeeded(): String? {
  */
 suspend fun Authgear.authenticate(options: AuthenticateOptions): UserInfo {
     return core.authenticate(options)
+}
+
+/**
+ * @see [Authgear.createAuthenticateRequest].
+ */
+@ExperimentalAuthgearApi
+suspend fun Authgear.createAuthenticateRequest(options: AuthenticateOptions): AuthenticationRequest {
+    return withContext(Dispatchers.IO) {
+        core.createAuthenticateRequest(options)
+    }
+}
+
+/**
+ * @see [Authgear.finishAuthentication].
+ */
+@ExperimentalAuthgearApi
+suspend fun Authgear.finishAuthentication(
+    finishUri: String,
+    request: AuthenticationRequest
+): UserInfo {
+    return withContext(Dispatchers.IO) {
+        core.finishAuthorization(finishUri, request.verifier)
+    }
 }
 
 /**
@@ -48,7 +77,9 @@ suspend fun Authgear.promoteAnonymousUser(options: PromoteOptions): UserInfo {
  * @see [Authgear.fetchUserInfo].
  */
 suspend fun Authgear.fetchUserInfo(): UserInfo {
-    return core.fetchUserInfo()
+    return withContext(Dispatchers.IO) {
+        core.fetchUserInfo()
+    }
 }
 
 /**
@@ -63,4 +94,14 @@ suspend fun Authgear.enableBiometric(options: BiometricOptions) {
  */
 suspend fun Authgear.authenticateBiometric(options: BiometricOptions): UserInfo {
     return core.authenticateBiometric(options)
+}
+
+/**
+ * @see [Authgear.generateUrl].
+ */
+@ExperimentalAuthgearApi
+suspend fun Authgear.generateUrl(redirectURI: String): Uri {
+    return withContext(Dispatchers.IO) {
+        core.generateUrl(redirectURI)
+    }
 }

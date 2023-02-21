@@ -47,7 +47,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 internal class AuthgearCore(
     private val authgear: Authgear,
-    private val application: Application,
+    val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
@@ -243,14 +243,26 @@ internal class AuthgearCore(
         return userInfo
     }
 
+    @ExperimentalAuthgearApi
+    @Suppress("RedundantSuspendModifier")
+    suspend fun createAuthenticateRequest(
+        options: AuthenticateOptions,
+        verifier: Verifier = generateCodeVerifier()
+    ): AuthenticationRequest {
+        requireIsInitialized()
+        val request = options.toRequest(this.isSsoEnabled)
+        val authorizeUri = authorizeEndpoint(request, verifier)
+        return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
+    }
+
     @Suppress("BlockingMethodInNonBlockingContext")
+    @OptIn(ExperimentalAuthgearApi::class)
     suspend fun authenticate(options: AuthenticateOptions): UserInfo {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(this.isSsoEnabled)
-        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
-        return finishAuthorization(deepLink)
+        val request = createAuthenticateRequest(options, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, request.url)
+        return finishAuthorization(deepLink, codeVerifier)
     }
 
     suspend fun reauthenticate(
@@ -314,7 +326,7 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun generateUrl(redirectUri: String, options: SettingOptions? = null): String {
+    suspend fun generateUrl(redirectUri: String, options: SettingOptions? = null): Uri {
         requireIsInitialized()
 
         val refreshToken = tokenStorage.getRefreshToken(name)
@@ -383,7 +395,7 @@ internal class AuthgearCore(
             }
             application.registerReceiver(br, intentFilter)
             application.startActivity(
-                WebViewActivity.createIntent(application, action, Uri.parse(authorizeUrl))
+                WebViewActivity.createIntent(application, action, authorizeUrl)
             )
         }
     }
@@ -516,24 +528,28 @@ internal class AuthgearCore(
         }
     }
 
-    private fun authorizeEndpoint(request: OidcAuthenticationRequest, codeVerifier: Verifier?): String {
+    private fun authorizeEndpoint(request: OidcAuthenticationRequest, codeVerifier: Verifier?): Uri {
         val config = oauthRepo.getOidcConfiguration()
         val query = request.toQuery(this.clientId, codeVerifier)
-        return "${config.authorizationEndpoint}?${query.toQueryParameter()}"
+        return Uri.parse(config.authorizationEndpoint).buildUpon().let {
+            it.encodedQuery(query.toQueryParameter())
+        }.build()
     }
 
     private fun setupVerifier(): Verifier {
         val verifier = generateCodeVerifier()
-        storage.setOidcCodeVerifier(name, verifier)
-        return Verifier(verifier, computeCodeChallenge(verifier))
+        // TODO: need store verifier?
+        storage.setOidcCodeVerifier(name, verifier.verifier)
+        return verifier
     }
 
-    private fun generateCodeVerifier(): String {
+    private fun generateCodeVerifier(): Verifier {
         val bytes = ByteArray(32)
         SecureRandom().nextBytes(bytes)
-        return bytes.joinToString(separator = "") {
+        val verifier = bytes.joinToString(separator = "") {
             it.toString(16).padStart(2, '0')
         }
+        return Verifier(verifier, computeCodeChallenge(verifier))
     }
 
     private fun computeCodeChallenge(verifier: String): String {
@@ -647,7 +663,7 @@ internal class AuthgearCore(
 
     private suspend fun openAuthorizeUrl(
         redirectUrl: String,
-        authorizeUrl: String
+        authorizeUri: Uri
     ): String {
         return suspendCoroutine { k ->
             val action = newRandomAction()
@@ -674,7 +690,6 @@ internal class AuthgearCore(
             }
             application.registerReceiver(br, intentFilter)
             val redirectUri = Uri.parse(redirectUrl)
-            val authorizeUri = Uri.parse(authorizeUrl)
             if (uiVariant == UIVariant.WEB_VIEW) {
                 application.startActivity(
                     OAuthWebViewActivity.createIntent(
@@ -699,14 +714,14 @@ internal class AuthgearCore(
                         application,
                         action,
                         redirectUrl,
-                        authorizeUrl
+                        authorizeUri.toString()
                     )
                 )
             }
         }
     }
 
-    private fun finishAuthorization(deepLink: String): UserInfo {
+    fun finishAuthorization(deepLink: String, verifier: Verifier? = null): UserInfo {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val state = uri.getQueryParameter("state")
@@ -731,7 +746,7 @@ internal class AuthgearCore(
                 state = state,
                 errorURI = errorURI
             )
-        val codeVerifier = storage.getOidcCodeVerifier(name)
+        val codeVerifier = verifier?.verifier ?: storage.getOidcCodeVerifier(name)
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OidcTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
