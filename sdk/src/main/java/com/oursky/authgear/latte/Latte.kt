@@ -12,7 +12,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @OptIn(ExperimentalAuthgearApi::class)
-object Latte {
+class Latte(val authgear: Authgear, val customUIEndpoint: String) {
     private data class LatteResult(val broadcastAction: String, val finishUri: String?) {
         inline fun <T> handle(authgear: Authgear, fn: (finishUri: String) -> T): LatteHandle<T> {
             val finishUri = this.finishUri ?: return LatteHandle.Failure(authgear, broadcastAction, CancelException())
@@ -33,7 +33,7 @@ object Latte {
         return "${app.packageName}.latte.$action"
     }
 
-    private suspend fun startActivity(authgear: Authgear, url: Uri, redirectUri: String): LatteResult {
+    private suspend fun startActivity(url: Uri, redirectUri: String): LatteResult {
         return suspendCoroutine { k ->
             val app = authgear.core.application
             val broadcastAction = makeRandomAction(app)
@@ -66,15 +66,15 @@ object Latte {
         }
     }
 
-    suspend fun authenticate(authgear: Authgear, options: AuthenticateOptions): LatteHandle<UserInfo> {
+    suspend fun authenticate(options: AuthenticateOptions): LatteHandle<UserInfo> {
         val request = authgear.createAuthenticateRequest(options)
-        val result = startActivity(authgear, request.url, request.redirectUri)
+        val result = startActivity(request.url, request.redirectUri)
         return result.handle(authgear) {
             authgear.finishAuthentication(it, request)
         }
     }
 
-    suspend fun verifyEmail(authgear: Authgear, customUIEndpoint: String, email: String): LatteHandle<UserInfo> {
+    suspend fun verifyEmail(email: String): LatteHandle<UserInfo> {
         val entryUrl = "$customUIEndpoint/verify/email"
         val redirectUri = "$customUIEndpoint/verify/email/completed"
 
@@ -83,7 +83,7 @@ object Latte {
             appendQueryParameter("redirect_uri", redirectUri)
         }.build()
         val url = authgear.generateUrl(verifyEmailUrl.toString())
-        val result = startActivity(authgear, url, redirectUri)
+        val result = startActivity(url, redirectUri)
         return result.handle(authgear) {
             authgear.fetchUserInfo()
         }
