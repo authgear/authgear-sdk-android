@@ -74,7 +74,10 @@ object Latte {
         }
     }
 
-    suspend fun verifyEmail(authgear: Authgear, email: String, entryUrl: String, redirectUri: String): LatteHandle<UserInfo> {
+    suspend fun verifyEmail(authgear: Authgear, customUIEndpoint: String, email: String): LatteHandle<UserInfo> {
+        val entryUrl = "$customUIEndpoint/verify/email"
+        val redirectUri = "$customUIEndpoint/verify/email/completed"
+
         val verifyEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("email", email)
             appendQueryParameter("redirect_uri", redirectUri)
