@@ -1,9 +1,12 @@
 package com.oursky.authgear.latte
 
+import android.app.Application
 import android.content.Intent
+import android.net.Uri
 import com.oursky.authgear.getQueryList
 
 object LatteLink {
+    const val BROADCAST_ACTION_LINK_RECEIVED = "com.oursky.authgear.latte.linkReceived"
     interface LinkHandler {
         suspend fun handle(latte: Latte)
     }
@@ -31,5 +34,13 @@ object LatteLink {
             path.endsWith("/reset_link") -> ResetLinkHandler(query)
             else -> null
         }
+    }
+
+    fun createLinkReceivedIntent(uri: Uri, app: Application): Intent {
+        val intent = Intent(BROADCAST_ACTION_LINK_RECEIVED).apply {
+            setPackage(app.packageName)
+            data = uri
+        }
+        return intent
     }
 }

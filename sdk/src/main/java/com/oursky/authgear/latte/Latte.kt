@@ -7,12 +7,17 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import com.oursky.authgear.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.security.SecureRandom
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @OptIn(ExperimentalAuthgearApi::class)
-class Latte(val authgear: Authgear, val customUIEndpoint: String) {
+class Latte(
+    private val authgear: Authgear,
+    private val customUIEndpoint: String
+) {
     private data class LatteResult(val broadcastAction: String, val finishUri: String?) {
         inline fun <T> handle(authgear: Authgear, fn: (finishUri: String) -> T): LatteHandle<T> {
             val finishUri = this.finishUri ?: return LatteHandle.Failure(authgear, broadcastAction, CancelException())
@@ -102,5 +107,24 @@ class Latte(val authgear: Authgear, val customUIEndpoint: String) {
         val url = authgear.generateUrl(resetPasswordUrl.toString())
         val result = startActivity(url, redirectUri)
         return result.handle(authgear) { }
+    }
+
+    fun listenForAppLink(ctx: Context, coroutineScope: CoroutineScope, linkURLHost: String): () -> Unit {
+        val self = this
+        val intentFilter = IntentFilter(LatteLink.BROADCAST_ACTION_LINK_RECEIVED)
+        val linkIntentReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val mustIntent = intent ?: return
+                val handler = LatteLink.getAppLinkHandler(linkURLHost, mustIntent)
+                val mustHandler = handler ?: return
+                coroutineScope.launch {
+                    mustHandler.handle(self)
+                }
+            }
+        }
+        ctx.registerReceiver(linkIntentReceiver, intentFilter)
+        return {
+            ctx.unregisterReceiver(linkIntentReceiver)
+        }
     }
 }
