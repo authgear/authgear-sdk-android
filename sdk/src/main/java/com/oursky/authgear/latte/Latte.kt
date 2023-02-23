@@ -104,8 +104,7 @@ class Latte(
             }
             appendQueryParameter("redirect_uri", redirectUri)
         }.build()
-        val url = authgear.generateUrl(resetPasswordUrl.toString())
-        val result = startActivity(url, redirectUri)
+        val result = startActivity(resetPasswordUrl, redirectUri)
         return result.handle(authgear) { }
     }
 
