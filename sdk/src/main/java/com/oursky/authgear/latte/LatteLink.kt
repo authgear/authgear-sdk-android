@@ -8,6 +8,7 @@ import com.oursky.authgear.getQueryList
 
 object LatteLink {
     const val BROADCAST_ACTION_LINK_RECEIVED = "com.oursky.authgear.latte.linkReceived"
+    const val KEY_URI = "com.oursky.authgear.latte.linkReceived.uri"
     interface LinkHandler {
         suspend fun handle(latte: Latte)
     }
@@ -27,7 +28,14 @@ object LatteLink {
         appLinkOrigin: Uri,
         rewriteAppLinkOrigin: Uri?
     ): LinkHandler? {
-        val uri = intent.data ?: return null
+        var uri: Uri? = null
+        val extraUriStr = intent.getStringExtra(KEY_URI)
+        uri = if (extraUriStr != null) {
+            Uri.parse(extraUriStr)
+        } else {
+            intent.data
+        }
+        if (uri == null) { return null }
         val origin = uri.getOrigin() ?: return null
         val path = uri.path ?: return null
         if (origin != appLinkOrigin.toString()) { return null }
@@ -41,7 +49,7 @@ object LatteLink {
     fun createLinkReceivedIntent(uri: Uri, app: Application): Intent {
         val intent = Intent(BROADCAST_ACTION_LINK_RECEIVED).apply {
             setPackage(app.packageName)
-            data = uri
+            putExtra(KEY_URI, uri.toString())
         }
         return intent
     }
