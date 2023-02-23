@@ -3,6 +3,7 @@ package com.oursky.authgear.latte
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import com.oursky.authgear.getOrigin
 import com.oursky.authgear.getQueryList
 
 object LatteLink {
@@ -22,13 +23,14 @@ object LatteLink {
     }
 
     fun getAppLinkHandler(
-        linkURLHost: String,
-        intent: Intent
+        intent: Intent,
+        appLinkOrigin: Uri,
+        rewriteAppLinkOrigin: Uri?
     ): LinkHandler? {
         val uri = intent.data ?: return null
-        val host = uri.host ?: return null
+        val origin = uri.getOrigin() ?: return null
         val path = uri.path ?: return null
-        if (host != linkURLHost) { return null }
+        if (origin != appLinkOrigin.toString()) { return null }
         val query = uri.getQueryList()
         return when {
             path.endsWith("/reset_link") -> ResetLinkHandler(query)

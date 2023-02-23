@@ -13,3 +13,14 @@ internal fun Uri.getQueryList(): List<Pair<String, String>> {
     }
     return queryList
 }
+
+internal fun Uri.getOrigin(): String? {
+    var originScheme = scheme ?: return null
+    var originAuthority = host ?: return null
+    if (port != -1) {
+        originAuthority += ":$port"
+    }
+    return Uri.Builder()
+        .scheme(originScheme)
+        .authority(originAuthority).build().toString()
+}
