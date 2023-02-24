@@ -17,16 +17,30 @@ object LatteLink {
     const val BROADCAST_ACTION_LINK_RECEIVED = "com.oursky.authgear.latte.linkReceived"
     const val KEY_URI = "com.oursky.authgear.latte.linkReceived.uri"
     interface LinkHandler {
-        suspend fun handle(latte: Latte)
+        suspend fun handle(latte: Latte): LinkResult<Unit>
+    }
+
+    sealed class LinkResult<T> {
+        data class Success<T>(
+            val result: T
+        ) : LinkResult<T>()
+        data class Failure<T>(
+            val error: Throwable
+        ) : LinkResult<T>()
     }
 
     private class ResetLinkHandler(
         private val query: List<Pair<String, String>>
     ) : LinkHandler {
 
-        override suspend fun handle(latte: Latte) {
+        override suspend fun handle(latte: Latte): LinkResult<Unit> {
             val handle = latte.resetPassword(query)
             handle.finish()
+            return try {
+                LinkResult.Success(handle.value)
+            } catch (e: Throwable) {
+                LinkResult.Failure(e)
+            }
         }
     }
 
@@ -34,22 +48,24 @@ object LatteLink {
         private val url: URL
     ) : LinkHandler {
 
-        override suspend fun handle(latte: Latte) {
-            withContext(Dispatchers.IO) {
+        override suspend fun handle(latte: Latte): LinkResult<Unit> {
+            return withContext(Dispatchers.IO) {
                 var httpConn: HttpURLConnection? = null
                 var status: Int? = null
                 try {
                     val conn = url.openConnection()
-                    httpConn = conn as? HttpURLConnection ?: return@withContext
+                    httpConn = conn as HttpURLConnection
                     httpConn.requestMethod = "POST"
                     status = httpConn.responseCode
                 } catch (_: IOException) {
+                    return@withContext LinkResult.Failure<Unit>(Exception("Failed to send request"))
                 } finally {
                     httpConn?.disconnect()
                 }
                 if (status == null || status >= 400) {
-                    // TODO(tung): Handle failure?
-                    return@withContext
+                    return@withContext LinkResult.Failure<Unit>(Exception("Unexpected response status $status"))
+                } else {
+                    return@withContext LinkResult.Success<Unit>(Unit)
                 }
             }
         }

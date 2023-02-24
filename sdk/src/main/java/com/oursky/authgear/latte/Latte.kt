@@ -125,7 +125,14 @@ class Latte(
                     rewriteAppLinkOrigin)
                 val mustHandler = handler ?: return
                 coroutineScope.launch {
-                    mustHandler.handle(self)
+                    when (mustHandler.handle(self)) {
+                        is LatteLink.LinkResult.Failure -> {
+                            // TODO(tung): Handle failure?
+                        }
+                        is LatteLink.LinkResult.Success -> {
+                            return@launch
+                        }
+                    }
                 }
             }
         }
