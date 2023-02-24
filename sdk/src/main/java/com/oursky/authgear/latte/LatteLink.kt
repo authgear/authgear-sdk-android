@@ -5,6 +5,12 @@ import android.content.Intent
 import android.net.Uri
 import com.oursky.authgear.getOrigin
 import com.oursky.authgear.getQueryList
+import com.oursky.authgear.rewriteOrigin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.MalformedURLException
+import java.net.URL
 
 object LatteLink {
     const val BROADCAST_ACTION_LINK_RECEIVED = "com.oursky.authgear.latte.linkReceived"
@@ -23,6 +29,25 @@ object LatteLink {
         }
     }
 
+    private class LoginLinkHandler(
+        private val url: URL
+    ) : LinkHandler {
+
+        override suspend fun handle(latte: Latte) {
+            withContext(Dispatchers.IO) {
+                var httpConn: HttpURLConnection? = null
+                try {
+                    val conn = url.openConnection()
+                    httpConn = conn as? HttpURLConnection ?: return@withContext
+                    httpConn.requestMethod = "POST"
+                    httpConn.responseCode
+                } finally {
+                    httpConn?.disconnect()
+                }
+            }
+        }
+    }
+
     fun getAppLinkHandler(
         intent: Intent,
         appLinkOrigin: Uri,
@@ -38,10 +63,19 @@ object LatteLink {
         if (uri == null) { return null }
         val origin = uri.getOrigin() ?: return null
         val path = uri.path ?: return null
-        if (origin != appLinkOrigin.toString()) { return null }
+        if (origin != appLinkOrigin.getOrigin()) { return null }
         val query = uri.getQueryList()
         return when {
             path.endsWith("/reset_link") -> ResetLinkHandler(query)
+            path.endsWith("/login_link") -> {
+                try {
+                    if (rewriteAppLinkOrigin != null) {
+                        uri = uri.rewriteOrigin(rewriteAppLinkOrigin)
+                    }
+                    val url = URL(uri.toString())
+                    return LoginLinkHandler(url)
+                } catch (e: MalformedURLException) { return null }
+            }
             else -> null
         }
     }
