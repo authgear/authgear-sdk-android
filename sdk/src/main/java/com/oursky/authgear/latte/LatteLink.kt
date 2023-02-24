@@ -8,6 +8,7 @@ import com.oursky.authgear.getQueryList
 import com.oursky.authgear.rewriteOrigin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
@@ -36,13 +37,19 @@ object LatteLink {
         override suspend fun handle(latte: Latte) {
             withContext(Dispatchers.IO) {
                 var httpConn: HttpURLConnection? = null
+                var status: Int? = null
                 try {
                     val conn = url.openConnection()
                     httpConn = conn as? HttpURLConnection ?: return@withContext
                     httpConn.requestMethod = "POST"
-                    httpConn.responseCode
+                    status = httpConn.responseCode
+                } catch (_: IOException) {
                 } finally {
                     httpConn?.disconnect()
+                }
+                if (status == null || status >= 400) {
+                    // TODO(tung): Handle failure?
+                    return@withContext
                 }
             }
         }
