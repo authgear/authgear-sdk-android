@@ -18,6 +18,8 @@ class Latte(
     private val authgear: Authgear,
     private val customUIEndpoint: String
 ) {
+    var delegate: LatteDelegate? = null
+
     private data class LatteResult(val broadcastAction: String, val finishUri: String?) {
         inline fun <T> handle(authgear: Authgear, fn: (finishUri: String) -> T): LatteHandle<T> {
             val finishUri = this.finishUri ?: return LatteHandle.Failure(authgear, broadcastAction, CancelException())
@@ -42,6 +44,7 @@ class Latte(
         return suspendCoroutine { k ->
             val app = authgear.core.application
             val broadcastAction = makeRandomAction(app)
+            val that = this
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     val message = intent?.let { LatteActivity.extract(it) } ?: return
@@ -59,6 +62,9 @@ class Latte(
                                 listOf(EmailClient.GMAIL, EmailClient.OUTLOOK)
                             )
                             context.startActivity(intent)
+                        }
+                        is LatteMessage.ViewPage -> {
+                            delegate?.onViewPage(message.path)
                         }
                         else -> {}
                     }
