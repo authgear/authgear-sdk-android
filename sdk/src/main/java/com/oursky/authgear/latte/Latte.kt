@@ -120,6 +120,21 @@ class Latte(
         return result.handle(authgear) { }
     }
 
+    suspend fun changeEmail(email: String): LatteHandle<UserInfo> {
+        val entryUrl = "$customUIEndpoint/settings/change_email"
+        val redirectUri = "$customUIEndpoint/verify/email/completed"
+
+        val changeEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
+            appendQueryParameter("email", email)
+            appendQueryParameter("redirect_uri", redirectUri)
+        }.build()
+        val url = authgear.generateUrl(changeEmailUrl.toString())
+        val result = startActivity(url, redirectUri)
+        return result.handle(authgear) {
+            authgear.fetchUserInfo()
+        }
+    }
+
     fun listenForAppLink(
         ctx: Context,
         coroutineScope: CoroutineScope,
