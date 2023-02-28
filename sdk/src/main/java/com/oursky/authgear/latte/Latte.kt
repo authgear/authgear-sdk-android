@@ -63,7 +63,7 @@ class Latte(
                             context.startActivity(intent)
                         }
                         is LatteMessage.ViewPage -> {
-                            delegate?.onViewPage(message.path)
+                            delegate?.onViewPage(message.event)
                         }
                         else -> {}
                     }

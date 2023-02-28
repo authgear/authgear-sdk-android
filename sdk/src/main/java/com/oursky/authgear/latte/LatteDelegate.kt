@@ -2,5 +2,5 @@ package com.oursky.authgear.latte
 
 interface LatteDelegate {
     @JvmDefault
-    fun onViewPage(path: String) {}
+    fun onViewPage(event: LatteViewPageEvent) {}
 }

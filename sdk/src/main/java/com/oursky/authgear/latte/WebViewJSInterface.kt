@@ -38,7 +38,7 @@ internal class WebViewJSInterface(private val webView: WebView) {
                 val path = try {
                     event.jsonObject["path"]?.jsonPrimitive?.contentOrNull
                 } catch (e: Exception) { null } ?: return
-                this.webView.listener?.onEvent(WebViewEvent.ViewPage(path))
+                this.webView.listener?.onEvent(WebViewEvent.ViewPage(LatteViewPageEvent(path)))
             }
         }
     }

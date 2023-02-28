@@ -93,7 +93,7 @@ internal class LatteActivity : AppCompatActivity(), WebViewListener {
     override fun onEvent(event: WebViewEvent) {
         when (event) {
             is WebViewEvent.OpenEmailClient -> dispatch(LatteMessage.OpenEmailClient)
-            is WebViewEvent.ViewPage -> dispatch(LatteMessage.ViewPage(event.path))
+            is WebViewEvent.ViewPage -> dispatch(LatteMessage.ViewPage(event.event))
         }
     }
 
