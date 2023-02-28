@@ -44,7 +44,6 @@ class Latte(
         return suspendCoroutine { k ->
             val app = authgear.core.application
             val broadcastAction = makeRandomAction(app)
-            val that = this
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     val message = intent?.let { LatteActivity.extract(it) } ?: return
