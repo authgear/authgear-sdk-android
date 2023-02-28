@@ -94,6 +94,18 @@ class Latte(
         }
     }
 
+    suspend fun changePassword(): LatteHandle<Unit> {
+        val entryUrl = "$customUIEndpoint/settings/change_password"
+        val redirectUri = "latte://complete"
+
+        val changeEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
+            appendQueryParameter("redirect_uri", redirectUri)
+        }.build()
+        val url = authgear.generateUrl(changeEmailUrl.toString())
+        val result = startActivity(url, redirectUri)
+        return result.handle(authgear) { }
+    }
+
     suspend fun resetPassword(extraQuery: List<Pair<String, String>>): LatteHandle<Unit> {
         val entryUrl = "$customUIEndpoint/recovery/reset"
         val redirectUri = "latte://reset-complete"
