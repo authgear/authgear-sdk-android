@@ -8,6 +8,9 @@ internal sealed class LatteMessage {
     object OpenEmailClient : LatteMessage()
 
     @Serializable
+    data class ViewPage(val event: LatteViewPageEvent) : LatteMessage()
+
+    @Serializable
     data class HandleRedirectURI(val finishUri: String?) : LatteMessage()
 
     @Serializable

@@ -1,5 +1,6 @@
 package com.oursky.authgear.latte
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.webkit.WebResourceRequest
@@ -35,8 +36,12 @@ internal class WebViewClient(
         return super.shouldOverrideUrlLoading(view, request) || this.checkRedirectURI(request.url)
     }
 
-    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+    override fun onPageStarted(view: android.webkit.WebView?, url: String?, favicon: Bitmap?) {
         view?.evaluateJavascript(WebViewJSInterface.initScript) {}
+        inner.onPageStarted(view, url, favicon)
+    }
+
+    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
         inner.onPageFinished(view, url)
     }
 

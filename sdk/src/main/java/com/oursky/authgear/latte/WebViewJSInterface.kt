@@ -19,7 +19,8 @@ internal class WebViewJSInterface(private val webView: WebView) {
     }
 
     enum class BuiltInEvent(val eventName: String) {
-        OPEN_EMAIL_CLIENT("openEmailClient")
+        OPEN_EMAIL_CLIENT("openEmailClient"),
+        VIEW_PAGE("viewPage")
     }
 
     @JavascriptInterface
@@ -33,6 +34,12 @@ internal class WebViewJSInterface(private val webView: WebView) {
 
         when (type) {
             BuiltInEvent.OPEN_EMAIL_CLIENT -> this.webView.listener?.onEvent(WebViewEvent.OpenEmailClient)
+            BuiltInEvent.VIEW_PAGE -> {
+                val path = try {
+                    event.jsonObject["path"]?.jsonPrimitive?.contentOrNull
+                } catch (e: Exception) { null } ?: return
+                this.webView.listener?.onEvent(WebViewEvent.ViewPage(LatteViewPageEvent(path)))
+            }
         }
     }
 }
