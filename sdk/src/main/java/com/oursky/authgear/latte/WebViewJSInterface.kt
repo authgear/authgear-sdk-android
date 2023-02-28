@@ -35,8 +35,10 @@ internal class WebViewJSInterface(private val webView: WebView) {
         when (type) {
             BuiltInEvent.OPEN_EMAIL_CLIENT -> this.webView.listener?.onEvent(WebViewEvent.OpenEmailClient)
             BuiltInEvent.VIEW_PAGE -> {
-                val path = event.jsonObject["path"]?.jsonPrimitive?.contentOrNull ?: return
-                this.webView.listener?.onEvent(ViewPageEvent(path))
+                val path = try {
+                    event.jsonObject["path"]?.jsonPrimitive?.contentOrNull
+                } catch (e: Exception) { null } ?: return
+                this.webView.listener?.onEvent(WebViewEvent.ViewPage(path))
             }
         }
     }
