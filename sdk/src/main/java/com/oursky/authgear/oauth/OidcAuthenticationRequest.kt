@@ -3,6 +3,7 @@ package com.oursky.authgear.oauth
 import com.oursky.authgear.AuthgearCore
 import com.oursky.authgear.ColorScheme
 import com.oursky.authgear.PromptOption
+import com.oursky.authgear.UILocales
 
 internal data class OidcAuthenticationRequest constructor(
     var redirectUri: String,
@@ -48,7 +49,7 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
     }
 
     this.uiLocales?.let {
-        query["ui_locales"] = it.joinToString(separator = " ")
+        query["ui_locales"] = UILocales.stringify(it)
     }
 
     this.colorScheme?.let {
