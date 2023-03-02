@@ -140,38 +140,4 @@ class Latte(
             authgear.fetchUserInfo()
         }
     }
-
-    fun listenForAppLink(
-        ctx: Context,
-        coroutineScope: CoroutineScope,
-        appLinkOrigin: Uri,
-        rewriteAppLinkOrigin: Uri?
-    ): () -> Unit {
-        val self = this
-        val intentFilter = IntentFilter(LatteLink.BROADCAST_ACTION_LINK_RECEIVED)
-        val linkIntentReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                val mustIntent = intent ?: return
-                val handler = LatteLink.getAppLinkHandler(
-                    mustIntent,
-                    appLinkOrigin,
-                    rewriteAppLinkOrigin)
-                val mustHandler = handler ?: return
-                coroutineScope.launch {
-                    when (mustHandler.handle(self)) {
-                        is LatteLink.LinkResult.Failure -> {
-                            // TODO(tung): Handle failure?
-                        }
-                        is LatteLink.LinkResult.Success -> {
-                            return@launch
-                        }
-                    }
-                }
-            }
-        }
-        ctx.registerReceiver(linkIntentReceiver, intentFilter)
-        return {
-            ctx.unregisterReceiver(linkIntentReceiver)
-        }
-    }
 }
