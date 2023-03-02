@@ -3,6 +3,7 @@ package com.oursky.authgear.latte
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.getOrigin
 import com.oursky.authgear.getQueryList
 import com.oursky.authgear.rewriteOrigin
@@ -12,6 +13,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import java.nio.charset.StandardCharsets
 
 object LatteLink {
     const val BROADCAST_ACTION_LINK_RECEIVED = "com.oursky.authgear.latte.linkReceived"
@@ -50,22 +52,20 @@ object LatteLink {
 
         override suspend fun handle(latte: Latte): LinkResult<Unit> {
             return withContext(Dispatchers.IO) {
-                var httpConn: HttpURLConnection? = null
-                var status: Int? = null
                 try {
-                    val conn = url.openConnection()
-                    httpConn = conn as HttpURLConnection
-                    httpConn.requestMethod = "POST"
-                    status = httpConn.responseCode
-                } catch (_: IOException) {
-                    return@withContext LinkResult.Failure<Unit>(Exception("Failed to send request"))
-                } finally {
-                    httpConn?.disconnect()
-                }
-                if (status == null || status >= 400) {
-                    return@withContext LinkResult.Failure<Unit>(Exception("Unexpected response status $status"))
-                } else {
-                    return@withContext LinkResult.Success<Unit>(Unit)
+                    HttpClient.fetch(url, "POST", emptyMap()) {conn ->
+                        conn.errorStream?.use {
+                            val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                            HttpClient.throwErrorIfNeeded(conn, responseString)
+                        }
+                        conn.inputStream.use {
+                            val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                            HttpClient.throwErrorIfNeeded(conn, responseString)
+                        }
+                    }
+                    return@withContext LinkResult.Success(Unit)
+                } catch (e: Throwable) {
+                    return@withContext LinkResult.Failure(e)
                 }
             }
         }
