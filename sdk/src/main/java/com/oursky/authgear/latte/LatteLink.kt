@@ -1,21 +1,17 @@
 package com.oursky.authgear.latte
 
-import android.app.Application
-import android.content.Intent
 import android.net.Uri
+import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.getOrigin
 import com.oursky.authgear.getQueryList
 import com.oursky.authgear.rewriteOrigin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.IOException
-import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import java.nio.charset.StandardCharsets
 
 object LatteLink {
-    const val BROADCAST_ACTION_LINK_RECEIVED = "com.oursky.authgear.latte.linkReceived"
-    const val KEY_URI = "com.oursky.authgear.latte.linkReceived.uri"
     interface LinkHandler {
         suspend fun handle(latte: Latte): LinkResult<Unit>
     }
@@ -50,40 +46,31 @@ object LatteLink {
 
         override suspend fun handle(latte: Latte): LinkResult<Unit> {
             return withContext(Dispatchers.IO) {
-                var httpConn: HttpURLConnection? = null
-                var status: Int? = null
                 try {
-                    val conn = url.openConnection()
-                    httpConn = conn as HttpURLConnection
-                    httpConn.requestMethod = "POST"
-                    status = httpConn.responseCode
-                } catch (_: IOException) {
-                    return@withContext LinkResult.Failure<Unit>(Exception("Failed to send request"))
-                } finally {
-                    httpConn?.disconnect()
-                }
-                if (status == null || status >= 400) {
-                    return@withContext LinkResult.Failure<Unit>(Exception("Unexpected response status $status"))
-                } else {
-                    return@withContext LinkResult.Success<Unit>(Unit)
+                    HttpClient.fetch(url, "POST", emptyMap()) {conn ->
+                        conn.errorStream?.use {
+                            val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                            HttpClient.throwErrorIfNeeded(conn, responseString)
+                        }
+                        conn.inputStream.use {
+                            val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                            HttpClient.throwErrorIfNeeded(conn, responseString)
+                        }
+                    }
+                    return@withContext LinkResult.Success(Unit)
+                } catch (e: Throwable) {
+                    return@withContext LinkResult.Failure(e)
                 }
             }
         }
     }
 
     fun getAppLinkHandler(
-        intent: Intent,
+        intentData: Uri,
         appLinkOrigin: Uri,
         rewriteAppLinkOrigin: Uri?
     ): LinkHandler? {
-        var uri: Uri? = null
-        val extraUriStr = intent.getStringExtra(KEY_URI)
-        uri = if (extraUriStr != null) {
-            Uri.parse(extraUriStr)
-        } else {
-            intent.data
-        }
-        if (uri == null) { return null }
+        var uri = intentData
         val origin = uri.getOrigin() ?: return null
         val path = uri.path ?: return null
         if (origin != appLinkOrigin.getOrigin()) { return null }
@@ -101,13 +88,5 @@ object LatteLink {
             }
             else -> null
         }
-    }
-
-    fun createLinkReceivedIntent(uri: Uri, app: Application): Intent {
-        val intent = Intent(BROADCAST_ACTION_LINK_RECEIVED).apply {
-            setPackage(app.packageName)
-            putExtra(KEY_URI, uri.toString())
-        }
-        return intent
     }
 }
