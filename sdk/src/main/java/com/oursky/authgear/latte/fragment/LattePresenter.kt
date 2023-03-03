@@ -1,13 +1,26 @@
 package com.oursky.authgear.latte.fragment
 
+import android.content.Intent
 import android.net.Uri
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.*
 import com.oursky.authgear.latte.Latte
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import java.security.SecureRandom
 
 @OptIn(ExperimentalAuthgearApi::class)
-class LattePresenter(val latte: Latte) {
+class LattePresenter(
+    val latte: Latte,
+    private val appLinkOrigin: Uri,
+    private val rewriteAppLinkOrigin: Uri? = null
+) {
+
     var delegate: LattePresenterDelegate? = null
+    private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
 
     private fun makeID(): String {
         val rng = SecureRandom()
@@ -83,5 +96,38 @@ class LattePresenter(val latte: Latte) {
         val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
         fragment.latte = latte
         return fragment
+    }
+
+    fun handleIntent(intent: Intent) {
+        intents.tryEmit(intent)
+    }
+
+    fun listenForAppLinks(
+        lifecycleOwner: LifecycleOwner,
+        callback: suspend (LatteAppLink) -> Unit
+    ) {
+        lifecycleOwner.lifecycleScope.launch {
+            intents.collect {
+                var uri = it?.data ?: return@collect
+                val origin = uri.getOrigin() ?: return@collect
+                val path = uri.path ?: return@collect
+                if (origin != appLinkOrigin.getOrigin()) {
+                    return@collect
+                }
+                val query = uri.getQueryList()
+
+                if (rewriteAppLinkOrigin != null) {
+                    uri = uri.rewriteOrigin(rewriteAppLinkOrigin)
+                }
+
+                val link = when {
+                    path.endsWith("/reset_link") -> LatteAppLink.ResetLink(query)
+                    path.endsWith("/login_link") -> LatteAppLink.LoginLink(uri)
+                    else -> null
+                }
+
+                link?.let { callback(link) }
+            }
+        }
     }
 }
