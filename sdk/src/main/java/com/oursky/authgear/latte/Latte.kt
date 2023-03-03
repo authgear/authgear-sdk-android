@@ -7,8 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import com.oursky.authgear.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import java.security.SecureRandom
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -87,7 +85,8 @@ class Latte(
     suspend fun verifyEmail(
         email: String,
         state: String? = null,
-        uiLocales: List<String>? = null): LatteHandle<UserInfo> {
+        uiLocales: List<String>? = null
+    ): LatteHandle<UserInfo> {
         val entryUrl = "$customUIEndpoint/verify/email"
         val redirectUri = "$customUIEndpoint/verify/email/completed"
 
@@ -110,7 +109,8 @@ class Latte(
 
     suspend fun changePassword(
         state: String? = null,
-        uiLocales: List<String>? = null): LatteHandle<Unit> {
+        uiLocales: List<String>? = null
+    ): LatteHandle<Unit> {
         val entryUrl = "$customUIEndpoint/settings/change_password"
         val redirectUri = "latte://complete"
 
@@ -128,12 +128,12 @@ class Latte(
         return result.handle(authgear) { }
     }
 
-    suspend fun resetPassword(query: List<Pair<String, String>>): LatteHandle<Unit> {
+    suspend fun resetPassword(uri: Uri): LatteHandle<Unit> {
         val entryUrl = "$customUIEndpoint/recovery/reset"
         val redirectUri = "latte://reset-complete"
 
         val resetPasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
-            for (q in query) {
+            for (q in uri.getQueryList()) {
                 appendQueryParameter(q.first, q.second)
             }
             appendQueryParameter("redirect_uri", redirectUri)
@@ -146,7 +146,8 @@ class Latte(
         email: String,
         phoneNumber: String,
         state: String? = null,
-        uiLocales: List<String>? = null): LatteHandle<UserInfo> {
+        uiLocales: List<String>? = null
+    ): LatteHandle<UserInfo> {
         val entryUrl = "$customUIEndpoint/settings/change_email"
         val redirectUri = "$customUIEndpoint/verify/email/completed"
 
