@@ -14,7 +14,7 @@ import kotlin.coroutines.suspendCoroutine
 @OptIn(ExperimentalAuthgearApi::class)
 class Latte(
     internal val authgear: Authgear,
-    private val customUIEndpoint: String
+    internal val customUIEndpoint: String
 ) {
     var delegate: LatteDelegate? = null
 
