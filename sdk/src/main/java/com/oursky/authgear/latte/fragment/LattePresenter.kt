@@ -3,17 +3,28 @@ package com.oursky.authgear.latte.fragment
 import android.net.Uri
 import com.oursky.authgear.*
 import com.oursky.authgear.latte.Latte
+import java.security.SecureRandom
 
 @OptIn(ExperimentalAuthgearApi::class)
 class LattePresenter(val latte: Latte) {
-    suspend fun authenticate(options: AuthenticateOptions): LatteFragment<UserInfo> {
+    var delegate: LattePresenterDelegate? = null
+
+    private fun makeID(): String {
+        val rng = SecureRandom()
+        val byteArray = ByteArray(32)
+        rng.nextBytes(byteArray)
+        val id = base64UrlEncode(byteArray)
+        return "latte.$id"
+    }
+
+    suspend fun authenticate(options: AuthenticateOptions): LatteHandle<UserInfo> {
         val request = latte.authgear.createAuthenticateRequest(options)
-        val fragment = LatteAuthenticateFragment(request)
+        val fragment = LatteAuthenticateFragment(makeID(), request)
         fragment.latte = latte
         return fragment
     }
 
-    suspend fun verifyEmail(email: String): LatteFragment<UserInfo> {
+    suspend fun verifyEmail(email: String): LatteHandle<UserInfo> {
         val entryUrl = "${latte.customUIEndpoint}/verify/email"
         val redirectUri = "${latte.customUIEndpoint}/verify/email/completed"
 
@@ -23,12 +34,12 @@ class LattePresenter(val latte: Latte) {
         }.build()
         val url = latte.authgear.generateUrl(verifyEmailUrl.toString())
 
-        val fragment = LatteUserInfoWebViewFragment(url, redirectUri)
+        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
         fragment.latte = latte
         return fragment
     }
 
-    suspend fun resetPassword(extraQuery: List<Pair<String, String>>): LatteFragment<Unit> {
+    suspend fun resetPassword(extraQuery: List<Pair<String, String>>): LatteHandle<Unit> {
         val entryUrl = "${latte.customUIEndpoint}/recovery/reset"
         val redirectUri = "latte://completed"
 
@@ -39,12 +50,12 @@ class LattePresenter(val latte: Latte) {
             appendQueryParameter("redirect_uri", redirectUri)
         }.build()
 
-        val fragment = LatteWebViewFragment(resetPasswordUrl, redirectUri)
+        val fragment = LatteWebViewFragment(makeID(), resetPasswordUrl, redirectUri)
         fragment.latte = latte
         return fragment
     }
 
-    suspend fun changePassword(): LatteFragment<Unit> {
+    suspend fun changePassword(): LatteHandle<Unit> {
         val entryUrl = "${latte.customUIEndpoint}/settings/change_password"
         val redirectUri = "latte://completed"
 
@@ -53,12 +64,12 @@ class LattePresenter(val latte: Latte) {
         }.build()
         val url = latte.authgear.generateUrl(changePasswordUrl.toString())
 
-        val fragment = LatteWebViewFragment(url, redirectUri)
+        val fragment = LatteWebViewFragment(makeID(), url, redirectUri)
         fragment.latte = latte
         return fragment
     }
 
-    suspend fun changeEmail(email: String, phoneNumber: String): LatteFragment<UserInfo> {
+    suspend fun changeEmail(email: String, phoneNumber: String): LatteHandle<UserInfo> {
         val entryUrl = "${latte.customUIEndpoint}/settings/change_email"
         val redirectUri = "${latte.customUIEndpoint}/verify/email/completed"
 
@@ -69,7 +80,7 @@ class LattePresenter(val latte: Latte) {
         }.build()
         val url = latte.authgear.generateUrl(changeEmailUrl.toString())
 
-        val fragment = LatteUserInfoWebViewFragment(url, redirectUri)
+        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
         fragment.latte = latte
         return fragment
     }

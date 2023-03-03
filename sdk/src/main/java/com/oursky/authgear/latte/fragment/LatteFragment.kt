@@ -21,22 +21,27 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.completeWith
 import kotlinx.coroutines.launch
 
-abstract class LatteFragment<T>() : Fragment() {
+internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
     companion object {
+        private const val KEY_ID = "id"
         private const val KEY_URL = "url"
         private const val KEY_REDIRECT_URI = "redirect_uri"
     }
 
     internal var latte: Latte? = null
 
-    internal val url: Uri
+    val latteID: String
+        get() = requireArguments().getString(KEY_ID)!!
+
+    val url: Uri
         get() = Uri.parse(requireArguments().getString(KEY_URL)!!)
 
-    internal val redirectUri: String
+    val redirectUri: String
         get() = requireArguments().getString(KEY_REDIRECT_URI)!!
 
-    internal constructor(url: Uri, redirectUri: String) : this() {
+    internal constructor(id: String, url: Uri, redirectUri: String) : this() {
         arguments = Bundle().apply {
+            putString(KEY_ID, id)
             putString(KEY_URL, url.toString())
             putString(KEY_REDIRECT_URI, redirectUri)
         }
@@ -106,14 +111,25 @@ abstract class LatteFragment<T>() : Fragment() {
     private fun handleFinishUri(finishUri: Uri?) {
         lifecycleScope.launch {
             result.completeWith(runCatching {
-                finishUri?.let { onHandleFinishUri(it) } ?: throw CancelException()
+                finishUri?.let {
+                    val error = it.getQueryParameter("error")
+                    if (error == "cancel") {
+                        throw CancelException()
+                    }
+
+                    onHandleFinishUri(it)
+                } ?: throw CancelException()
             })
         }
     }
 
     internal abstract suspend fun onHandleFinishUri(finishUri: Uri): T
 
-    suspend fun await(): T {
-        return result.await()
-    }
+    override val id: String
+        get() = latteID
+
+    override val fragment: Fragment
+        get() = this
+
+    override suspend fun await() = result.await()
 }

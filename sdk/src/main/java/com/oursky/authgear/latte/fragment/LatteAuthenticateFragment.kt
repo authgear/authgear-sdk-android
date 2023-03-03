@@ -4,8 +4,8 @@ import android.net.Uri
 import com.oursky.authgear.*
 
 @OptIn(ExperimentalAuthgearApi::class)
-internal class LatteAuthenticateFragment(request: AuthenticationRequest) :
-    LatteFragment<UserInfo>(request.url, request.redirectUri) {
+internal class LatteAuthenticateFragment(id: String, request: AuthenticationRequest) :
+    LatteFragment<UserInfo>(id, request.url, request.redirectUri) {
 
     companion object {
         const val KEY_AUTH_REQUEST = "auth_request"
