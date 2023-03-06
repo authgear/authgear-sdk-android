@@ -10,10 +10,10 @@ import java.nio.charset.StandardCharsets
 sealed class LatteAppLink {
     abstract suspend fun handle(presenter: LattePresenter)
 
-    internal class ResetLink(val query: List<Pair<String, String>>) : LatteAppLink() {
+    internal class ResetLink(val uri: Uri) : LatteAppLink() {
         override suspend fun handle(presenter: LattePresenter) {
             val delegate = presenter.delegate ?: return
-            val handle = presenter.resetPassword(query)
+            val handle = presenter.resetPassword(uri)
             delegate.showLatteFragment(handle.id, handle.fragment)
             try {
                 handle.await()
