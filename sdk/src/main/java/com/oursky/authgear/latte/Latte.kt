@@ -1,85 +1,42 @@
 package com.oursky.authgear.latte
 
-import android.app.Application
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.*
+import com.oursky.authgear.latte.fragment.LatteAuthenticateFragment
+import com.oursky.authgear.latte.fragment.LatteUserInfoWebViewFragment
+import com.oursky.authgear.latte.fragment.LatteWebViewFragment
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import java.security.SecureRandom
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @OptIn(ExperimentalAuthgearApi::class)
 class Latte(
     internal val authgear: Authgear,
-    internal val customUIEndpoint: String
+    internal val customUIEndpoint: String,
+    private val appLinkOrigin: Uri,
+    private val rewriteAppLinkOrigin: Uri? = null
 ) {
     var delegate: LatteDelegate? = null
+    private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
 
-    private data class LatteResult(val broadcastAction: String, val finishUri: String?) {
-        inline fun <T> handle(authgear: Authgear, fn: (finishUri: String) -> T): LatteHandle<T> {
-            val finishUri = this.finishUri ?: return LatteHandle.Failure(authgear, broadcastAction, CancelException())
-            return try {
-                val value = fn(finishUri)
-                LatteHandle.Success(authgear, broadcastAction, value)
-            } catch (e: Throwable) {
-                LatteHandle.Failure(authgear, broadcastAction, e)
-            }
-        }
-    }
-
-    private fun makeRandomAction(app: Application): String {
+    private fun makeID(): String {
         val rng = SecureRandom()
         val byteArray = ByteArray(32)
         rng.nextBytes(byteArray)
-        val action = base64UrlEncode(byteArray)
-        return "${app.packageName}.latte.$action"
-    }
-
-    private suspend fun startActivity(url: Uri, redirectUri: String): LatteResult {
-        return suspendCoroutine { k ->
-            val app = authgear.core.application
-            val broadcastAction = makeRandomAction(app)
-            val br = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    val message = intent?.let { LatteActivity.extract(it) } ?: return
-
-                    when (message) {
-                        is LatteMessage.HandleRedirectURI -> {
-                            app.unregisterReceiver(this)
-                            k.resume(LatteResult(broadcastAction, message.finishUri))
-                        }
-                        is LatteMessage.OpenEmailClient -> {
-                            if (context == null) return
-                            val intent = EmailClient.makeEmailClientIntentChooser(
-                                context,
-                                "Choose Email Client",
-                                listOf(EmailClient.GMAIL, EmailClient.OUTLOOK)
-                            )
-                            context.startActivity(intent)
-                        }
-                        is LatteMessage.ViewPage -> {
-                            delegate?.onViewPage(message.event)
-                        }
-                        else -> {}
-                    }
-                }
-            }
-            app.registerReceiver(br, IntentFilter(broadcastAction))
-            app.startActivity(
-                LatteActivity.createIntent(app, url, redirectUri, broadcastAction)
-            )
-        }
+        val id = base64UrlEncode(byteArray)
+        return "latte.$id"
     }
 
     suspend fun authenticate(options: AuthenticateOptions): LatteHandle<UserInfo> {
         val request = authgear.createAuthenticateRequest(options)
-        val result = startActivity(request.url, request.redirectUri)
-        return result.handle(authgear) {
-            authgear.finishAuthentication(it, request)
-        }
+        val fragment = LatteAuthenticateFragment(makeID(), request)
+        fragment.latte = this
+        return fragment
     }
 
     suspend fun verifyEmail(
@@ -101,10 +58,26 @@ class Latte(
             }
         }.build()
         val url = authgear.generateUrl(verifyEmailUrl.toString())
-        val result = startActivity(url, redirectUri)
-        return result.handle(authgear) {
-            authgear.fetchUserInfo()
-        }
+
+        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
+        fragment.latte = this
+        return fragment
+    }
+
+    suspend fun resetPassword(uri: Uri): LatteHandle<Unit> {
+        val entryUrl = "$customUIEndpoint/recovery/reset"
+        val redirectUri = "latte://completed"
+
+        val resetPasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
+            for (q in uri.getQueryList()) {
+                appendQueryParameter(q.first, q.second)
+            }
+            appendQueryParameter("redirect_uri", redirectUri)
+        }.build()
+
+        val fragment = LatteWebViewFragment(makeID(), resetPasswordUrl, redirectUri)
+        fragment.latte = this
+        return fragment
     }
 
     suspend fun changePassword(
@@ -112,9 +85,9 @@ class Latte(
         uiLocales: List<String>? = null
     ): LatteHandle<Unit> {
         val entryUrl = "$customUIEndpoint/settings/change_password"
-        val redirectUri = "latte://complete"
+        val redirectUri = "latte://completed"
 
-        val changeEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
+        val changePasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("redirect_uri", redirectUri)
             if (state != null) {
                 appendQueryParameter("state", state)
@@ -123,23 +96,11 @@ class Latte(
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
             }
         }.build()
-        val url = authgear.generateUrl(changeEmailUrl.toString())
-        val result = startActivity(url, redirectUri)
-        return result.handle(authgear) { }
-    }
+        val url = authgear.generateUrl(changePasswordUrl.toString())
 
-    suspend fun resetPassword(uri: Uri): LatteHandle<Unit> {
-        val entryUrl = "$customUIEndpoint/recovery/reset"
-        val redirectUri = "latte://reset-complete"
-
-        val resetPasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
-            for (q in uri.getQueryList()) {
-                appendQueryParameter(q.first, q.second)
-            }
-            appendQueryParameter("redirect_uri", redirectUri)
-        }.build()
-        val result = startActivity(resetPasswordUrl, redirectUri)
-        return result.handle(authgear) { }
+        val fragment = LatteWebViewFragment(makeID(), url, redirectUri)
+        fragment.latte = this
+        return fragment
     }
 
     suspend fun changeEmail(
@@ -163,9 +124,40 @@ class Latte(
             }
         }.build()
         val url = authgear.generateUrl(changeEmailUrl.toString())
-        val result = startActivity(url, redirectUri)
-        return result.handle(authgear) {
-            authgear.fetchUserInfo()
+
+        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
+        fragment.latte = this
+        return fragment
+    }
+
+    fun handleIntent(intent: Intent) {
+        intents.tryEmit(intent)
+    }
+
+    fun listenForAppLinks(
+        lifecycleOwner: LifecycleOwner,
+        callback: suspend (LatteAppLink) -> Unit
+    ) {
+        lifecycleOwner.lifecycleScope.launch {
+            intents.collect {
+                var uri = it?.data ?: return@collect
+                val origin = uri.getOrigin() ?: return@collect
+                val path = uri.path ?: return@collect
+                if (origin != appLinkOrigin.getOrigin()) {
+                    return@collect
+                }
+                if (rewriteAppLinkOrigin != null) {
+                    uri = uri.rewriteOrigin(rewriteAppLinkOrigin)
+                }
+
+                val link = when {
+                    path.endsWith("/reset_link") -> LatteAppLink.ResetLink(uri)
+                    path.endsWith("/login_link") -> LatteAppLink.LoginLink(uri)
+                    else -> null
+                }
+
+                link?.let { callback(link) }
+            }
         }
     }
 }

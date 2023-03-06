@@ -1,4 +1,4 @@
-package com.oursky.authgear.latte.fragment
+package com.oursky.authgear.latte
 
 import android.net.Uri
 import com.oursky.authgear.data.HttpClient
@@ -8,12 +8,12 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 
 sealed class LatteAppLink {
-    abstract suspend fun handle(presenter: LattePresenter)
+    abstract suspend fun handle(latte: Latte)
 
     internal class ResetLink(val uri: Uri) : LatteAppLink() {
-        override suspend fun handle(presenter: LattePresenter) {
-            val delegate = presenter.delegate ?: return
-            val handle = presenter.resetPassword(uri)
+        override suspend fun handle(latte: Latte) {
+            val delegate = latte.delegate ?: return
+            val handle = latte.resetPassword(uri)
             delegate.showLatteFragment(handle.id, handle.fragment)
             try {
                 handle.await()
@@ -24,7 +24,7 @@ sealed class LatteAppLink {
     }
 
     internal class LoginLink(val uri: Uri) : LatteAppLink() {
-        override suspend fun handle(presenter: LattePresenter) {
+        override suspend fun handle(latte: Latte) {
             return withContext(Dispatchers.IO) {
                 val url = URL(uri.toString())
                 HttpClient.fetch(url, "POST", emptyMap()) { conn ->
