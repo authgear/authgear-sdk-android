@@ -51,12 +51,7 @@ data class AuthenticateOptions @JvmOverloads constructor(
     /**
      * Which page to open initially. Valid values are "login" and "signup".
      */
-    var page: String? = null,
-
-    /**
-     * Query parameters for the custom ui.
-     */
-    var customUIQuery: String? = null
+    var page: String? = null
 )
 
 internal fun AuthenticateOptions.toRequest(isSsoEnabled: Boolean): OidcAuthenticationRequest {
@@ -73,7 +68,6 @@ internal fun AuthenticateOptions.toRequest(isSsoEnabled: Boolean): OidcAuthentic
         uiLocales = this.uiLocales,
         colorScheme = this.colorScheme,
         wechatRedirectURI = this.wechatRedirectURI,
-        page = this.page,
-        customUIQuery = this.customUIQuery
+        page = this.page
     )
 }
