@@ -2,14 +2,16 @@ package com.oursky.authgear
 
 import org.json.JSONObject
 
-class ServerException : AuthgearException {
-    val name: String
-    val reason: String
-    var info: JSONObject?
-
-    constructor(name: String, reason: String, message: String, info: JSONObject?) : super(message) {
-        this.name = name
-        this.reason = reason
-        this.info = info
-    }
+class ServerException(
+    val name: String,
+    val reason: String,
+    message: String,
+    val info: JSONObject? = null
+) : AuthgearException(message) {
+    constructor(json: JSONObject) : this(
+        json.getString("name"),
+        json.getString("reason"),
+        json.getString("message"),
+        json.optJSONObject("info")
+    )
 }
