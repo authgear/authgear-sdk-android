@@ -7,5 +7,5 @@ interface LatteDelegate {
     fun hideLatteFragment(id: String)
 
     @JvmDefault
-    fun onViewPage(event: LatteViewPageEvent) {}
+    fun onAnalyticsEvent(event: LatteAnalyticsEvent) {}
 }
