@@ -49,16 +49,7 @@ internal class HttpClient {
                 val any = jsonObject.get("error")
                 if (any is JSONObject) {
                     if (any.has("name") && any.has("reason") && any.has("message")) {
-                        var info: JSONObject? = null
-                        if (any.has("info")) {
-                            info = any.getJSONObject("info")
-                        }
-                        return ServerException(
-                            name = any.getString("name"),
-                            reason = any.getString("reason"),
-                            message = any.getString("message"),
-                            info = info
-                        )
+                        return ServerException(any)
                     }
                 }
                 if (any is String) {

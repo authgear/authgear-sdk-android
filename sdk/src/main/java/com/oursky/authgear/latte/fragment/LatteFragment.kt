@@ -2,6 +2,7 @@ package com.oursky.authgear.latte.fragment
 
 import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.CancelException
 import com.oursky.authgear.R
+import com.oursky.authgear.ServerException
 import com.oursky.authgear.latte.*
 import com.oursky.authgear.latte.WebView
 import com.oursky.authgear.latte.WebViewEvent
@@ -20,6 +22,7 @@ import com.oursky.authgear.latte.WebViewResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.completeWith
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
     companion object {
@@ -115,6 +118,12 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
                     val error = it.getQueryParameter("error")
                     if (error == "cancel") {
                         throw CancelException()
+                    }
+
+                    val latteError = it.getQueryParameter("x_latte_error")
+                    latteError?.let { base64Json ->
+                        val json = Base64.decode(base64Json, Base64.URL_SAFE).toString(Charsets.UTF_8)
+                        throw ServerException(JSONObject(json))
                     }
 
                     onHandleFinishUri(it)
