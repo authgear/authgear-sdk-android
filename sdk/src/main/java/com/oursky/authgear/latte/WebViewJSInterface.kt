@@ -20,7 +20,7 @@ internal class WebViewJSInterface(private val webView: WebView) {
 
     enum class BuiltInEvent(val eventName: String) {
         OPEN_EMAIL_CLIENT("openEmailClient"),
-        VIEW_PAGE("viewPage")
+        ANALYTICS("analytics")
     }
 
     @JavascriptInterface
@@ -34,11 +34,23 @@ internal class WebViewJSInterface(private val webView: WebView) {
 
         when (type) {
             BuiltInEvent.OPEN_EMAIL_CLIENT -> this.webView.listener?.onEvent(WebViewEvent.OpenEmailClient)
-            BuiltInEvent.VIEW_PAGE -> {
+            BuiltInEvent.ANALYTICS -> {
+                val type = try {
+                    event.jsonObject["analytics_event_type"]?.jsonPrimitive?.contentOrNull
+                } catch (e: Exception) { null } ?: return
                 val path = try {
                     event.jsonObject["path"]?.jsonPrimitive?.contentOrNull
-                } catch (e: Exception) { null } ?: return
-                this.webView.listener?.onEvent(WebViewEvent.ViewPage(LatteViewPageEvent(path)))
+                } catch (e: Exception) { null } ?: ""
+                val url = try {
+                    event.jsonObject["url"]?.jsonPrimitive?.contentOrNull
+                } catch (e: Exception) { null } ?: ""
+                val clientID = try {
+                    event.jsonObject["client_id"]?.jsonPrimitive?.contentOrNull
+                } catch (e: Exception) { null } ?: ""
+                val data = try {
+                    event.jsonObject["data"]?.jsonObject
+                } catch (e: Exception) { null }
+                this.webView.listener?.onEvent(WebViewEvent.Analytics(LatteAnalyticsEvent(type, path, url, clientID, data)))
             }
         }
     }
