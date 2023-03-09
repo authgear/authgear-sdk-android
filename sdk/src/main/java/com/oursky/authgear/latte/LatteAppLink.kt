@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets
 sealed class LatteAppLink {
     abstract suspend fun handle(latte: Latte)
 
-    internal class ResetLink(val uri: Uri) : LatteAppLink() {
+    class ResetLink(val uri: Uri) : LatteAppLink() {
         override suspend fun handle(latte: Latte) {
             val delegate = latte.delegate ?: return
             val handle = latte.resetPassword(uri)
@@ -23,7 +23,7 @@ sealed class LatteAppLink {
         }
     }
 
-    internal class LoginLink(val uri: Uri) : LatteAppLink() {
+    class LoginLink(val uri: Uri) : LatteAppLink() {
         override suspend fun handle(latte: Latte) {
             return withContext(Dispatchers.IO) {
                 val url = URL(uri.toString())
