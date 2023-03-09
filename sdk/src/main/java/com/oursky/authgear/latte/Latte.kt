@@ -45,7 +45,7 @@ class Latte(
         uiLocales: List<String>? = null
     ): LatteHandle<UserInfo> {
         val entryUrl = "$customUIEndpoint/verify/email"
-        val redirectUri = "$customUIEndpoint/verify/email/completed"
+        val redirectUri = "latte://complete"
 
         val verifyEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("email", email)
@@ -66,7 +66,7 @@ class Latte(
 
     suspend fun resetPassword(uri: Uri): LatteHandle<Unit> {
         val entryUrl = "$customUIEndpoint/recovery/reset"
-        val redirectUri = "latte://completed"
+        val redirectUri = "latte://complete"
 
         val resetPasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
             for (q in uri.getQueryList()) {
@@ -85,7 +85,7 @@ class Latte(
         uiLocales: List<String>? = null
     ): LatteHandle<Unit> {
         val entryUrl = "$customUIEndpoint/settings/change_password"
-        val redirectUri = "latte://completed"
+        val redirectUri = "latte://complete"
 
         val changePasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("redirect_uri", redirectUri)
@@ -110,7 +110,7 @@ class Latte(
         uiLocales: List<String>? = null
     ): LatteHandle<UserInfo> {
         val entryUrl = "$customUIEndpoint/settings/change_email"
-        val redirectUri = "$customUIEndpoint/verify/email/completed"
+        val redirectUri = "latte://complete"
 
         val changeEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("email", email)
