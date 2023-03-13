@@ -151,8 +151,11 @@ internal fun getDeviceInfo(context: Context): DeviceInfoRoot {
         longVersionCode = packageInfo.longVersionCode.toString()
     }
 
-    val bluetoothName = Settings.Secure.getString(context.applicationContext.contentResolver, "bluetooth_name") ?: ""
+    var bluetoothName = ""
     var deviceName = ""
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
+        bluetoothName = Settings.Secure.getString(context.applicationContext.contentResolver, "bluetooth_name") ?: ""
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
         deviceName = Settings.Global.getString(context.applicationContext.contentResolver, Settings.Global.DEVICE_NAME) ?: ""
     }
