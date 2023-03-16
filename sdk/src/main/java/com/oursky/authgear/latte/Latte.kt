@@ -33,7 +33,7 @@ class Latte(
     }
 
     suspend fun authenticate(options: AuthenticateOptions): LatteHandle<UserInfo> {
-        val request = authgear.createAuthenticateRequest(options)
+        val request = authgear.createAuthenticateRequest(options.toAuthgearAuthenticateOptions())
         val fragment = LatteAuthenticateFragment(makeID(), request)
         fragment.latte = this
         return fragment
