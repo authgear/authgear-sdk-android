@@ -1,5 +1,6 @@
 package com.oursky.authgear.latte.fragment
 
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
@@ -99,8 +100,8 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
         savedInstanceState: Bundle?
     ): View? {
         webView = WebView(requireContext())
+        webView.setBackgroundColor(Color.TRANSPARENT)
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
-            setBackgroundColor(0xffffffff.toInt())
             addView(webView)
         }
     }
