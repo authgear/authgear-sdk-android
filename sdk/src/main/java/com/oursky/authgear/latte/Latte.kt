@@ -51,7 +51,7 @@ class Latte(
             appendQueryParameter("email", email)
             appendQueryParameter("redirect_uri", redirectUri)
             if (state != null) {
-                appendQueryParameter("state", state)
+                appendQueryParameter("x_state", state)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
@@ -90,7 +90,7 @@ class Latte(
         val changePasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("redirect_uri", redirectUri)
             if (state != null) {
-                appendQueryParameter("state", state)
+                appendQueryParameter("x_state", state)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
@@ -117,7 +117,7 @@ class Latte(
             appendQueryParameter("phone", phoneNumber)
             appendQueryParameter("redirect_uri", redirectUri)
             if (state != null) {
-                appendQueryParameter("state", state)
+                appendQueryParameter("x_state", state)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))

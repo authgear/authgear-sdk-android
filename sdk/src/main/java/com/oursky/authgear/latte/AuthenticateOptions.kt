@@ -5,6 +5,7 @@ import com.oursky.authgear.PromptOption
 
 data class AuthenticateOptions @JvmOverloads constructor(
     var state: String? = null,
+    var xState: String? = null,
     var responseType: String? = "code",
     var prompt: List<PromptOption>? = null,
     var loginHint: String? = null,
@@ -17,6 +18,7 @@ data class AuthenticateOptions @JvmOverloads constructor(
 internal fun AuthenticateOptions.toAuthgearAuthenticateOptions(): com.oursky.authgear.AuthenticateOptions {
     return com.oursky.authgear.AuthenticateOptions(
         state = this.state,
+        xState = this.xState,
         redirectUri = "latte://complete",
         responseType = this.responseType,
         prompt = this.prompt,
