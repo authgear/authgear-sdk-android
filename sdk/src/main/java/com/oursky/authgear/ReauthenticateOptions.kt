@@ -15,6 +15,10 @@ data class ReauthentcateOptions @JvmOverloads constructor(
      */
     var state: String? = null,
     /**
+     * Custom state.
+     */
+    var xState: String? = null,
+    /**
      * UI locale tags
      */
     var uiLocales: List<String>? = null,
@@ -43,6 +47,7 @@ internal fun ReauthentcateOptions.toRequest(idTokenHint: String, isSsoEnabled: B
         scope = listOf("openid", "https://authgear.com/scopes/full-access"),
         isSsoEnabled = isSsoEnabled,
         state = this.state,
+        xState = this.xState,
         prompt = null,
         loginHint = null,
         idTokenHint = idTokenHint,
