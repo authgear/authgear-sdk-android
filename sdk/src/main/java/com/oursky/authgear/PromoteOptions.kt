@@ -10,6 +10,10 @@ data class PromoteOptions @JvmOverloads constructor(
      */
     var state: String? = null,
     /**
+     * Custom state.
+     */
+    var xState: String? = null,
+    /**
      * UI locale tags
      */
     var uiLocales: List<String>? = null,

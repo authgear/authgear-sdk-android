@@ -11,6 +11,7 @@ internal data class OidcAuthenticationRequest constructor(
     var scope: List<String>,
     var isSsoEnabled: Boolean,
     var state: String? = null,
+    var xState: String? = null,
     var prompt: List<PromptOption>? = null,
     var maxAge: Int? = null,
     var loginHint: String? = null,
@@ -41,6 +42,10 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
 
     this.state?.let {
         query["state"] = it
+    }
+
+    this.xState?.let {
+        query["x_state"] = it
     }
 
     this.loginHint?.let {

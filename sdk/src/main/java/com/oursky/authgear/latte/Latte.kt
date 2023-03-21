@@ -41,7 +41,7 @@ class Latte(
 
     suspend fun verifyEmail(
         email: String,
-        state: String? = null,
+        xState: String? = null,
         uiLocales: List<String>? = null
     ): LatteHandle<UserInfo> {
         val entryUrl = "$customUIEndpoint/verify/email"
@@ -50,8 +50,8 @@ class Latte(
         val verifyEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("email", email)
             appendQueryParameter("redirect_uri", redirectUri)
-            if (state != null) {
-                appendQueryParameter("state", state)
+            if (xState != null) {
+                appendQueryParameter("x_state", xState)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
@@ -81,7 +81,7 @@ class Latte(
     }
 
     suspend fun changePassword(
-        state: String? = null,
+        xState: String? = null,
         uiLocales: List<String>? = null
     ): LatteHandle<Unit> {
         val entryUrl = "$customUIEndpoint/settings/change_password"
@@ -89,8 +89,8 @@ class Latte(
 
         val changePasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("redirect_uri", redirectUri)
-            if (state != null) {
-                appendQueryParameter("state", state)
+            if (xState != null) {
+                appendQueryParameter("x_state", xState)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
@@ -106,7 +106,7 @@ class Latte(
     suspend fun changeEmail(
         email: String,
         phoneNumber: String,
-        state: String? = null,
+        xState: String? = null,
         uiLocales: List<String>? = null
     ): LatteHandle<UserInfo> {
         val entryUrl = "$customUIEndpoint/settings/change_email"
@@ -116,8 +116,8 @@ class Latte(
             appendQueryParameter("email", email)
             appendQueryParameter("phone", phoneNumber)
             appendQueryParameter("redirect_uri", redirectUri)
-            if (state != null) {
-                appendQueryParameter("state", state)
+            if (xState != null) {
+                appendQueryParameter("x_state", xState)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))

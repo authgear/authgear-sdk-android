@@ -454,6 +454,7 @@ internal class AuthgearCore(
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
                 state = options.state,
+                xState = options.xState,
                 uiLocales = options.uiLocales,
                 colorScheme = options.colorScheme,
                 wechatRedirectURI = options.wechatRedirectURI
