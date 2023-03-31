@@ -66,8 +66,8 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
                     )
                     context.startActivity(intent)
                 }
-                is WebViewEvent.Analytics -> {
-                    fragment.latte?.delegate?.onAnalyticsEvent(event.event)
+                is WebViewEvent.Tracking -> {
+                    fragment.latte?.delegate?.onTrackingEvent(event.event)
                 }
             }
         }
