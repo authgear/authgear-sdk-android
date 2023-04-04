@@ -24,19 +24,11 @@ class Latte(
     var delegate: LatteDelegate? = null
     private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
 
-    private fun makeID(): String {
-        val rng = SecureRandom()
-        val byteArray = ByteArray(32)
-        rng.nextBytes(byteArray)
-        val id = base64UrlEncode(byteArray)
-        return "latte.$id"
-    }
-
     suspend fun authenticate(options: AuthenticateOptions): LatteHandle<UserInfo> {
         val request = authgear.createAuthenticateRequest(options.toAuthgearAuthenticateOptions())
-        val fragment = LatteAuthenticateFragment(makeID(), request)
+        val fragment = LatteAuthenticateFragment(request)
         fragment.latte = this
-        return fragment
+        return LatteHandle(fragment)
     }
 
     suspend fun verifyEmail(
@@ -59,9 +51,9 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(verifyEmailUrl.toString())
 
-        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
+        val fragment = LatteUserInfoWebViewFragment(url, redirectUri)
         fragment.latte = this
-        return fragment
+        return LatteHandle(fragment)
     }
 
     suspend fun resetPassword(uri: Uri): LatteHandle<Unit> {
@@ -75,9 +67,9 @@ class Latte(
             appendQueryParameter("redirect_uri", redirectUri)
         }.build()
 
-        val fragment = LatteWebViewFragment(makeID(), resetPasswordUrl, redirectUri)
+        val fragment = LatteWebViewFragment(resetPasswordUrl, redirectUri)
         fragment.latte = this
-        return fragment
+        return LatteHandle(fragment)
     }
 
     suspend fun changePassword(
@@ -98,9 +90,9 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changePasswordUrl.toString())
 
-        val fragment = LatteWebViewFragment(makeID(), url, redirectUri)
+        val fragment = LatteWebViewFragment(url, redirectUri)
         fragment.latte = this
-        return fragment
+        return LatteHandle(fragment)
     }
 
     suspend fun changeEmail(
@@ -125,9 +117,9 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changeEmailUrl.toString())
 
-        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
+        val fragment = LatteUserInfoWebViewFragment(url, redirectUri)
         fragment.latte = this
-        return fragment
+        return LatteHandle(fragment)
     }
 
     fun handleIntent(intent: Intent) {

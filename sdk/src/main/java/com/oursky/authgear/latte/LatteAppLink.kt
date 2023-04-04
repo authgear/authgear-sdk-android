@@ -1,6 +1,7 @@
 package com.oursky.authgear.latte
 
 import android.net.Uri
+import androidx.fragment.app.FragmentManager
 import com.oursky.authgear.data.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +17,7 @@ sealed class LatteAppLink {
             val handle = latte.resetPassword(uri)
             delegate.showLatteFragment(handle.id, handle.fragment)
             try {
-                handle.await()
+                handle.await(delegate.latteFragmentManager)
             } finally {
                 delegate.hideLatteFragment(handle.id)
             }

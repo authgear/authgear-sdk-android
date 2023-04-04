@@ -14,18 +14,18 @@ import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.CancelException
 import com.oursky.authgear.R
 import com.oursky.authgear.ServerException
+import com.oursky.authgear.base64UrlEncode
 import com.oursky.authgear.latte.*
 import com.oursky.authgear.latte.WebView
 import com.oursky.authgear.latte.WebViewEvent
 import com.oursky.authgear.latte.WebViewListener
 import com.oursky.authgear.latte.WebViewRequest
 import com.oursky.authgear.latte.WebViewResult
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.completeWith
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.security.SecureRandom
 
-internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
+internal abstract class LatteFragment<T>() : Fragment() {
     companion object {
         private const val KEY_ID = "id"
         private const val KEY_URL = "url"
@@ -43,16 +43,24 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
     val redirectUri: String
         get() = requireArguments().getString(KEY_REDIRECT_URI)!!
 
-    internal constructor(id: String, url: Uri, redirectUri: String) : this() {
+
+    internal constructor(url: Uri, redirectUri: String) : this() {
         arguments = Bundle().apply {
-            putString(KEY_ID, id)
+            putString(KEY_ID, makeID())
             putString(KEY_URL, url.toString())
             putString(KEY_REDIRECT_URI, redirectUri)
         }
     }
 
     private lateinit var webView: WebView
-    private val result = CompletableDeferred<T>()
+
+    private fun makeID(): String {
+        val rng = SecureRandom()
+        val byteArray = ByteArray(32)
+        rng.nextBytes(byteArray)
+        val id = base64UrlEncode(byteArray)
+        return "latte.$id"
+    }
 
     private class LatteWebViewListener<T>(val fragment: LatteFragment<T>) : WebViewListener {
         override fun onEvent(event: WebViewEvent) {
@@ -114,7 +122,7 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
 
     private fun handleFinishUri(finishUri: Uri?) {
         lifecycleScope.launch {
-            result.completeWith(runCatching {
+            val output = runCatching {
                 finishUri?.let {
                     val error = it.getQueryParameter("error")
                     if (error == "cancel") {
@@ -129,17 +137,12 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
 
                     onHandleFinishUri(it)
                 } ?: throw CancelException()
-            })
+            }
+            val resultBundle = Bundle()
+            resultBundle.putSerializable("result", output)
+            this@LatteFragment.parentFragmentManager.setFragmentResult(latteID, resultBundle)
         }
     }
 
     internal abstract suspend fun onHandleFinishUri(finishUri: Uri): T
-
-    override val id: String
-        get() = latteID
-
-    override val fragment: Fragment
-        get() = this
-
-    override suspend fun await() = result.await()
 }
