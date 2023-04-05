@@ -28,8 +28,8 @@ import java.security.SecureRandom
 internal abstract class LatteFragment<T>() : Fragment() {
     companion object {
         private const val KEY_ID = "id"
-        private const val KEY_URL = "url"
-        private const val KEY_REDIRECT_URI = "redirect_uri"
+        internal const val KEY_URL = "url"
+        internal const val KEY_REDIRECT_URI = "redirect_uri"
     }
 
     internal var latte: Latte? = null
@@ -43,10 +43,13 @@ internal abstract class LatteFragment<T>() : Fragment() {
     val redirectUri: String
         get() = requireArguments().getString(KEY_REDIRECT_URI)!!
 
-
+    init {
+        arguments = arguments ?: Bundle()
+        requireArguments().putString(KEY_ID, makeID())
+    }
     internal constructor(url: Uri, redirectUri: String) : this() {
-        arguments = Bundle().apply {
-            putString(KEY_ID, makeID())
+        arguments = arguments ?: Bundle()
+        requireArguments().apply {
             putString(KEY_URL, url.toString())
             putString(KEY_REDIRECT_URI, redirectUri)
         }

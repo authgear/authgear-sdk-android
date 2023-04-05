@@ -1,18 +1,23 @@
 package com.oursky.authgear.latte.fragment
 
 import android.net.Uri
+import android.os.Bundle
 import com.oursky.authgear.*
 
 @OptIn(ExperimentalAuthgearApi::class)
-internal class LatteAuthenticateFragment(request: AuthenticationRequest) :
-    LatteFragment<UserInfo>(request.url, request.redirectUri) {
+internal class LatteAuthenticateFragment() : LatteFragment<UserInfo>() {
 
     companion object {
         const val KEY_AUTH_REQUEST = "auth_request"
     }
 
-    init {
-        requireArguments().putBundle(KEY_AUTH_REQUEST, request.toBundle())
+    internal constructor(request: AuthenticationRequest) : this() {
+        arguments = arguments ?: Bundle()
+        requireArguments().apply {
+            putBundle(KEY_AUTH_REQUEST, request.toBundle())
+            putString(KEY_URL, request.url.toString())
+            putString(KEY_REDIRECT_URI, request.redirectUri)
+        }
     }
 
     override suspend fun onHandleFinishUri(finishUri: Uri): UserInfo {
