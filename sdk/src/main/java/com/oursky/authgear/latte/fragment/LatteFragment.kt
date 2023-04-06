@@ -118,9 +118,18 @@ internal abstract class LatteFragment<T>() : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        webView.request = WebViewRequest(url = url, redirectUri = redirectUri)
-        webView.listener = LatteWebViewListener(this)
-        webView.load()
+        if (savedInstanceState != null) {
+            webView.restoreState(savedInstanceState)
+        } else {
+            webView.request = WebViewRequest(url = url, redirectUri = redirectUri)
+            webView.listener = LatteWebViewListener(this)
+            webView.load()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        webView.saveState(outState)
     }
 
     private fun handleFinishUri(finishUri: Uri?) {
