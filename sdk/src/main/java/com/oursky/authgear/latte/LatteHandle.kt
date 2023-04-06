@@ -5,8 +5,9 @@ import androidx.fragment.app.FragmentManager
 import com.oursky.authgear.latte.fragment.LatteFragment
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.completeWith
+import java.io.Serializable
 
-class LatteHandle<T> internal constructor(fragment: LatteFragment<T>) {
+class LatteHandle<T> internal constructor(fragment: LatteFragment<T>): Serializable {
     private val latteFragment = fragment
 
     val id = fragment.latteID
