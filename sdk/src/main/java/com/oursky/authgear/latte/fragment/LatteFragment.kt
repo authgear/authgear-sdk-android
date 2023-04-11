@@ -30,6 +30,7 @@ internal abstract class LatteFragment<T>() : Fragment() {
         private const val KEY_ID = "id"
         internal const val KEY_URL = "url"
         internal const val KEY_REDIRECT_URI = "redirect_uri"
+        internal const val KEY_RESULT = "result"
     }
 
     internal var latte: Latte? = null
@@ -151,7 +152,7 @@ internal abstract class LatteFragment<T>() : Fragment() {
                 } ?: throw CancelException()
             }
             val resultBundle = Bundle()
-            resultBundle.putSerializable("result", output)
+            resultBundle.putSerializable(KEY_RESULT, output)
             this@LatteFragment.parentFragmentManager.setFragmentResult(latteID, resultBundle)
         }
     }
