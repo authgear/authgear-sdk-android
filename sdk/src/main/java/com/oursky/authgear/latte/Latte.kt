@@ -19,7 +19,8 @@ class Latte(
     internal val authgear: Authgear,
     internal val customUIEndpoint: String,
     private val appLinkOrigin: Uri,
-    private val rewriteAppLinkOrigin: Uri? = null
+    private val rewriteAppLinkOrigin: Uri? = null,
+    private val webviewIsInspectable: Boolean = false
 ) {
     var delegate: LatteDelegate? = null
     private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
@@ -34,7 +35,7 @@ class Latte(
 
     suspend fun authenticate(options: AuthenticateOptions): LatteHandle<UserInfo> {
         val request = authgear.createAuthenticateRequest(options.toAuthgearAuthenticateOptions())
-        val fragment = LatteAuthenticateFragment(makeID(), request)
+        val fragment = LatteAuthenticateFragment(makeID(), request, webviewIsInspectable)
         fragment.latte = this
         return fragment
     }
@@ -59,7 +60,7 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(verifyEmailUrl.toString())
 
-        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
+        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri, webviewIsInspectable)
         fragment.latte = this
         return fragment
     }
@@ -75,7 +76,7 @@ class Latte(
             appendQueryParameter("redirect_uri", redirectUri)
         }.build()
 
-        val fragment = LatteWebViewFragment(makeID(), resetPasswordUrl, redirectUri)
+        val fragment = LatteWebViewFragment(makeID(), resetPasswordUrl, redirectUri, webviewIsInspectable)
         fragment.latte = this
         return fragment
     }
@@ -98,7 +99,7 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changePasswordUrl.toString())
 
-        val fragment = LatteWebViewFragment(makeID(), url, redirectUri)
+        val fragment = LatteWebViewFragment(makeID(), url, redirectUri, webviewIsInspectable)
         fragment.latte = this
         return fragment
     }
@@ -125,7 +126,7 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changeEmailUrl.toString())
 
-        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri)
+        val fragment = LatteUserInfoWebViewFragment(makeID(), url, redirectUri, webviewIsInspectable)
         fragment.latte = this
         return fragment
     }
