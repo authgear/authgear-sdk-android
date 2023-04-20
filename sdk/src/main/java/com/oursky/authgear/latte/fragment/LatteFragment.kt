@@ -39,15 +39,15 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
     val redirectUri: String
         get() = requireArguments().getString(KEY_REDIRECT_URI)!!
 
-    private val webviewIsInspectable: Boolean
+    private val webContentsDebuggingEnabled: Boolean
         get() = requireArguments().getBoolean(KEY_WEBSITE_INSTPECTABLE)
 
-    internal constructor(id: String, url: Uri, redirectUri: String, webviewIsInspectable: Boolean) : this() {
+    internal constructor(id: String, url: Uri, redirectUri: String, webContentsDebuggingEnabled: Boolean) : this() {
         arguments = Bundle().apply {
             putString(KEY_ID, id)
             putString(KEY_URL, url.toString())
             putString(KEY_REDIRECT_URI, redirectUri)
-            putBoolean(KEY_WEBSITE_INSTPECTABLE, webviewIsInspectable)
+            putBoolean(KEY_WEBSITE_INSTPECTABLE, webContentsDebuggingEnabled)
         }
     }
 
@@ -99,7 +99,7 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        webView = WebView(requireContext(), webviewIsInspectable)
+        webView = WebView(requireContext(), webContentsDebuggingEnabled)
         webView.setBackgroundColor(Color.TRANSPARENT)
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
             addView(webView)

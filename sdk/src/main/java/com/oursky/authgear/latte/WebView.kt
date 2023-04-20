@@ -8,7 +8,7 @@ import android.view.inputmethod.InputMethodManager
 import com.oursky.authgear.AuthgearException
 
 @SuppressLint("SetJavaScriptEnabled")
-internal class WebView(context: Context, inspectable: Boolean = false) : android.webkit.WebView(context) {
+internal class WebView(context: Context, webContentsDebuggingEnabled: Boolean) : android.webkit.WebView(context) {
     var request: WebViewRequest? = null
     var listener: WebViewListener? = null
 
@@ -16,7 +16,7 @@ internal class WebView(context: Context, inspectable: Boolean = false) : android
         addJavascriptInterface(WebViewJSInterface(this), WebViewJSInterface.jsBridgeName)
         settings.javaScriptEnabled = true
 
-        if (inspectable) {
+        if (webContentsDebuggingEnabled) {
             setWebContentsDebuggingEnabled(true)
         }
 
