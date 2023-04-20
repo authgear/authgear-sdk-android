@@ -8,13 +8,17 @@ import android.view.inputmethod.InputMethodManager
 import com.oursky.authgear.AuthgearException
 
 @SuppressLint("SetJavaScriptEnabled")
-internal class WebView(context: Context) : android.webkit.WebView(context) {
+internal class WebView(context: Context, webContentsDebuggingEnabled: Boolean) : android.webkit.WebView(context) {
     var request: WebViewRequest? = null
     var listener: WebViewListener? = null
 
     init {
         addJavascriptInterface(WebViewJSInterface(this), WebViewJSInterface.jsBridgeName)
         settings.javaScriptEnabled = true
+
+        if (webContentsDebuggingEnabled) {
+            setWebContentsDebuggingEnabled(true)
+        }
 
         webViewClient = android.webkit.WebViewClient()
         // TODO: copy WebChromeClient from OAuthWebViewBaseActivity?

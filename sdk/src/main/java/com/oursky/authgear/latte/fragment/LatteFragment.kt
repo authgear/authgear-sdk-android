@@ -15,11 +15,6 @@ import com.oursky.authgear.CancelException
 import com.oursky.authgear.R
 import com.oursky.authgear.ServerException
 import com.oursky.authgear.latte.*
-import com.oursky.authgear.latte.WebView
-import com.oursky.authgear.latte.WebViewEvent
-import com.oursky.authgear.latte.WebViewListener
-import com.oursky.authgear.latte.WebViewRequest
-import com.oursky.authgear.latte.WebViewResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.completeWith
 import kotlinx.coroutines.launch
@@ -30,6 +25,7 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
         private const val KEY_ID = "id"
         private const val KEY_URL = "url"
         private const val KEY_REDIRECT_URI = "redirect_uri"
+        private const val KEY_WEBSITE_INSTPECTABLE = "webview_inspectable"
     }
 
     internal var latte: Latte? = null
@@ -43,11 +39,15 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
     val redirectUri: String
         get() = requireArguments().getString(KEY_REDIRECT_URI)!!
 
-    internal constructor(id: String, url: Uri, redirectUri: String) : this() {
+    private val webContentsDebuggingEnabled: Boolean
+        get() = requireArguments().getBoolean(KEY_WEBSITE_INSTPECTABLE)
+
+    internal constructor(id: String, url: Uri, redirectUri: String, webContentsDebuggingEnabled: Boolean) : this() {
         arguments = Bundle().apply {
             putString(KEY_ID, id)
             putString(KEY_URL, url.toString())
             putString(KEY_REDIRECT_URI, redirectUri)
+            putBoolean(KEY_WEBSITE_INSTPECTABLE, webContentsDebuggingEnabled)
         }
     }
 
@@ -99,7 +99,7 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        webView = WebView(requireContext())
+        webView = WebView(requireContext(), webContentsDebuggingEnabled)
         webView.setBackgroundColor(Color.TRANSPARENT)
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
             addView(webView)
