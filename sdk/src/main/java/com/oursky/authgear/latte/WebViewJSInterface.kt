@@ -20,7 +20,8 @@ internal class WebViewJSInterface(private val webView: WebView) {
 
     enum class BuiltInEvent(val eventName: String) {
         OPEN_EMAIL_CLIENT("openEmailClient"),
-        TRACKING("tracking")
+        TRACKING("tracking"),
+        READY("ready")
     }
 
     @JavascriptInterface
@@ -42,6 +43,10 @@ internal class WebViewJSInterface(private val webView: WebView) {
                     event.jsonObject["params"]?.jsonObject
                 } catch (e: Exception) { null } ?: return
                 this.webView.listener?.onEvent(WebViewEvent.Tracking(LatteTrackingEvent(event_name, params)))
+            }
+            BuiltInEvent.READY -> {
+                this.webView.onReady?.invoke(this.webView)
+                this.webView.onReady = null
             }
         }
     }

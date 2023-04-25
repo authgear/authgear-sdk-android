@@ -15,10 +15,11 @@ internal class WebViewClient(
     }
 
     private fun checkRedirectURI(uri: Uri): Boolean {
-        val redirectURI = this.webView.request?.redirectUri ?: return false
+        val redirectURI = this.webView.request.redirectUri
         val currentURI = removeQueryAndFragment(uri)
         if (redirectURI == currentURI.toString()) {
-            webView.listener?.onCompleted(WebViewResult(uri))
+            webView.completion?.invoke(webView, Result.success(WebViewResult(uri)))
+            webView.completion = null
             return true
         }
         return false
@@ -38,6 +39,7 @@ internal class WebViewClient(
 
     override fun onPageStarted(view: android.webkit.WebView?, url: String?, favicon: Bitmap?) {
         view?.evaluateJavascript(WebViewJSInterface.initScript) {}
+        view?.requestFocus()
         inner.onPageStarted(view, url, favicon)
     }
 

@@ -8,23 +8,11 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 
 sealed class LatteAppLink {
-    abstract suspend fun handle(latte: Latte)
 
-    class ResetLink(val uri: Uri) : LatteAppLink() {
-        override suspend fun handle(latte: Latte) {
-            val delegate = latte.delegate ?: return
-            val handle = latte.resetPassword(uri)
-            delegate.showLatteFragment(handle.id, handle.fragment)
-            try {
-                handle.await()
-            } finally {
-                delegate.hideLatteFragment(handle.id)
-            }
-        }
-    }
+    class ResetLink(val uri: Uri) : LatteAppLink()
 
     class LoginLink(val uri: Uri) : LatteAppLink() {
-        override suspend fun handle(latte: Latte) {
+        suspend fun handle(latte: Latte) {
             return withContext(Dispatchers.IO) {
                 val url = URL(uri.toString())
                 HttpClient.fetch(url, "POST", emptyMap()) { conn ->
