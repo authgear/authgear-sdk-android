@@ -3,12 +3,12 @@ package com.oursky.authgear.latte
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import androidx.annotation.RequiresApi
 
 internal class WebViewClient(
-    private val webView: WebView,
-    private val inner: android.webkit.WebViewClient
+    private val webView: WebView
 ) : android.webkit.WebViewClient() {
     private fun removeQueryAndFragment(uri: Uri): Uri {
         return uri.buildUpon().query(null).fragment(null).build()
@@ -40,12 +40,28 @@ internal class WebViewClient(
     override fun onPageStarted(view: android.webkit.WebView?, url: String?, favicon: Bitmap?) {
         view?.evaluateJavascript(WebViewJSInterface.initScript) {}
         view?.requestFocus()
-        inner.onPageStarted(view, url, favicon)
+        super.onPageStarted(view, url, favicon)
     }
 
-    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
-        inner.onPageFinished(view, url)
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    override fun onReceivedError(
+        view: android.webkit.WebView?,
+        request: WebResourceRequest?,
+        error: WebResourceError?
+    ) {
+        super.onReceivedError(view, request, error)
+        webView.completion?.invoke(webView, Result.failure(WebViewError(request!!, error!!)))
+        webView.completion = null
     }
 
-    // TODO: delegate all methods to inner?
+    override fun onReceivedError(
+        view: android.webkit.WebView?,
+        errorCode: Int,
+        description: String?,
+        failingUrl: String?
+    ) {
+        super.onReceivedError(view, errorCode, description, failingUrl)
+        webView.completion?.invoke(webView, Result.failure(WebViewError(errorCode, description!!, failingUrl!!)))
+        webView.completion = null
+    }
 }

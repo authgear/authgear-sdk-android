@@ -20,17 +20,13 @@ internal class WebView(context: Context, val request: WebViewRequest, webContent
             setWebContentsDebuggingEnabled(true)
         }
 
-        webViewClient = android.webkit.WebViewClient()
+        webViewClient = WebViewClient(this)
         // TODO: copy WebChromeClient from OAuthWebViewBaseActivity?
     }
 
     fun load() {
         val url = this.request.url
         this.loadUrl(url.toString())
-    }
-
-    override fun setWebViewClient(client: android.webkit.WebViewClient) {
-        super.setWebViewClient(WebViewClient(this, client))
     }
 
     override fun onCreateInputConnection(outAttrs: EditorInfo?): InputConnection? {
