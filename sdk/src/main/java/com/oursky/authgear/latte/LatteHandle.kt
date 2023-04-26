@@ -1,9 +1,9 @@
 package com.oursky.authgear.latte
 
-import androidx.fragment.app.Fragment
+import kotlinx.coroutines.Deferred
 
-interface LatteHandle<T> {
-    val id: String
-    val fragment: Fragment
-    suspend fun await(): T
+data class LatteHandle<T>(val fragmentId: String, private val deferred: Deferred<T>) {
+    suspend fun await(): T {
+        return deferred.await()
+    }
 }

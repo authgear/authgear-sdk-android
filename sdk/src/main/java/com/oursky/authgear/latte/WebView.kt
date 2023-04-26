@@ -5,11 +5,11 @@ import android.content.Context
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
-import com.oursky.authgear.AuthgearException
 
 @SuppressLint("SetJavaScriptEnabled")
-internal class WebView(context: Context, webContentsDebuggingEnabled: Boolean) : android.webkit.WebView(context) {
-    var request: WebViewRequest? = null
+internal class WebView(context: Context, val request: WebViewRequest, webContentsDebuggingEnabled: Boolean) : android.webkit.WebView(context) {
+    var onReady: ((webView: WebView) -> Unit)? = null
+    var completion: ((webView: WebView, result: Result<WebViewResult>) -> Unit)? = null
     var listener: WebViewListener? = null
 
     init {
@@ -20,18 +20,13 @@ internal class WebView(context: Context, webContentsDebuggingEnabled: Boolean) :
             setWebContentsDebuggingEnabled(true)
         }
 
-        webViewClient = android.webkit.WebViewClient()
+        webViewClient = WebViewClient(this)
         // TODO: copy WebChromeClient from OAuthWebViewBaseActivity?
     }
 
     fun load() {
-        val url = this.request?.url ?: throw AuthgearException("request not provided")
+        val url = this.request.url
         this.loadUrl(url.toString())
-        this.requestFocus()
-    }
-
-    override fun setWebViewClient(client: android.webkit.WebViewClient) {
-        super.setWebViewClient(WebViewClient(this, client))
     }
 
     override fun onCreateInputConnection(outAttrs: EditorInfo?): InputConnection? {

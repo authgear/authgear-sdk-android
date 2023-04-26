@@ -1,26 +1,20 @@
 package com.oursky.authgear.latte.fragment
 
+import android.content.Context
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.CancelException
 import com.oursky.authgear.R
-import com.oursky.authgear.ServerException
 import com.oursky.authgear.latte.*
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.completeWith
-import kotlinx.coroutines.launch
-import org.json.JSONObject
 
-internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
+internal class LatteFragment() : Fragment() {
     companion object {
         private const val KEY_ID = "id"
         private const val KEY_URL = "url"
@@ -42,19 +36,21 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
     private val webContentsDebuggingEnabled: Boolean
         get() = requireArguments().getBoolean(KEY_WEBSITE_INSTPECTABLE)
 
-    internal constructor(id: String, url: Uri, redirectUri: String, webContentsDebuggingEnabled: Boolean) : this() {
+    internal constructor(context: Context, id: String, url: Uri, redirectUri: String, webContentsDebuggingEnabled: Boolean) : this() {
         arguments = Bundle().apply {
             putString(KEY_ID, id)
             putString(KEY_URL, url.toString())
             putString(KEY_REDIRECT_URI, redirectUri)
             putBoolean(KEY_WEBSITE_INSTPECTABLE, webContentsDebuggingEnabled)
         }
+        webView = WebView(context, WebViewRequest(url = url, redirectUri = redirectUri), webContentsDebuggingEnabled)
+        webView.setBackgroundColor(Color.TRANSPARENT)
+        webView.listener = LatteWebViewListener(this)
     }
 
-    private lateinit var webView: WebView
-    private val result = CompletableDeferred<T>()
+    internal lateinit var webView: WebView
 
-    private class LatteWebViewListener<T>(val fragment: LatteFragment<T>) : WebViewListener {
+    private class LatteWebViewListener(val fragment: LatteFragment) : WebViewListener {
         override fun onEvent(event: WebViewEvent) {
             when (event) {
                 is WebViewEvent.OpenEmailClient -> {
@@ -71,18 +67,14 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
                 }
             }
         }
-
-        override fun onCompleted(result: WebViewResult) {
-            fragment.handleFinishUri(result.finishUri)
-        }
     }
 
-    private class LatteBackPressHandler<T>(val fragment: LatteFragment<T>) : OnBackPressedCallback(true) {
+    private class LatteBackPressHandler(val fragment: LatteFragment) : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             if (fragment.webView.canGoBack()) {
                 fragment.webView.goBack()
             } else {
-                fragment.handleFinishUri(null)
+                fragment.webView.completion?.invoke(fragment.webView, Result.failure(CancelException()))
             }
         }
     }
@@ -99,47 +91,8 @@ internal abstract class LatteFragment<T>() : Fragment(), LatteHandle<T> {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        webView = WebView(requireContext(), webContentsDebuggingEnabled)
-        webView.setBackgroundColor(Color.TRANSPARENT)
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
             addView(webView)
         }
     }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        webView.request = WebViewRequest(url = url, redirectUri = redirectUri)
-        webView.listener = LatteWebViewListener(this)
-        webView.load()
-    }
-
-    private fun handleFinishUri(finishUri: Uri?) {
-        lifecycleScope.launch {
-            result.completeWith(runCatching {
-                finishUri?.let {
-                    val error = it.getQueryParameter("error")
-                    if (error == "cancel") {
-                        throw CancelException()
-                    }
-
-                    val latteError = it.getQueryParameter("x_latte_error")
-                    latteError?.let { base64Json ->
-                        val json = Base64.decode(base64Json, Base64.URL_SAFE).toString(Charsets.UTF_8)
-                        throw ServerException(JSONObject(json))
-                    }
-
-                    onHandleFinishUri(it)
-                } ?: throw CancelException()
-            })
-        }
-    }
-
-    internal abstract suspend fun onHandleFinishUri(finishUri: Uri): T
-
-    override val id: String
-        get() = latteID
-
-    override val fragment: Fragment
-        get() = this
-
-    override suspend fun await() = result.await()
 }
