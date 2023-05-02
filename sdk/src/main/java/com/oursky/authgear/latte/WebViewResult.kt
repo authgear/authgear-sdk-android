@@ -2,8 +2,8 @@ package com.oursky.authgear.latte
 
 import android.net.Uri
 import android.util.Base64
-import com.oursky.authgear.AuthgearException
 import com.oursky.authgear.CancelException
+import com.oursky.authgear.OAuthException
 import com.oursky.authgear.ServerException
 import org.json.JSONObject
 internal data class WebViewResult(private val finishUri: Uri) {
@@ -20,7 +20,12 @@ internal data class WebViewResult(private val finishUri: Uri) {
         }
 
         if (!error.isNullOrBlank()) {
-            throw AuthgearException(error)
+            throw OAuthException(
+                error = error,
+                errorDescription = finishUri.getQueryParameter("error_description"),
+                state = null,
+                errorURI = finishUri.getQueryParameter("error_uri")
+            )
         }
 
         return finishUri
