@@ -3,6 +3,7 @@ package com.oursky.authgear.latte
 import android.net.Uri
 import android.util.Base64
 import com.oursky.authgear.CancelException
+import com.oursky.authgear.OAuthException
 import com.oursky.authgear.ServerException
 import org.json.JSONObject
 internal data class WebViewResult(private val finishUri: Uri) {
@@ -17,6 +18,16 @@ internal data class WebViewResult(private val finishUri: Uri) {
             val json = Base64.decode(base64Json, Base64.URL_SAFE).toString(Charsets.UTF_8)
             throw ServerException(JSONObject(json))
         }
+
+        if (!error.isNullOrBlank()) {
+            throw OAuthException(
+                error = error,
+                errorDescription = finishUri.getQueryParameter("error_description"),
+                state = null,
+                errorURI = finishUri.getQueryParameter("error_uri")
+            )
+        }
+
         return finishUri
     }
 }

@@ -37,11 +37,24 @@ class Latte(
 
     private suspend fun waitWebViewToLoad(webView: WebView) {
         suspendCoroutine<Unit> { k ->
-            webView.onReady = {
+            var isResumed = false
+            webView.onReady = fun(_) {
+                if (isResumed) {
+                    return
+                }
+                isResumed = true
                 k.resume(Unit)
             }
-            webView.completion = { _, result ->
-                k.resumeWith(result.map { })
+            webView.completion = fun(_, result) {
+                if (isResumed) {
+                    return
+                }
+                isResumed = true
+                k.resumeWith(result.mapCatching {
+                    // Throw error if needed
+                    it.getOrThrow()
+                    return
+                })
             }
             webView.load()
         }
