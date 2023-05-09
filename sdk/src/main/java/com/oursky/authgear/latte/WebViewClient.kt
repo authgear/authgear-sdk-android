@@ -50,6 +50,12 @@ internal class WebViewClient(
         error: WebResourceError?
     ) {
         super.onReceivedError(view, request, error)
+        // For unknown reason, when we attempt to inspect the webview with chrome,
+        // the webview will receive this error.
+        // But this is not a critical error so we ignore it here.
+        if (error != null && error.errorCode == ERROR_UNKNOWN && error.description == "net::ERR_CACHE_MISS") {
+            return
+        }
         webView.completion?.invoke(webView, Result.failure(WebViewError(request!!, error!!)))
         webView.completion = null
     }
@@ -61,6 +67,12 @@ internal class WebViewClient(
         failingUrl: String?
     ) {
         super.onReceivedError(view, errorCode, description, failingUrl)
+        // For unknown reason, when we attempt to inspect the webview with chrome,
+        // the webview will receive this error.
+        // But this is not a critical error so we ignore it here.
+        if (errorCode == ERROR_UNKNOWN && description == "net::ERR_CACHE_MISS") {
+            return
+        }
         webView.completion?.invoke(webView, Result.failure(WebViewError(errorCode, description!!, failingUrl!!)))
         webView.completion = null
     }

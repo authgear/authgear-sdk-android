@@ -60,6 +60,13 @@ class Latte(
         }
     }
 
+    suspend fun preload(context: Context) {
+        val url = Uri.parse(this.customUIEndpoint + "/preload")
+        val redirectUri = "latte://complete"
+        val webView = WebView(context, WebViewRequest(url = url, redirectUri = redirectUri), webContentsDebuggingEnabled)
+        this.waitWebViewToLoad(webView)
+    }
+
     suspend fun authenticate(context: Context, lifecycleOwner: LifecycleOwner, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
         val request = authgear.createAuthenticateRequest(options.toAuthgearAuthenticateOptions())
         val fragment = LatteFragment(
