@@ -69,6 +69,7 @@ class Latte(
             redirectUri = request.redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        fragment.latte = this
 
         this.waitWebViewToLoad(fragment.webView)
 
@@ -115,6 +116,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        fragment.latte = this
 
         this.waitWebViewToLoad(fragment.webView)
 
@@ -150,6 +152,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        fragment.latte = this
 
         this.waitWebViewToLoad(fragment.webView)
 
@@ -193,6 +196,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        fragment.latte = this
 
         this.waitWebViewToLoad(fragment.webView)
 
@@ -240,6 +244,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        fragment.latte = this
 
         this.waitWebViewToLoad(fragment.webView)
 
