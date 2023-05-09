@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import com.oursky.authgear.CancelException
 import com.oursky.authgear.R
 import com.oursky.authgear.latte.*
+import java.lang.ref.WeakReference
 
 internal class LatteFragment() : Fragment() {
     companion object {
@@ -22,7 +23,10 @@ internal class LatteFragment() : Fragment() {
         private const val KEY_WEBSITE_INSTPECTABLE = "webview_inspectable"
     }
 
-    internal var latte: Latte? = null
+    private var latteRef: WeakReference<Latte?> = WeakReference(null)
+    internal var latte: Latte?
+        get() = latteRef.get()
+        set(value) { latteRef = WeakReference(value) }
 
     val latteID: String
         get() = requireArguments().getString(KEY_ID)!!
