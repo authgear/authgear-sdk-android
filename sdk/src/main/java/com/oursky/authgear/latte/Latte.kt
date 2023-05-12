@@ -7,16 +7,11 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.*
-import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.latte.fragment.LatteFragment
-import com.oursky.authgear.net.toQueryParameter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
-import org.json.JSONObject
-import java.net.URL
-import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -25,7 +20,6 @@ import kotlin.coroutines.suspendCoroutine
 class Latte(
     internal val authgear: Authgear,
     internal val customUIEndpoint: String,
-    internal val tokenizeEndpoint: String,
     private val appLinkOrigin: Uri,
     private val rewriteAppLinkOrigin: Uri? = null,
     private val webContentsDebuggingEnabled: Boolean = false
@@ -74,7 +68,7 @@ class Latte(
     }
 
     suspend fun authenticate(context: Context, lifecycleOwner: LifecycleOwner, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
-        val request = authgear.createAuthenticateRequest(makeAuthgearAuthenticateOptions(options))
+        val request = authgear.createAuthenticateRequest(options.toAuthgearAuthenticateOptions())
         val fragment = LatteFragment(
             context = context,
             id = makeID(),
@@ -104,20 +98,17 @@ class Latte(
         context: Context,
         lifecycleOwner: LifecycleOwner,
         email: String,
-        xState: Map<String, String> = mapOf(),
+        xState: String? = null,
         uiLocales: List<String>? = null
     ): Pair<Fragment, LatteHandle<UserInfo>> {
         val entryUrl = "$customUIEndpoint/verify/email"
         val redirectUri = "latte://complete"
-        val xSecrets = hashMapOf(
-            "email" to email
-        )
-        val finalXState = makeXStateWithSecrets(xState, xSecrets)
 
         val verifyEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
+            appendQueryParameter("email", email)
             appendQueryParameter("redirect_uri", redirectUri)
-            if (xState.isNotEmpty()) {
-                appendQueryParameter("x_state", finalXState.toQueryParameter())
+            if (xState != null) {
+                appendQueryParameter("x_state", xState)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
@@ -188,7 +179,7 @@ class Latte(
     suspend fun changePassword(
         context: Context,
         lifecycleOwner: LifecycleOwner,
-        xState: Map<String, String> = mapOf(),
+        xState: String? = null,
         uiLocales: List<String>? = null
     ): Pair<Fragment, LatteHandle<Unit>> {
         val entryUrl = "$customUIEndpoint/settings/change_password"
@@ -196,8 +187,8 @@ class Latte(
 
         val changePasswordUrl = Uri.parse(entryUrl).buildUpon().apply {
             appendQueryParameter("redirect_uri", redirectUri)
-            if (xState.isNotEmpty()) {
-                appendQueryParameter("x_state", xState.toQueryParameter())
+            if (xState != null) {
+                appendQueryParameter("x_state", xState)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
@@ -234,22 +225,18 @@ class Latte(
         lifecycleOwner: LifecycleOwner,
         email: String,
         phoneNumber: String,
-        xState: Map<String, String> = mapOf(),
+        xState: String? = null,
         uiLocales: List<String>? = null
     ): Pair<Fragment, LatteHandle<UserInfo>> {
         val entryUrl = "$customUIEndpoint/settings/change_email"
         val redirectUri = "latte://complete"
 
-        val xSecrets = hashMapOf(
-            "email" to email,
-            "phone" to phoneNumber
-        )
-        val finalXState = makeXStateWithSecrets(xState, xSecrets)
-
         val changeEmailUrl = Uri.parse(entryUrl).buildUpon().apply {
+            appendQueryParameter("email", email)
+            appendQueryParameter("phone", phoneNumber)
             appendQueryParameter("redirect_uri", redirectUri)
-            if (xState.isNotEmpty()) {
-                appendQueryParameter("x_state", finalXState.toQueryParameter())
+            if (xState != null) {
+                appendQueryParameter("x_state", xState)
             }
             if (uiLocales != null) {
                 appendQueryParameter("ui_locales", UILocales.stringify(uiLocales))
@@ -311,54 +298,5 @@ class Latte(
                 link?.let { callback(link) }
             }
         }
-    }
-
-    private suspend fun createXSecretsToken(data: ByteArray): String {
-        return withContext(Dispatchers.IO) {
-            val url = URL(this@Latte.tokenizeEndpoint)
-            return@withContext HttpClient.fetch(url, "POST", emptyMap()) { conn ->
-                conn.outputStream.use {
-                    it.write(data)
-                }
-                conn.errorStream?.use {
-                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                    HttpClient.throwErrorIfNeeded(conn, responseString)
-                }
-                conn.inputStream.use {
-                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                    HttpClient.throwErrorIfNeeded(conn, responseString)
-                    return@fetch responseString
-                }
-            }
-        }
-    }
-
-    private suspend fun makeXStateWithSecrets(
-        xState: Map<String, String>,
-        xSecrets: Map<String, String>
-    ): Map<String, String> {
-        val finalXState = HashMap(xState)
-        if (xSecrets.isNotEmpty()) {
-            val xTokenJson = JSONObject(xSecrets).toString()
-            val xSecretsToken = createXSecretsToken(xTokenJson.toByteArray(StandardCharsets.UTF_8))
-            finalXState["x_secrets_token"] = xSecretsToken
-        }
-        return finalXState
-    }
-
-    private suspend fun makeAuthgearAuthenticateOptions(latteOptions: AuthenticateOptions): com.oursky.authgear.AuthenticateOptions {
-        val finalXState = makeXStateWithSecrets(latteOptions.xState, latteOptions.xSecrets)
-
-        return AuthenticateOptions(
-            xState = finalXState.toQueryParameter(),
-            redirectUri = "latte://complete",
-            responseType = latteOptions.responseType,
-            prompt = latteOptions.prompt,
-            loginHint = latteOptions.loginHint,
-            uiLocales = latteOptions.uiLocales,
-            colorScheme = latteOptions.colorScheme,
-            wechatRedirectURI = latteOptions.wechatRedirectURI,
-            page = latteOptions.page
-        )
     }
 }
