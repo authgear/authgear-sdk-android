@@ -58,13 +58,7 @@ internal class LatteFragment() : Fragment() {
         override fun onEvent(event: WebViewEvent) {
             when (event) {
                 is WebViewEvent.OpenEmailClient -> {
-                    val context = fragment.requireContext()
-                    val intent = EmailClient.makeEmailClientIntentChooser(
-                        context,
-                        "Choose Email Client",
-                        listOf(EmailClient.GMAIL, EmailClient.OUTLOOK)
-                    )
-                    context.startActivity(intent)
+                    fragment.latte?.delegate?.onOpenEmailClient(fragment)
                 }
                 is WebViewEvent.Tracking -> {
                     fragment.latte?.delegate?.onTrackingEvent(event.event)
