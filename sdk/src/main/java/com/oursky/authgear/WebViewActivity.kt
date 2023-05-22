@@ -37,11 +37,7 @@ internal class WebViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        webView = AuthgearWebView(this, object : AuthgearWebViewListener {
-            override fun onOpenEmailClient() {
-                sendOpenEmailClientBroadcast()
-            }
-        })
+        webView = AuthgearWebView(this)
         webView.setAuthgearWebViewClient(object : AuthgearWebView.Client() {
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
@@ -124,16 +120,7 @@ internal class WebViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendOpenEmailClientBroadcast() {
-        this.intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
-            val broadcastIntent = Intent(broadcastAction)
-            broadcastIntent.putExtra(KEY_BROADCAST_TYPE, BroadcastType.OPEN_EMAIL_CLIENT.name)
-            this.sendBroadcast(broadcastIntent)
-        }
-    }
-
     enum class BroadcastType {
-        END,
-        OPEN_EMAIL_CLIENT
+        END
     }
 }
