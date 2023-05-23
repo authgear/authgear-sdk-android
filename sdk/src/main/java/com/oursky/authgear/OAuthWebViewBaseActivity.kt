@@ -77,11 +77,7 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mWebView = AuthgearWebView(this, object : AuthgearWebViewListener {
-            override fun onOpenEmailClient() {
-                sendOpenEmailClientBroadcast()
-            }
-        })
+        mWebView = AuthgearWebView(this)
 
         // Override URL navigation
         val webViewClient = object : AuthgearWebView.Client() {
@@ -162,17 +158,6 @@ internal open class OAuthWebViewBaseActivity : AppCompatActivity() {
             mResult?.data?.toString()?.let {
                 broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, it)
             }
-            this.sendBroadcast(broadcastIntent)
-        }
-    }
-
-    private fun sendOpenEmailClientBroadcast() {
-        intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
-            val broadcastIntent = Intent(broadcastAction)
-            broadcastIntent.putExtra(
-                AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE,
-                OAuthBroadcastType.OPEN_EMAIL_CLIENT.name
-            )
             this.sendBroadcast(broadcastIntent)
         }
     }

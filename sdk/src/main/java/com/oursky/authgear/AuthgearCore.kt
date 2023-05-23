@@ -386,10 +386,6 @@ internal class AuthgearCore(
                             application.unregisterReceiver(this)
                             k.resume(Unit)
                         }
-                        WebViewActivity.BroadcastType.OPEN_EMAIL_CLIENT.name -> {
-                            if (context == null) return
-                            delegate?.onOpenEmailClient(context)
-                        }
                     }
                 }
             }
@@ -681,10 +677,6 @@ internal class AuthgearCore(
                             } else {
                                 k.resumeWithException(CancelException())
                             }
-                        }
-                        OAuthBroadcastType.OPEN_EMAIL_CLIENT.name -> {
-                            if (context == null) return
-                            delegate?.onOpenEmailClient(context)
                         }
                     }
                 }
