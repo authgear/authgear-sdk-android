@@ -90,7 +90,20 @@ internal class LatteFragment() : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
+            removeWebviewFromParent()
             addView(webView)
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        removeWebviewFromParent()
+    }
+
+    private fun removeWebviewFromParent() {
+        val webViewParent = webView.parent
+        if (webViewParent != null) {
+            (webViewParent as? ViewGroup)?.removeView(webView)
         }
     }
 }
