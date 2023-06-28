@@ -47,12 +47,13 @@ internal class LatteFragment() : Fragment() {
             putString(KEY_REDIRECT_URI, redirectUri)
             putBoolean(KEY_WEBSITE_INSTPECTABLE, webContentsDebuggingEnabled)
         }
-        webView = WebView(context, WebViewRequest(url = url, redirectUri = redirectUri), webContentsDebuggingEnabled)
-        webView.setBackgroundColor(Color.TRANSPARENT)
-        webView.listener = LatteWebViewListener(this)
+        constructWebViewIfNeeded(context)
     }
 
-    internal lateinit var webView: WebView
+    private var mutWebView: WebView? = null
+    internal var webView: WebView
+        get() = mutWebView!!
+        set(value) { mutWebView = value }
 
     private class LatteWebViewListener(val fragment: LatteFragment) : WebViewListener {
         override fun onEvent(event: WebViewEvent) {
@@ -67,6 +68,20 @@ internal class LatteFragment() : Fragment() {
         }
     }
 
+    private fun constructWebViewIfNeeded(ctx: Context) {
+        if (mutWebView != null) {
+            return
+        }
+        val url = Uri.parse(requireArguments().getString(KEY_URL)!!)
+        val redirectUri = requireArguments().getString(KEY_REDIRECT_URI)!!
+        val webContentsDebuggingEnabled = requireArguments().getBoolean(KEY_WEBSITE_INSTPECTABLE)
+
+        val newWebView = WebView(ctx, WebViewRequest(url = url, redirectUri = redirectUri), webContentsDebuggingEnabled)
+        mutWebView = newWebView
+        newWebView.setBackgroundColor(Color.TRANSPARENT)
+        newWebView.listener = LatteWebViewListener(this)
+    }
+
     private class LatteBackPressHandler(val fragment: LatteFragment) : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             if (fragment.webView.canGoBack()) {
@@ -79,6 +94,8 @@ internal class LatteFragment() : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        constructWebViewIfNeeded(requireContext())
 
         val backDispatcher = requireActivity().onBackPressedDispatcher
         backDispatcher.addCallback(this, LatteBackPressHandler(this))
