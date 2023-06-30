@@ -6,8 +6,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.*
 import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.latte.fragment.LatteFragment
@@ -86,7 +84,7 @@ class Latte(
         return result
     }
 
-    suspend fun authenticate(context: Context, lifecycleOwner: LifecycleOwner, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
+    suspend fun authenticate(context: Context, coroutineScope: CoroutineScope, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
         val request = authgear.createAuthenticateRequest(makeAuthgearAuthenticateOptions(options))
         val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
@@ -97,7 +95,7 @@ class Latte(
         )
         fragment.waitWebViewToLoad()
 
-        val d = lifecycleOwner.lifecycleScope.async {
+        val d = coroutineScope.async {
             val result = waitForResult(fragment)
             val userInfo = authgear.finishAuthentication(result.getOrThrow().toString(), request)
             userInfo
@@ -109,7 +107,7 @@ class Latte(
 
     suspend fun verifyEmail(
         context: Context,
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         email: String,
         xState: Map<String, String> = mapOf(),
         uiLocales: List<String>? = null
@@ -141,7 +139,7 @@ class Latte(
         )
         fragment.waitWebViewToLoad()
 
-        val d = lifecycleOwner.lifecycleScope.async {
+        val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
             val userInfo = authgear.fetchUserInfo()
             userInfo
@@ -151,7 +149,7 @@ class Latte(
         return Pair(fragment, handle)
     }
 
-    suspend fun resetPassword(context: Context, lifecycleOwner: LifecycleOwner, uri: Uri): Pair<Fragment, LatteHandle<Unit>> {
+    suspend fun resetPassword(context: Context, coroutineScope: CoroutineScope, uri: Uri): Pair<Fragment, LatteHandle<Unit>> {
         val entryUrl = "$customUIEndpoint/recovery/reset"
         val redirectUri = "latte://complete"
 
@@ -171,7 +169,7 @@ class Latte(
         )
         fragment.waitWebViewToLoad()
 
-        val d = lifecycleOwner.lifecycleScope.async {
+        val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
             Unit
         }
@@ -182,7 +180,7 @@ class Latte(
 
     suspend fun changePassword(
         context: Context,
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         xState: Map<String, String> = mapOf(),
         uiLocales: List<String>? = null
     ): Pair<Fragment, LatteHandle<Unit>> {
@@ -209,7 +207,7 @@ class Latte(
         )
         fragment.waitWebViewToLoad()
 
-        val d = lifecycleOwner.lifecycleScope.async {
+        val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
             Unit
         }
@@ -220,7 +218,7 @@ class Latte(
 
     suspend fun changeEmail(
         context: Context,
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         email: String,
         phoneNumber: String,
         xState: Map<String, String> = mapOf(),
@@ -255,7 +253,7 @@ class Latte(
         )
         fragment.waitWebViewToLoad()
 
-        val d = lifecycleOwner.lifecycleScope.async {
+        val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
             val userInfo = authgear.fetchUserInfo()
             userInfo
@@ -270,10 +268,10 @@ class Latte(
     }
 
     fun listenForAppLinks(
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         callback: suspend (LatteAppLink) -> Unit
     ) {
-        lifecycleOwner.lifecycleScope.launch {
+        coroutineScope.launch {
             intents.collect {
                 var uri = it?.data ?: return@collect
                 val origin = uri.getOrigin() ?: return@collect
