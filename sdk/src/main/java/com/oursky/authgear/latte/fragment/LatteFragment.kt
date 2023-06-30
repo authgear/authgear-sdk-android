@@ -39,7 +39,7 @@ internal class LatteFragment() : Fragment() {
             webContentsDebuggingEnabled: Boolean
         ): LatteFragment {
             val fragment = LatteFragment()
-            fragment.context = context
+            fragment.latteContext = context
             fragment.arguments = Bundle().apply {
                 putString(KEY_ID, id)
                 putString(KEY_URL, url.toString())
@@ -69,7 +69,7 @@ internal class LatteFragment() : Fragment() {
     private val webContentsDebuggingEnabled: Boolean
         get() = requireArguments().getBoolean(KEY_WEBSITE_INSTPECTABLE)
 
-    private var context: Context? = null
+    private var latteContext: Context? = null
 
     private var mutWebView: WebView? = null
     private var webView: WebView
@@ -143,14 +143,14 @@ internal class LatteFragment() : Fragment() {
     }
 
     private fun broadcastOnOpenEmailClientIntent() {
-        val ctx = context ?: return
+        val ctx = latteContext ?: return
         val broadcastIntent = Intent(latteID)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_EMAIL_CLIENT.toString())
         ctx.sendBroadcast(broadcastIntent)
     }
 
     private fun broadcastTrackingIntent(event: LatteTrackingEvent) {
-        val ctx = context ?: return
+        val ctx = latteContext ?: return
         val broadcastIntent = Intent(latteID)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.TRACKING.toString())
         broadcastIntent.putExtra(INTENT_KEY_EVENT, Json.encodeToString(event))
@@ -158,7 +158,7 @@ internal class LatteFragment() : Fragment() {
     }
 
     private fun broadcastCompleteIntent(result: Result<WebViewResult>) {
-        val ctx = context ?: return
+        val ctx = latteContext ?: return
         val broadcastIntent = Intent(latteID)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.COMPLETE.toString())
         val latteResult: LatteResult = try {
@@ -199,7 +199,7 @@ internal class LatteFragment() : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        this.context = context
+        this.latteContext = context
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
