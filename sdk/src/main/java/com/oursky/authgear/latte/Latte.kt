@@ -57,6 +57,7 @@ class Latte(
     private suspend fun waitForResult(fragment: LatteFragment): LatteResult {
         val application = authgear.core.application
         val result: LatteResult = suspendCoroutine<LatteResult> { k ->
+            var isResumed = false
             val intentFilter = IntentFilter(fragment.latteID)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
@@ -71,6 +72,10 @@ class Latte(
                             delegate?.onTrackingEvent(event)
                         }
                         LatteFragment.BroadcastType.COMPLETE.name -> {
+                            if (isResumed) {
+                                return
+                            }
+                            isResumed = true
                             val resultStr = intent.getStringExtra(LatteFragment.INTENT_KEY_RESULT) ?: return
                             val result = Json.decodeFromString<LatteResult>(resultStr)
                             k.resumeWith(Result.success(result))
