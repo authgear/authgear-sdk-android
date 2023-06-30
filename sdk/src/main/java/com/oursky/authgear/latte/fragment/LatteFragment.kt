@@ -21,6 +21,25 @@ internal class LatteFragment() : Fragment() {
         private const val KEY_URL = "url"
         private const val KEY_REDIRECT_URI = "redirect_uri"
         private const val KEY_WEBSITE_INSTPECTABLE = "webview_inspectable"
+        private const val KEY_WEBVIEW_STATE = "webview_state"
+
+        fun makeWithPreCreatedWebView(
+            context: Context,
+            id: String,
+            url: Uri,
+            redirectUri: String,
+            webContentsDebuggingEnabled: Boolean
+        ): LatteFragment {
+            val fragment = LatteFragment()
+            fragment.arguments = Bundle().apply {
+                putString(KEY_ID, id)
+                putString(KEY_URL, url.toString())
+                putString(KEY_REDIRECT_URI, redirectUri)
+                putBoolean(KEY_WEBSITE_INSTPECTABLE, webContentsDebuggingEnabled)
+            }
+            fragment.preCreateWebView(context)
+            return fragment
+        }
     }
 
     private var latteRef: WeakReference<Latte?> = WeakReference(null)
@@ -40,16 +59,6 @@ internal class LatteFragment() : Fragment() {
     private val webContentsDebuggingEnabled: Boolean
         get() = requireArguments().getBoolean(KEY_WEBSITE_INSTPECTABLE)
 
-    internal constructor(context: Context, id: String, url: Uri, redirectUri: String, webContentsDebuggingEnabled: Boolean) : this() {
-        arguments = Bundle().apply {
-            putString(KEY_ID, id)
-            putString(KEY_URL, url.toString())
-            putString(KEY_REDIRECT_URI, redirectUri)
-            putBoolean(KEY_WEBSITE_INSTPECTABLE, webContentsDebuggingEnabled)
-        }
-        constructWebViewIfNeeded(context)
-    }
-
     private var mutWebView: WebView? = null
     internal var webView: WebView
         get() = mutWebView!!
@@ -68,18 +77,18 @@ internal class LatteFragment() : Fragment() {
         }
     }
 
-    private fun constructWebViewIfNeeded(ctx: Context) {
+    private fun constructWebViewIfNeeded(ctx: Context, stateBundle: Bundle?) {
         if (mutWebView != null) {
             return
         }
-        val url = Uri.parse(requireArguments().getString(KEY_URL)!!)
-        val redirectUri = requireArguments().getString(KEY_REDIRECT_URI)!!
-        val webContentsDebuggingEnabled = requireArguments().getBoolean(KEY_WEBSITE_INSTPECTABLE)
 
         val newWebView = WebView(ctx, WebViewRequest(url = url, redirectUri = redirectUri), webContentsDebuggingEnabled)
         mutWebView = newWebView
         newWebView.setBackgroundColor(Color.TRANSPARENT)
         newWebView.listener = LatteWebViewListener(this)
+        if (stateBundle != null) {
+            newWebView.restoreState(stateBundle)
+        }
     }
 
     private class LatteBackPressHandler(val fragment: LatteFragment) : OnBackPressedCallback(true) {
@@ -95,8 +104,6 @@ internal class LatteFragment() : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        constructWebViewIfNeeded(requireContext())
-
         val backDispatcher = requireActivity().onBackPressedDispatcher
         backDispatcher.addCallback(this, LatteBackPressHandler(this))
     }
@@ -105,22 +112,36 @@ internal class LatteFragment() : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
+        val webViewStateBundle = savedInstanceState?.getBundle(KEY_WEBVIEW_STATE)
+        constructWebViewIfNeeded(requireContext(), webViewStateBundle)
+        removeWebViewFromParent(webView)
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
-            removeWebviewFromParent()
             addView(webView)
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        removeWebviewFromParent()
+        removeWebViewFromParent(webView)
+        mutWebView = null
     }
 
-    private fun removeWebviewFromParent() {
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val webViewState = Bundle()
+        webView.saveState(webViewState)
+        outState.putBundle(KEY_WEBVIEW_STATE, webViewState)
+    }
+
+    private fun removeWebViewFromParent(webView: WebView) {
         val webViewParent = webView.parent
         if (webViewParent != null) {
             (webViewParent as? ViewGroup)?.removeView(webView)
         }
+    }
+
+    private fun preCreateWebView(ctx: Context) {
+        constructWebViewIfNeeded(ctx, null)
     }
 }

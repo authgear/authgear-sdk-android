@@ -75,7 +75,7 @@ class Latte(
 
     suspend fun authenticate(context: Context, lifecycleOwner: LifecycleOwner, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
         val request = authgear.createAuthenticateRequest(makeAuthgearAuthenticateOptions(options))
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = request.url,
@@ -125,7 +125,7 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(verifyEmailUrl.toString())
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = url,
@@ -161,7 +161,7 @@ class Latte(
             appendQueryParameter("redirect_uri", redirectUri)
         }.build()
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = resetPasswordUrl,
@@ -205,7 +205,7 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changePasswordUrl.toString())
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = url,
@@ -257,7 +257,7 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changeEmailUrl.toString())
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = url,
