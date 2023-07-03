@@ -62,6 +62,7 @@ class Latte(
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     val type = intent?.getStringExtra(LatteFragment.INTENT_KEY_TYPE) ?: return
+                    resultData = LatteFragment.INTENT_RESULT_OK
                     when (type) {
                         LatteFragment.BroadcastType.OPEN_EMAIL_CLIENT.name -> {
                             delegate?.onOpenEmailClient(context)

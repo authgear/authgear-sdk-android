@@ -1,5 +1,7 @@
 package com.oursky.authgear.latte.fragment
 
+import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -11,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import kotlinx.serialization.encodeToString
 import com.oursky.authgear.CancelException
 import com.oursky.authgear.R
@@ -30,6 +33,8 @@ internal class LatteFragment() : Fragment() {
         internal const val INTENT_KEY_TYPE = "type"
         internal const val INTENT_KEY_EVENT = "event"
         internal const val INTENT_KEY_RESULT = "result"
+
+        internal const val INTENT_RESULT_OK = "ok"
 
         fun makeWithPreCreatedWebView(
             context: Context,
@@ -146,7 +151,7 @@ internal class LatteFragment() : Fragment() {
         val ctx = latteContext ?: return
         val broadcastIntent = Intent(latteID)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_EMAIL_CLIENT.toString())
-        ctx.sendBroadcast(broadcastIntent)
+        ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
 
     private fun broadcastTrackingIntent(event: LatteTrackingEvent) {
@@ -154,7 +159,7 @@ internal class LatteFragment() : Fragment() {
         val broadcastIntent = Intent(latteID)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.TRACKING.toString())
         broadcastIntent.putExtra(INTENT_KEY_EVENT, Json.encodeToString(event))
-        ctx.sendBroadcast(broadcastIntent)
+        ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
 
     private fun broadcastCompleteIntent(result: Result<WebViewResult>) {
@@ -170,7 +175,29 @@ internal class LatteFragment() : Fragment() {
             LatteResult(errorMessage = e.message)
         }
         broadcastIntent.putExtra(INTENT_KEY_RESULT, Json.encodeToString(latteResult))
-        ctx.sendBroadcast(broadcastIntent)
+        val br = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                intent ?: return
+                // Intent was handled, we don't have to do anything
+                if (resultData == INTENT_RESULT_OK) {
+                    return
+                }
+                // Else, pop the current fragment
+                if (!isAdded) {
+                    return
+                }
+                parentFragmentManager.popBackStack(latteID, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            }
+        }
+        ctx.sendOrderedBroadcast(
+            broadcastIntent,
+            null,
+            br,
+            null,
+            Activity.RESULT_OK,
+            null,
+            null
+        )
     }
 
     private fun constructWebViewIfNeeded(ctx: Context, stateBundle: Bundle?) {
