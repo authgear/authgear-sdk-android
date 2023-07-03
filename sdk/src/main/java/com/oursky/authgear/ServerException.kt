@@ -9,9 +9,9 @@ class ServerException(
     val info: JSONObject? = null
 ) : AuthgearException(message) {
     constructor(json: JSONObject) : this(
-        json.getString("name"),
-        json.getString("reason"),
-        json.getString("message"),
+        json.optString("name"),
+        json.optString("reason"),
+        json.optString("message"),
         json.optJSONObject("info")
     )
 }
