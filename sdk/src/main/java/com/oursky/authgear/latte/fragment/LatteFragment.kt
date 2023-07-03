@@ -249,6 +249,7 @@ internal class LatteFragment() : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        val webView = mutWebView ?: return
         val webViewState = Bundle()
         webView.saveState(webViewState)
         outState.putBundle(KEY_WEBVIEW_STATE, webViewState)
