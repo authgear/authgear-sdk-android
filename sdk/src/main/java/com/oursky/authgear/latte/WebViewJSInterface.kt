@@ -45,8 +45,7 @@ internal class WebViewJSInterface(private val webView: WebView) {
                 this.webView.listener?.onEvent(WebViewEvent.Tracking(LatteTrackingEvent(event_name, params)))
             }
             BuiltInEvent.READY -> {
-                this.webView.onReady?.invoke(this.webView)
-                this.webView.onReady = null
+                this.webView.listener?.onReady(this.webView)
             }
         }
     }

@@ -1,14 +1,14 @@
 package com.oursky.authgear.latte
 
-import androidx.fragment.app.Fragment
+import android.content.Context
 
 interface LatteDelegate {
     @JvmDefault
     fun onTrackingEvent(event: LatteTrackingEvent) {}
 
     @JvmDefault
-    fun onOpenEmailClient(source: Fragment) {
-        val context = source.requireContext()
+    fun onOpenEmailClient(context: Context?) {
+        context ?: return
         val intent = EmailClient.makeEmailClientIntentChooser(
             context,
             "Choose Email Client",

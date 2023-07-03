@@ -1,11 +1,11 @@
 package com.oursky.authgear.latte
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import com.oursky.authgear.*
 import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.latte.fragment.LatteFragment
@@ -14,11 +14,12 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
-import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @OptIn(ExperimentalAuthgearApi::class)
@@ -41,58 +42,68 @@ class Latte(
         return "latte.$id"
     }
 
-    private suspend fun waitWebViewToLoad(webView: WebView) {
-        suspendCoroutine<Unit> { k ->
-            var isResumed = false
-            webView.onReady = fun(_) {
-                if (isResumed) {
-                    return
-                }
-                isResumed = true
-                k.resume(Unit)
-            }
-            webView.completion = fun(_, result) {
-                if (isResumed) {
-                    return
-                }
-                isResumed = true
-                k.resumeWith(result.mapCatching {
-                    // Throw error if needed
-                    it.getOrThrow()
-                    return
-                })
-            }
-            webView.load()
-        }
-    }
-
     suspend fun preload(context: Context) {
         val url = Uri.parse(this.customUIEndpoint + "/preload")
         val redirectUri = "latte://complete"
-        val webView = WebView(context, WebViewRequest(url = url, redirectUri = redirectUri), webContentsDebuggingEnabled)
-        this.waitWebViewToLoad(webView)
+        LatteFragment.makeWithPreCreatedWebView(
+            context = context,
+            id = makeID(),
+            url = url,
+            redirectUri = redirectUri,
+            webContentsDebuggingEnabled = webContentsDebuggingEnabled
+        ).waitWebViewToLoad()
     }
 
-    suspend fun authenticate(context: Context, lifecycleOwner: LifecycleOwner, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
+    private suspend fun waitForResult(fragment: LatteFragment): LatteResult {
+        val application = authgear.core.application
+        val result: LatteResult = suspendCoroutine<LatteResult> { k ->
+            var isResumed = false
+            val intentFilter = IntentFilter(fragment.latteID)
+            val br = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    val type = intent?.getStringExtra(LatteFragment.INTENT_KEY_TYPE) ?: return
+                    resultData = LatteFragment.INTENT_RESULT_OK
+                    when (type) {
+                        LatteFragment.BroadcastType.OPEN_EMAIL_CLIENT.name -> {
+                            delegate?.onOpenEmailClient(context)
+                        }
+                        LatteFragment.BroadcastType.TRACKING.name -> {
+                            val eventStr = intent.getStringExtra(LatteFragment.INTENT_KEY_EVENT) ?: return
+                            val event = Json.decodeFromString<LatteTrackingEvent>(eventStr)
+                            delegate?.onTrackingEvent(event)
+                        }
+                        LatteFragment.BroadcastType.COMPLETE.name -> {
+                            if (isResumed) {
+                                return
+                            }
+                            isResumed = true
+                            val resultStr = intent.getStringExtra(LatteFragment.INTENT_KEY_RESULT) ?: return
+                            val result = Json.decodeFromString<LatteResult>(resultStr)
+                            k.resumeWith(Result.success(result))
+                            application.unregisterReceiver(this)
+                        }
+                    }
+                }
+            }
+            application.registerReceiver(br, intentFilter)
+        }
+        return result
+    }
+
+    suspend fun authenticate(context: Context, coroutineScope: CoroutineScope, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
         val request = authgear.createAuthenticateRequest(makeAuthgearAuthenticateOptions(options))
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = request.url,
             redirectUri = request.redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.latte = this
+        fragment.waitWebViewToLoad()
 
-        this.waitWebViewToLoad(fragment.webView)
-
-        val d = lifecycleOwner.lifecycleScope.async {
-            val result: Uri = suspendCoroutine<WebViewResult> { k ->
-                fragment.webView.completion = { _, result ->
-                    k.resumeWith(result)
-                }
-            }.getOrThrow()
-            val userInfo = authgear.finishAuthentication(result.toString(), request)
+        val d = coroutineScope.async {
+            val result = waitForResult(fragment)
+            val userInfo = authgear.finishAuthentication(result.getOrThrow().toString(), request)
             userInfo
         }
 
@@ -102,7 +113,7 @@ class Latte(
 
     suspend fun verifyEmail(
         context: Context,
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         email: String,
         xState: Map<String, String> = mapOf(),
         uiLocales: List<String>? = null
@@ -125,23 +136,17 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(verifyEmailUrl.toString())
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = url,
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.latte = this
+        fragment.waitWebViewToLoad()
 
-        this.waitWebViewToLoad(fragment.webView)
-
-        val d = lifecycleOwner.lifecycleScope.async {
-            suspendCoroutine<WebViewResult> { k ->
-                fragment.webView.completion = { _, result ->
-                    k.resumeWith(result)
-                }
-            }.getOrThrow()
+        val d = coroutineScope.async {
+            waitForResult(fragment).getOrThrow()
             val userInfo = authgear.fetchUserInfo()
             userInfo
         }
@@ -150,7 +155,7 @@ class Latte(
         return Pair(fragment, handle)
     }
 
-    suspend fun resetPassword(context: Context, lifecycleOwner: LifecycleOwner, uri: Uri): Pair<Fragment, LatteHandle<Unit>> {
+    suspend fun resetPassword(context: Context, coroutineScope: CoroutineScope, uri: Uri): Pair<Fragment, LatteHandle<Unit>> {
         val entryUrl = "$customUIEndpoint/recovery/reset"
         val redirectUri = "latte://complete"
 
@@ -161,23 +166,17 @@ class Latte(
             appendQueryParameter("redirect_uri", redirectUri)
         }.build()
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = resetPasswordUrl,
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.latte = this
+        fragment.waitWebViewToLoad()
 
-        this.waitWebViewToLoad(fragment.webView)
-
-        val d = lifecycleOwner.lifecycleScope.async {
-            suspendCoroutine<WebViewResult> { k ->
-                fragment.webView.completion = { _, result ->
-                    k.resumeWith(result)
-                }
-            }.getOrThrow()
+        val d = coroutineScope.async {
+            waitForResult(fragment).getOrThrow()
             Unit
         }
 
@@ -187,7 +186,7 @@ class Latte(
 
     suspend fun changePassword(
         context: Context,
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         xState: Map<String, String> = mapOf(),
         uiLocales: List<String>? = null
     ): Pair<Fragment, LatteHandle<Unit>> {
@@ -205,23 +204,17 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changePasswordUrl.toString())
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = url,
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.latte = this
+        fragment.waitWebViewToLoad()
 
-        this.waitWebViewToLoad(fragment.webView)
-
-        val d = lifecycleOwner.lifecycleScope.async {
-            suspendCoroutine<WebViewResult> { k ->
-                fragment.webView.completion = { _, result ->
-                    k.resumeWith(result)
-                }
-            }.getOrThrow()
+        val d = coroutineScope.async {
+            waitForResult(fragment).getOrThrow()
             Unit
         }
 
@@ -231,7 +224,7 @@ class Latte(
 
     suspend fun changeEmail(
         context: Context,
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         email: String,
         phoneNumber: String,
         xState: Map<String, String> = mapOf(),
@@ -257,23 +250,17 @@ class Latte(
         }.build()
         val url = authgear.generateUrl(changeEmailUrl.toString())
 
-        val fragment = LatteFragment(
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
             url = url,
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.latte = this
+        fragment.waitWebViewToLoad()
 
-        this.waitWebViewToLoad(fragment.webView)
-
-        val d = lifecycleOwner.lifecycleScope.async {
-            suspendCoroutine<WebViewResult> { k ->
-                fragment.webView.completion = { _, result ->
-                    k.resumeWith(result)
-                }
-            }.getOrThrow()
+        val d = coroutineScope.async {
+            waitForResult(fragment).getOrThrow()
             val userInfo = authgear.fetchUserInfo()
             userInfo
         }
@@ -287,10 +274,10 @@ class Latte(
     }
 
     fun listenForAppLinks(
-        lifecycleOwner: LifecycleOwner,
+        coroutineScope: CoroutineScope,
         callback: suspend (LatteAppLink) -> Unit
     ) {
-        lifecycleOwner.lifecycleScope.launch {
+        coroutineScope.launch {
             intents.collect {
                 var uri = it?.data ?: return@collect
                 val origin = uri.getOrigin() ?: return@collect

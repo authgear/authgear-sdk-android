@@ -8,8 +8,6 @@ import android.view.inputmethod.InputMethodManager
 
 @SuppressLint("SetJavaScriptEnabled")
 internal class WebView(context: Context, val request: WebViewRequest, webContentsDebuggingEnabled: Boolean) : android.webkit.WebView(context) {
-    var onReady: ((webView: WebView) -> Unit)? = null
-    var completion: ((webView: WebView, result: Result<WebViewResult>) -> Unit)? = null
     var listener: WebViewListener? = null
 
     init {

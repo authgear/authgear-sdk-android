@@ -18,8 +18,7 @@ internal class WebViewClient(
         val redirectURI = this.webView.request.redirectUri
         val currentURI = removeQueryAndFragment(uri)
         if (redirectURI == currentURI.toString()) {
-            webView.completion?.invoke(webView, Result.success(WebViewResult(uri)))
-            webView.completion = null
+            webView.listener?.onComplete(webView, Result.success(WebViewResult(uri)))
             return true
         }
         return false
@@ -56,8 +55,7 @@ internal class WebViewClient(
         if (error != null && error.errorCode == ERROR_UNKNOWN && error.description == "net::ERR_CACHE_MISS") {
             return
         }
-        webView.completion?.invoke(webView, Result.failure(WebViewError(request!!, error!!)))
-        webView.completion = null
+        webView.listener?.onComplete(webView, Result.failure(WebViewError(request!!, error!!)))
     }
 
     override fun onReceivedError(
@@ -73,7 +71,6 @@ internal class WebViewClient(
         if (errorCode == ERROR_UNKNOWN && description == "net::ERR_CACHE_MISS") {
             return
         }
-        webView.completion?.invoke(webView, Result.failure(WebViewError(errorCode, description!!, failingUrl!!)))
-        webView.completion = null
+        webView.listener?.onComplete(webView, Result.failure(WebViewError(errorCode, description!!, failingUrl!!)))
     }
 }
