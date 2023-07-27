@@ -34,16 +34,9 @@ internal fun Uri.getOrigin(): String? {
 }
 
 internal fun Uri.rewriteOrigin(newOrigin: Uri): Uri {
-    val originalUri = URI(this.toString())
-    val newOriginUri = URI(newOrigin.toString())
-    val newUri = URI(
-        newOriginUri.scheme,
-        originalUri.userInfo,
-        newOriginUri.host,
-        newOriginUri.port,
-        originalUri.path,
-        originalUri.query,
-        originalUri.fragment
-    )
-    return Uri.parse(newUri.toString())
+    // To my understanding, this is the safest way to rewrite origin.
+    // Previously, we used the URI constructor, but we encountered a issue about
+    // encoded query.
+    // This affects us because we have x_state which is encoded a query.
+    return this.buildUpon().scheme(newOrigin.scheme).encodedAuthority(newOrigin.encodedAuthority).build()
 }
