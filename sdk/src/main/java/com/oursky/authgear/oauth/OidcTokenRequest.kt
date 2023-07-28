@@ -22,5 +22,7 @@ internal data class OidcTokenRequest(
     @SerialName("access_token")
     val accessToken: String? = null,
     @SerialName("jwt")
-    val jwt: String? = null
+    val jwt: String? = null,
+    @SerialName("x_app2app_device_key_jwt")
+    val xApp2AppDeviceKeyJwt: String? = null
 )

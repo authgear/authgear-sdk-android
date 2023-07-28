@@ -14,6 +14,8 @@ import android.util.Base64
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import com.oursky.authgear.app2app.App2App
+import com.oursky.authgear.app2app.App2AppOptions
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.net.toQueryParameter
@@ -51,6 +53,7 @@ internal class AuthgearCore(
     val clientId: String,
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
+    private val app2AppOptions: App2AppOptions,
     private val uiVariant: UIVariant,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
@@ -135,6 +138,8 @@ internal class AuthgearCore(
         val challenge: String
     )
 
+    private val app2app: App2App = App2App(oauthRepo)
+
     private val name = name ?: "default"
     private var isInitialized = false
     private var refreshToken: String? = null
@@ -150,6 +155,10 @@ internal class AuthgearCore(
 
     init {
         oauthRepo.endpoint = authgearEndpoint
+
+        if (app2AppOptions.isEnabled) {
+            requireMinimumApp2AppAPILevel()
+        }
     }
 
     val canReauthenticate: Boolean
@@ -186,6 +195,12 @@ internal class AuthgearCore(
     private fun requireMinimumBiometricAPILevel() {
         require(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             "Biometric authentication requires at least API Level 23"
+        }
+    }
+
+    private fun requireMinimumApp2AppAPILevel() {
+        require(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            "App2App authentication requires at least API Level 23"
         }
     }
 
@@ -606,12 +621,21 @@ internal class AuthgearCore(
         }
         val tokenResponse: OidcTokenResponse?
         try {
+            var app2appJwt: String? = null
+            if (
+                app2AppOptions.isEnabled &&
+                app2AppOptions.isInsecureDeviceKeyBindingEnabled &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+            ) {
+                app2appJwt = app2app.generateApp2AppJWT()
+            }
             tokenResponse = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
                     grantType = GrantType.REFRESH_TOKEN,
                     clientId = clientId,
                     xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                    refreshToken = refreshToken
+                    refreshToken = refreshToken,
+                    xApp2AppDeviceKeyJwt = app2appJwt
                 )
             )
         } catch (e: Exception) {
@@ -740,6 +764,10 @@ internal class AuthgearCore(
                 errorURI = errorURI
             )
         val codeVerifier = verifier?.verifier ?: storage.getOidcCodeVerifier(name)
+        var app2appJwt: String? = null
+        if (app2AppOptions.isEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            app2appJwt = app2app.generateApp2AppJWT()
+        }
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OidcTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
@@ -747,7 +775,8 @@ internal class AuthgearCore(
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                 code = code,
                 redirectUri = redirectUri,
-                codeVerifier = codeVerifier ?: ""
+                codeVerifier = codeVerifier ?: "",
+                xApp2AppDeviceKeyJwt = app2appJwt
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
@@ -867,7 +896,10 @@ internal class AuthgearCore(
 
         val kid = UUID.randomUUID().toString()
         val alias = "com.authgear.keys.biometric.$kid"
-        val spec = makeGenerateKeyPairSpec(alias, authenticatorTypesToKeyProperties(allowed), options.invalidatedByBiometricEnrollment)
+        val spec = makeGenerateKeyPairSpec(
+            alias,
+            authenticatorTypesToKeyProperties(allowed),
+            options.invalidatedByBiometricEnrollment)
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
         val keyPair = createKeyPair(spec)
         val jwk = publicKeyToJWK(kid, keyPair.public)

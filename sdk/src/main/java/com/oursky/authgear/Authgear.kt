@@ -8,6 +8,7 @@ import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
+import com.oursky.authgear.app2app.App2AppOptions
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
 import kotlinx.coroutines.*
@@ -21,7 +22,8 @@ constructor(
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
     isSsoEnabled: Boolean = false,
     uiVariant: UIVariant = UIVariant.CUSTOM_TABS,
-    name: String? = null
+    name: String? = null,
+    app2AppOptions: App2AppOptions = App2AppOptions(isEnabled = false)
 ) {
     companion object {
         @Suppress("unused")
@@ -37,6 +39,7 @@ constructor(
             clientId,
             authgearEndpoint,
             isSsoEnabled,
+            app2AppOptions,
             uiVariant,
             tokenStorage,
             PersistentContainerStorage(application),
