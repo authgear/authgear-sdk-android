@@ -2,6 +2,7 @@ package com.oursky.authgear.app2app
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.oursky.authgear.AuthgearCore
 import com.oursky.authgear.ContainerStorage
 import com.oursky.authgear.JWTHeader
 import com.oursky.authgear.JWTHeaderType
@@ -63,5 +64,16 @@ internal class App2App(
 
         storage.setApp2AppDeviceKeyId(namespace, kid)
         return jwt
+    }
+
+    fun createAuthenticateRequest(
+        clientID: String,
+        options: App2AppAuthenticateOptions,
+        verifier: AuthgearCore.Verifier
+    ): App2AppAuthenticateRequest {
+        return options.toRequest(
+            clientID = clientID,
+            codeVerifier = verifier
+        )
     }
 }

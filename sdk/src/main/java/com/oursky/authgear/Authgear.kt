@@ -671,4 +671,20 @@ constructor(
             }
         }
     }
+
+    /**
+     * Start app2app authentication.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun startApp2AppAuthentication(
+        authorizeUri: String,
+        redirectUri: String
+    ) {
+        core.startApp2AppAuthentication(
+            authorizeUri = authorizeUri,
+            redirectUri = redirectUri
+        )
+    }
 }
