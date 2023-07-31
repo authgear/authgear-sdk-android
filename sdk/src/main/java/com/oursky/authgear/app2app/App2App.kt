@@ -8,6 +8,9 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.oursky.authgear.GrantType
+import com.oursky.authgear.ServerException
+import com.oursky.authgear.OAuthException
 import com.oursky.authgear.AuthgearCore
 import com.oursky.authgear.ContainerStorage
 import com.oursky.authgear.JWTHeader
@@ -15,6 +18,8 @@ import com.oursky.authgear.JWTHeaderType
 import com.oursky.authgear.JWTPayload
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
+import com.oursky.authgear.net.toQueryParameter
+import com.oursky.authgear.oauth.OidcTokenRequest
 import com.oursky.authgear.publicKeyToJWK
 import com.oursky.authgear.signJWT
 import java.security.KeyPair
@@ -108,4 +113,82 @@ internal class App2App(
             application.startActivity(intent)
         }
     }
-}
+
+    fun parseApp2AppAuthenticationRequest(uri: Uri): App2AppAuthenticateRequest? {
+        return App2AppAuthenticateRequest.parse(uri)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private suspend fun doHandleApp2AppAuthenticationRequest(
+        maybeRefreshToken: String?,
+        redirectURI: Uri,
+        request: App2AppAuthenticateRequest
+    ): Intent {
+        val refreshToken = maybeRefreshToken ?: throw OAuthException(
+            error = "invalid_grant",
+            errorDescription = "unauthenticated",
+            state = null,
+            errorURI = null
+        )
+        val jwt = generateApp2AppJWT(forceNewKey = false)
+        val tokenResponse = oauthRepo.oidcTokenRequest(
+            OidcTokenRequest(
+                grantType = GrantType.APP2APP,
+                clientId = request.clientID,
+                jwt = jwt,
+                codeChallenge = request.codeChallenge,
+                redirectUri = request.redirectUri,
+                refreshToken = refreshToken,
+                codeChallengeMethod = AuthgearCore.CODE_CHALLENGE_METHOD
+            )
+        )
+        val query: Map<String, String> = hashMapOf(
+            "code" to tokenResponse.code!!
+        )
+        val resultURI = redirectURI.buildUpon()
+            .encodedQuery(query.toQueryParameter())
+            .build()
+        return Intent(Intent.ACTION_VIEW, resultURI)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    suspend fun handleApp2AppAuthenticationRequest(maybeRefreshToken: String?, request: App2AppAuthenticateRequest) {
+        var redirectURI: Uri? = null
+        try {
+            redirectURI = Uri.parse(request.redirectUri)
+            val intent = doHandleApp2AppAuthenticationRequest(
+                maybeRefreshToken,
+                redirectURI,
+                request
+            )
+            application.startActivity(intent)
+        } catch (e: Throwable) {
+            if (redirectURI == null) {
+                // Can't parse redirect_uri, throw the error
+                throw e
+            }
+            var error: String = "unknown_error"
+            var errorDescription: String? = "Unknown error"
+            when (e) {
+                is OAuthException -> {
+                    error = e.error
+                    errorDescription = e.errorDescription
+                }
+                is ServerException -> {
+                    error = "server_error"
+                    errorDescription = e.message
+                }
+            }
+            val query = hashMapOf(
+                "error" to error
+            )
+            if (errorDescription != null) {
+                query["error_description"] = errorDescription
+            }
+            val errorURI = redirectURI.buildUpon()
+                .encodedQuery(query.toQueryParameter())
+                .build()
+            application.startActivity(Intent(Intent.ACTION_VIEW, errorURI))
+        }
+    }
+    }

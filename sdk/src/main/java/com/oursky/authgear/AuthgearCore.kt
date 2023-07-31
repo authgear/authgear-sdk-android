@@ -16,6 +16,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.app2app.App2App
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest
 import com.oursky.authgear.app2app.App2AppOptions
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
@@ -81,6 +82,7 @@ internal class AuthgearCore(
 
         const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
         const val KEY_REDIRECT_URL = "redirectUrl"
+        const val CODE_CHALLENGE_METHOD = "S256"
 
         /**
          * Check and handle wehchat redirect uri and trigger delegate function if needed
@@ -1094,5 +1096,17 @@ internal class AuthgearCore(
         )
         val resultURI = app2app.startAuthenticateRequest(request)
         return finishAuthorization(resultURI.toString(), verifier)
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun parseApp2AppAuthenticationRequest(uri: Uri): App2AppAuthenticateRequest? {
+        requireMinimumApp2AppAPILevel()
+        return app2app.parseApp2AppAuthenticationRequest(uri)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    suspend fun handleApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest) {
+        requireMinimumApp2AppAPILevel()
+        return app2app.handleApp2AppAuthenticationRequest(refreshToken, request)
     }
 }

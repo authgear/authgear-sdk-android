@@ -11,7 +11,7 @@ internal data class OidcTokenRequest(
     @SerialName("client_id")
     val clientId: String,
     @SerialName("x_device_info")
-    val xDeviceInfo: String,
+    val xDeviceInfo: String? = null,
     @SerialName("redirect_uri")
     val redirectUri: String? = null,
     val code: String? = null,
@@ -24,5 +24,9 @@ internal data class OidcTokenRequest(
     @SerialName("jwt")
     val jwt: String? = null,
     @SerialName("x_app2app_device_key_jwt")
-    val xApp2AppDeviceKeyJwt: String? = null
+    val xApp2AppDeviceKeyJwt: String? = null,
+    @SerialName("code_challenge")
+    val codeChallenge: String? = null,
+    @SerialName("code_challenge_method")
+    val codeChallengeMethod: String? = null
 )

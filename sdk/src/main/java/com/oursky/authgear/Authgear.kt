@@ -2,6 +2,7 @@ package com.oursky.authgear
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -9,6 +10,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest
 import com.oursky.authgear.app2app.App2AppOptions
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
@@ -697,6 +699,43 @@ constructor(
                 e.printStackTrace()
                 handler.post {
                     onAuthenticateListener.onAuthenticationFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse an uri into app2app authentication request.
+     * @param uri The received uri.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun parseApp2AppAuthenticationRequest(uri: Uri): App2AppAuthenticateRequest? {
+        return core.parseApp2AppAuthenticationRequest(uri)
+    }
+
+    /**
+     * Parse an uri into app2app authentication request.
+     * @param uri The received uri.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun handleApp2AppAuthenticationRequest(
+        request: App2AppAuthenticateRequest,
+        listener: OnHandleApp2AppAuthenticationRequestListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.handleApp2AppAuthenticationRequest(request)
+                handler.post {
+                    listener.onFinished()
+                }
+            } catch (e: Throwable) {
+                handler.post {
+                    listener.onFailed(e)
                 }
             }
         }
