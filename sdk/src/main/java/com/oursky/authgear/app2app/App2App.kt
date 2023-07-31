@@ -1,5 +1,11 @@
 package com.oursky.authgear.app2app
 
+import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.oursky.authgear.AuthgearCore
@@ -16,8 +22,11 @@ import java.security.PrivateKey
 import java.security.Signature
 import java.time.Instant
 import java.util.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 internal class App2App(
+    private val application: Application,
     private val namespace: String,
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
@@ -75,5 +84,28 @@ internal class App2App(
             clientID = clientID,
             codeVerifier = verifier
         )
+    }
+
+    suspend fun startAuthenticateRequest(request: App2AppAuthenticateRequest): Uri {
+        return suspendCoroutine { k ->
+            var isResumed = false
+            val uri = request.toUri()
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+            val intentFilter = IntentFilter(App2AppRedirectActivity.BROADCAST_ACTION)
+            val br = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    val resultUri =
+                        intent?.getStringExtra(App2AppRedirectActivity.KEY_REDIRECT_URL) ?: return
+                    if (isResumed) {
+                        return
+                    }
+                    isResumed = true
+                    application.unregisterReceiver(this)
+                    k.resume(Uri.parse(resultUri))
+                }
+            }
+            application.registerReceiver(br, intentFilter)
+            application.startActivity(intent)
+        }
     }
 }

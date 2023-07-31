@@ -17,7 +17,6 @@ import androidx.biometric.BiometricPrompt
 import com.oursky.authgear.app2app.App2App
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions
 import com.oursky.authgear.app2app.App2AppOptions
-import com.oursky.authgear.app2app.toUri
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.net.toQueryParameter
@@ -153,7 +152,13 @@ internal class AuthgearCore(
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
 
-    private val app2app: App2App = App2App(this.name, storage, oauthRepo, keyRepo)
+    private val app2app: App2App = App2App(
+        application,
+        this.name,
+        storage,
+        oauthRepo,
+        keyRepo
+    )
 
     init {
         oauthRepo.endpoint = authgearEndpoint
@@ -1077,24 +1082,17 @@ internal class AuthgearCore(
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
-    fun startApp2AppAuthentication(
-        authorizeUri: String,
-        redirectUri: String
-    ) {
+    suspend fun startApp2AppAuthentication(options: App2AppAuthenticateOptions): UserInfo {
         requireIsInitialized()
         requireMinimumApp2AppAPILevel()
         val verifier = setupVerifier()
         // TODO: Verify integrity of another app
         val request = app2app.createAuthenticateRequest(
             clientID = clientId,
-            options = App2AppAuthenticateOptions(
-                authorizationEndpoint = authorizeUri,
-                redirectUri = redirectUri
-            ),
+            options = options,
             verifier = verifier
         )
-        val uri = request.toUri()
-        val intent = Intent(Intent.ACTION_VIEW, uri)
-        application.startActivity(intent)
+        val resultURI = app2app.startAuthenticateRequest(request)
+        return finishAuthorization(resultURI.toString(), verifier)
     }
 }

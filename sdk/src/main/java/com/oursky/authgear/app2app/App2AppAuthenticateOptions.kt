@@ -2,7 +2,7 @@ package com.oursky.authgear.app2app
 
 import com.oursky.authgear.AuthgearCore
 
-internal data class App2AppAuthenticateOptions(
+data class App2AppAuthenticateOptions(
     var authorizationEndpoint: String,
     var redirectUri: String
 )

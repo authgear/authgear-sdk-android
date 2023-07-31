@@ -8,6 +8,7 @@ import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
+import com.oursky.authgear.app2app.App2AppAuthenticateOptions
 import com.oursky.authgear.app2app.App2AppOptions
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
@@ -674,17 +675,30 @@ constructor(
 
     /**
      * Start app2app authentication.
+     * @param options App2App authenticate options.
+     * @param onAuthenticateListener The listener.
+     * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
     @JvmOverloads
     @RequiresApi(api = Build.VERSION_CODES.M)
     fun startApp2AppAuthentication(
-        authorizeUri: String,
-        redirectUri: String
+        options: App2AppAuthenticateOptions,
+        onAuthenticateListener: OnAuthenticateListener,
+        handler: Handler = Handler(Looper.getMainLooper())
     ) {
-        core.startApp2AppAuthentication(
-            authorizeUri = authorizeUri,
-            redirectUri = redirectUri
-        )
+        scope.launch {
+            try {
+                val userInfo = core.startApp2AppAuthentication(options)
+                handler.post {
+                    onAuthenticateListener.onAuthenticated(userInfo)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    onAuthenticateListener.onAuthenticationFailed(e)
+                }
+            }
+        }
     }
 }
