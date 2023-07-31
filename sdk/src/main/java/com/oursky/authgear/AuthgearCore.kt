@@ -138,8 +138,6 @@ internal class AuthgearCore(
         val challenge: String
     )
 
-    private val app2app: App2App = App2App(oauthRepo)
-
     private val name = name ?: "default"
     private var isInitialized = false
     private var refreshToken: String? = null
@@ -152,6 +150,8 @@ internal class AuthgearCore(
         private set
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
+
+    private val app2app: App2App = App2App(this.name, storage, oauthRepo, keyRepo)
 
     init {
         oauthRepo.endpoint = authgearEndpoint
@@ -627,7 +627,7 @@ internal class AuthgearCore(
                 app2AppOptions.isInsecureDeviceKeyBindingEnabled &&
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
             ) {
-                app2appJwt = app2app.generateApp2AppJWT()
+                app2appJwt = app2app.generateApp2AppJWT(forceNewKey = false)
             }
             tokenResponse = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
@@ -766,7 +766,7 @@ internal class AuthgearCore(
         val codeVerifier = verifier?.verifier ?: storage.getOidcCodeVerifier(name)
         var app2appJwt: String? = null
         if (app2AppOptions.isEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            app2appJwt = app2app.generateApp2AppJWT()
+            app2appJwt = app2app.generateApp2AppJWT(forceNewKey = true)
         }
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OidcTokenRequest(

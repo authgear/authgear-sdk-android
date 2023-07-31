@@ -10,6 +10,7 @@ internal class PersistentContainerStorage(val context: Context) : ContainerStora
         const val Verifier = "verifier"
         const val AnonymousKeyId = "anonymousKeyId"
         const val BiometricKeyId = "biometricKeyId"
+        const val App2AppDeviceKeyId = "app2appDeviceKeyId"
     }
 
     private val masterKey = MasterKey.Builder(context)
@@ -52,6 +53,16 @@ internal class PersistentContainerStorage(val context: Context) : ContainerStora
 
     override fun deleteBiometricKeyId(namespace: String) {
         getPref(namespace).edit().remove(BiometricKeyId).commit()
+    }
+
+    override fun getApp2AppDeviceKeyId(namespace: String): String? {
+        return getPref(namespace).getString(App2AppDeviceKeyId, null)
+    }
+    override fun setApp2AppDeviceKeyId(namespace: String, keyId: String) {
+        getPref(namespace).edit().putString(App2AppDeviceKeyId, keyId).commit()
+    }
+    override fun deleteApp2AppDeviceKeyId(namespace: String) {
+        getPref(namespace).edit().remove(App2AppDeviceKeyId).commit()
     }
 
     private fun getPref(namespace: String): SharedPreferences {
