@@ -208,9 +208,9 @@ internal class App2App(
     }
 
     private suspend fun verifyAppIntegrityByUri(uri: Uri): Throwable? {
-        val assetLink: List<AssetLink>
+        val assetLinks: List<AssetLink>
         try {
-            assetLink = assetLinkRepo.getAssetLinks(uri)
+            assetLinks = assetLinkRepo.getAssetLinks(uri)
         } catch (e: Throwable) {
             return e
         }
@@ -223,7 +223,7 @@ internal class App2App(
         }
         var matchedPackageLink: AssetLink? = null
         for (name in packageNames) {
-            val entry = assetLink.find { al ->
+            val entry = assetLinks.find { al ->
                 al.relation.contains("delegate_permission/common.handle_all_urls") &&
                     al.target.packageName == name
             }
