@@ -13,6 +13,7 @@ class App2AppRedirectActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val broadcastIntent = Intent(BROADCAST_ACTION)
+        broadcastIntent.setPackage(packageName)
         intent.data?.let {
             broadcastIntent.putExtra(KEY_REDIRECT_URL, it.toString())
             this.sendBroadcast(broadcastIntent)
