@@ -5,24 +5,20 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.content.pm.SigningInfo
 import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.oursky.authgear.GrantType
-import com.oursky.authgear.ServerException
-import com.oursky.authgear.OAuthException
-import com.oursky.authgear.AuthgearCore
-import com.oursky.authgear.ContainerStorage
-import com.oursky.authgear.JWTHeader
-import com.oursky.authgear.JWTHeaderType
-import com.oursky.authgear.JWTPayload
+import com.oursky.authgear.*
+import com.oursky.authgear.data.assetlink.AssetLink
+import com.oursky.authgear.data.assetlink.AssetLinkRepo
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OidcTokenRequest
-import com.oursky.authgear.publicKeyToJWK
-import com.oursky.authgear.signJWT
 import java.security.KeyPair
+import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.Signature
 import java.time.Instant
@@ -35,7 +31,8 @@ internal class App2App(
     private val namespace: String,
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
-    private val keyRepo: KeyRepo
+    private val keyRepo: KeyRepo,
+    private val assetLinkRepo: AssetLinkRepo
 ) {
     companion object {
         internal fun makeSignature(privateKey: PrivateKey): Signature {
@@ -92,9 +89,18 @@ internal class App2App(
     }
 
     suspend fun startAuthenticateRequest(request: App2AppAuthenticateRequest): Uri {
+        val uri = request.toUri()
+        val integrityCheckError = verifyAppIntegrityByUri(uri)
+        if (integrityCheckError != null) {
+            throw OAuthException(
+                error = "invalid_client",
+                errorDescription = "integrity check error: ${integrityCheckError.message}",
+                errorURI = null,
+                state = null
+            )
+        }
         return suspendCoroutine { k ->
             var isResumed = false
-            val uri = request.toUri()
             val intent = Intent(Intent.ACTION_VIEW, uri)
             val intentFilter = IntentFilter(App2AppRedirectActivity.BROADCAST_ACTION)
             val br = object : BroadcastReceiver() {
@@ -124,6 +130,15 @@ internal class App2App(
         redirectURI: Uri,
         request: App2AppAuthenticateRequest
     ): Intent {
+        val integrityCheckError = verifyAppIntegrityByUri(redirectURI)
+        if (integrityCheckError != null) {
+            throw OAuthException(
+                error = "invalid_client",
+                errorDescription = "integrity check error: ${integrityCheckError.message}",
+                errorURI = null,
+                state = null
+            )
+        }
         val refreshToken = maybeRefreshToken ?: throw OAuthException(
             error = "invalid_grant",
             errorDescription = "unauthenticated",
@@ -191,4 +206,91 @@ internal class App2App(
             application.startActivity(Intent(Intent.ACTION_VIEW, errorURI))
         }
     }
+
+    private suspend fun verifyAppIntegrityByUri(uri: Uri): Throwable? {
+        val assetLink: List<AssetLink>
+        try {
+            assetLink = assetLinkRepo.getAssetLinks(uri)
+        } catch (e: Throwable) {
+            return e
+        }
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        val pm = application.packageManager
+        val packageInfos = pm.queryIntentActivities(intent, PackageManager.GET_RESOLVED_FILTER)
+        val packageNames = hashSetOf<String>()
+        for (info in packageInfos) {
+            packageNames.add(info.activityInfo.packageName)
+        }
+        var matchedPackageLink: AssetLink? = null
+        for (name in packageNames) {
+            val entry = assetLink.find { al ->
+                al.relation.contains("delegate_permission/common.handle_all_urls") &&
+                    al.target.packageName == name
+            }
+            if (entry != null) {
+                matchedPackageLink = entry
+                break
+            }
+        }
+        if (matchedPackageLink == null) {
+            return AuthgearException("No package found to handle uri: $uri")
+        }
+        val expectedPackageName = matchedPackageLink.target.packageName
+        val actualSigningCertHashes = getSigningCertificatesHexHashes(expectedPackageName)
+        val expectedHashes = matchedPackageLink.target.sha256CertFingerprints.map { fingerprints ->
+            fingerprints.replace(":", "").toLowerCase(Locale.ROOT)
+        }.toSet()
+        if (
+            actualSigningCertHashes != null &&
+            actualSigningCertHashes.intersect(expectedHashes).isNotEmpty()
+        ) {
+            return null
+        }
+        return AuthgearException("package integrity cannot be verified: $expectedPackageName")
     }
+
+    private fun getSigningCertificatesHexHashes(packageName: String): Set<String?>? {
+        // NOTE(tung): This function references https://github.com/openid/AppAuth-Android/blob/300a91d24c2f085889cdd336a95031d71acd1257/library/java/net/openid/appauth/app2app/SecureRedirection.java#L246
+
+        return try {
+            val pm = application.packageManager
+            val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val signingInfo: SigningInfo = pm
+                    .getPackageInfo(
+                        packageName,
+                        PackageManager.GET_SIGNING_CERTIFICATES
+                    ).signingInfo
+                signingInfo.signingCertificateHistory
+            } else {
+                pm.getPackageInfo(
+                    packageName,
+                    PackageManager.GET_SIGNATURES
+                ).signatures
+            }
+            return generateSignatureHexHashes(signatures)
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
+
+    private fun generateSignatureHexHashes(
+        signatures: Array<android.content.pm.Signature?>
+    ): Set<String> {
+        // NOTE(tung): This function reference https://github.com/openid/AppAuth-Android/blob/300a91d24c2f085889cdd336a95031d71acd1257/library/java/net/openid/appauth/browser/BrowserDescriptor.java#L157C1-L165C6
+        val signatureHashes: MutableSet<String> = HashSet()
+        for (signature in signatures) {
+            val digest: MessageDigest = MessageDigest.getInstance("SHA-256")
+            val hashBytes: ByteArray = digest.digest(signature!!.toByteArray())
+            signatureHashes.add(hashBytes.toHex())
+        }
+        return signatureHashes
+    }
+}
+
+fun ByteArray.toHex(): String {
+    val sb: StringBuilder = StringBuilder(this.size * 2)
+    for (b in this) {
+        sb.append(String.format("%02x", b))
+    }
+    return sb.toString().toLowerCase(Locale.ROOT)
+}

@@ -18,6 +18,7 @@ import com.oursky.authgear.app2app.App2App
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions
 import com.oursky.authgear.app2app.App2AppAuthenticateRequest
 import com.oursky.authgear.app2app.App2AppOptions
+import com.oursky.authgear.data.assetlink.AssetLinkRepo
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.net.toQueryParameter
@@ -61,6 +62,7 @@ internal class AuthgearCore(
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
+    private val assetLinkRepo: AssetLinkRepo,
     name: String? = null
 ) {
     companion object {
@@ -159,7 +161,8 @@ internal class AuthgearCore(
         this.name,
         storage,
         oauthRepo,
-        keyRepo
+        keyRepo,
+        assetLinkRepo
     )
 
     init {

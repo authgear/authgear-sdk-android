@@ -12,6 +12,7 @@ import androidx.annotation.WorkerThread
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions
 import com.oursky.authgear.app2app.App2AppAuthenticateRequest
 import com.oursky.authgear.app2app.App2AppOptions
+import com.oursky.authgear.data.assetlink.AssetLinkRepoHttp
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
 import kotlinx.coroutines.*
@@ -48,6 +49,7 @@ constructor(
             PersistentContainerStorage(application),
             OAuthRepoHttp(),
             KeyRepoKeystore(),
+            AssetLinkRepoHttp(),
             name
         )
     }
