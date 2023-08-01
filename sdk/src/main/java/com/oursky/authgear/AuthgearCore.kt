@@ -1091,7 +1091,6 @@ internal class AuthgearCore(
         requireIsInitialized()
         requireMinimumApp2AppAPILevel()
         val verifier = setupVerifier()
-        // TODO: Verify integrity of another app
         val request = app2app.createAuthenticateRequest(
             clientID = clientId,
             options = options,
