@@ -367,7 +367,7 @@ public class MainViewModel extends AndroidViewModel {
     public void authenticateApp2App() {
         mIsLoading.setValue(true);
         App2AppAuthenticateOptions options = new App2AppAuthenticateOptions(
-                mApp2AppEndpoint.toString(),
+                mApp2AppEndpoint.getValue(),
                 MainApplication.AUTHGEAR_APP2APP_REDIRECT_URI);
         mAuthgear.startApp2AppAuthentication(options, new OnAuthenticateListener() {
             @Override
