@@ -307,9 +307,11 @@ public class MainActivity extends AppCompatActivity {
         boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
         boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
         boolean canReauthenticate = viewModel.canReauthenticate().getValue();
+        String app2appEndpoint = viewModel.app2appEndpoint().getValue();
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mConfigure.setEnabled(!isLoading);
         mAuthenticate.setEnabled(!isLoading && isConfigured && !isLoggedIn);
+        mAuthenticateApp2App.setEnabled(!isLoading && isConfigured && !isLoggedIn && !app2appEndpoint.isEmpty());
         mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
         mReauthenticate.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous);
