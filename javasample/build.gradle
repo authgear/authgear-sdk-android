@@ -36,6 +36,18 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    flavorDimensions 'flavor'
+    productFlavors {
+        one {
+            dimension "flavor"
+            applicationId "com.authgear.exampleapp.android"
+        }
+        two {
+            dimension "flavor"
+            applicationId "com.reactnativeexample"
+        }
+    }
 }
 
 dependencies {
