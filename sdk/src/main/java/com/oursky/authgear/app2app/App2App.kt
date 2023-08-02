@@ -102,6 +102,7 @@ internal class App2App(
         return suspendCoroutine { k ->
             var isResumed = false
             val intent = Intent(Intent.ACTION_VIEW, uri)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             val intentFilter = IntentFilter(App2AppRedirectActivity.BROADCAST_ACTION)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
@@ -176,6 +177,7 @@ internal class App2App(
                 redirectURI,
                 request
             )
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             application.startActivity(intent)
         } catch (e: Throwable) {
             if (redirectURI == null) {
@@ -203,7 +205,9 @@ internal class App2App(
             val errorURI = redirectURI.buildUpon()
                 .encodedQuery(query.toQueryParameter())
                 .build()
-            application.startActivity(Intent(Intent.ACTION_VIEW, errorURI))
+            val intent = Intent(Intent.ACTION_VIEW, errorURI)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            application.startActivity(intent)
         }
     }
 
