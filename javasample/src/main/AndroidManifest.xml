@@ -31,6 +31,15 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                    android:host="authgear-demo-android.pandawork.com"
+                    android:path="/app2app/authorize"/>
+            </intent-filter>
         </activity>
         <activity
             android:name="com.oursky.authgear.OAuthRedirectActivity"
@@ -45,6 +54,19 @@
                 <data android:scheme="com.authgear.exampleapp.android"
                     android:host="host"
                     android:pathPrefix="/open_wechat_app"/>
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.oursky.authgear.app2app.App2AppRedirectActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                    android:host="authgear-demo-android.pandawork.com"
+                    android:path="/app2app/redirect"/>
             </intent-filter>
         </activity>
     </application>
