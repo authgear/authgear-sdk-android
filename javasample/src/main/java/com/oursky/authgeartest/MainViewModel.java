@@ -49,6 +49,7 @@ import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions;
 import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
+import com.oursky.authgear.app2app.App2AppOptions;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
@@ -198,6 +199,7 @@ public class MainViewModel extends AndroidViewModel {
                 .putString("endpoint", endpoint)
                 .putBoolean("isSsoEnabled", isSsoEnabled)
                 .apply();
+        App2AppOptions app2appOptions = new App2AppOptions(true, true);
         if (mTokenStorage.getValue().equals(TransientTokenStorage.class.getSimpleName())) {
             mAuthgear = new Authgear(
                     getApplication(),
@@ -205,7 +207,9 @@ public class MainViewModel extends AndroidViewModel {
                     endpoint,
                     new TransientTokenStorage(),
                     isSsoEnabled,
-                    mUIVariant.getValue()
+                    mUIVariant.getValue(),
+                    null,
+                    app2appOptions
             );
         } else {
             mAuthgear = new Authgear(
@@ -214,7 +218,9 @@ public class MainViewModel extends AndroidViewModel {
                     endpoint,
                     new PersistentTokenStorage(getApplication()),
                     isSsoEnabled,
-                    mUIVariant.getValue()
+                    mUIVariant.getValue(),
+                    null,
+                    app2appOptions
             );
         }
         mAuthgear.configure(new OnConfigureListener() {
