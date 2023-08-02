@@ -271,6 +271,22 @@ public class MainActivity extends AppCompatActivity {
             builder.create().show();
         });
 
+        viewModel.app2appConfirmation().observe(this, c -> {
+            if (c == null) {
+                return;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("App2App");
+            builder.setMessage("Approve app2app authentication request?");
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+                c.onConfirm();
+            });
+            builder.setNegativeButton("Cancel", (dialogInterface, i) -> {
+                c.onCancel();
+            });
+            builder.create().show();
+        });
+
         if (savedInstanceState == null) {
             // Is first launch
             viewModel.appendApp2AppRequest(this.getIntent());

@@ -55,7 +55,6 @@ import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
-import java.util.Arrays;
 import java.util.Date;
 
 @SuppressWarnings("ConstantConditions")
@@ -81,6 +80,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
     private Intent pendingApp2AppIntent = null;
     final private MutableLiveData<Boolean> mAuthgearConfigured = new MutableLiveData<>(false);
+    final private MutableLiveData<ConfirmListener> mApp2AppConfirmation = new MutableLiveData<>(null);
 
     public MainViewModel(Application application) {
         super(application);
@@ -191,6 +191,7 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<Throwable> error() {
         return mError;
     }
+    public LiveData<ConfirmListener> app2appConfirmation() { return mApp2AppConfirmation; }
 
     public void configure(String clientID, String endpoint, Boolean isSsoEnabled, String app2appEndpoint) {
         if (mIsLoading.getValue()) return;
@@ -337,10 +338,7 @@ public class MainViewModel extends AndroidViewModel {
         if (intentUri == null) {
             return;
         }
-        App2AppAuthenticateRequest request = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            request = mAuthgear.parseApp2AppAuthenticationRequest(intentUri);
-        }
+        final App2AppAuthenticateRequest request = mAuthgear.parseApp2AppAuthenticationRequest(intentUri);
         if (request == null) {
             setError(new RuntimeException("Unexpected app2app uri"));
             return;
@@ -349,17 +347,27 @@ public class MainViewModel extends AndroidViewModel {
             setError(new RuntimeException("must be in authenticated state to handle app2app request"));
             return;
         }
-        mAuthgear.handleApp2AppAuthenticationRequest(request, new OnHandleApp2AppAuthenticationRequestListener() {
+        mApp2AppConfirmation.setValue(new ConfirmListener() {
             @Override
-            public void onFinished() {
-                Log.d(TAG, "Handled app2app request successfully");
+            public void onConfirm() {
+                mAuthgear.handleApp2AppAuthenticationRequest(request, new OnHandleApp2AppAuthenticationRequestListener() {
+                    @Override
+                    public void onFinished() {
+                        Log.d(TAG, "Handled app2app request successfully");
+                    }
+
+                    @Override
+                    public void onFailed(@NonNull Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        mIsLoading.setValue(false);
+                        setError(throwable);
+                    }
+                });
             }
 
             @Override
-            public void onFailed(@NonNull Throwable throwable) {
-                Log.d(TAG, throwable.toString());
-                mIsLoading.setValue(false);
-                setError(throwable);
+            public void onCancel() {
+                mApp2AppConfirmation.postValue(null);
             }
         });
     }
