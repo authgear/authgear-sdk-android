@@ -67,6 +67,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Boolean> mIsConfigured = new MutableLiveData<>(false);
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
+    final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
@@ -88,11 +89,13 @@ public class MainViewModel extends AndroidViewModel {
         if (preferences != null) {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
+            String storedApp2AppEndpoint = preferences.getString("app2appendpoint", "");
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
             Boolean storedIsSsoEnabled = preferences.getBoolean("isSsoEnabled", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
+            mApp2AppEndpoint.setValue(storedApp2AppEndpoint);
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
             mIsSsoEnabled.setValue(storedIsSsoEnabled);
@@ -159,6 +162,9 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<String> endpoint() {
         return mEndpoint;
     }
+    public LiveData<String> app2appEndpoint() {
+        return mApp2AppEndpoint;
+    }
 
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
@@ -186,17 +192,19 @@ public class MainViewModel extends AndroidViewModel {
         return mError;
     }
 
-    public void configure(String clientID, String endpoint, Boolean isSsoEnabled) {
+    public void configure(String clientID, String endpoint, Boolean isSsoEnabled, String app2appEndpoint) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
+        mApp2AppEndpoint.setValue(app2appEndpoint);
         mIsSsoEnabled.setValue(isSsoEnabled);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
+                .putString("app2appendpoint", app2appEndpoint)
                 .putBoolean("isSsoEnabled", isSsoEnabled)
                 .apply();
         App2AppOptions app2appOptions = new App2AppOptions(true, true);
@@ -359,7 +367,7 @@ public class MainViewModel extends AndroidViewModel {
     public void authenticateApp2App() {
         mIsLoading.setValue(true);
         App2AppAuthenticateOptions options = new App2AppAuthenticateOptions(
-                mEndpoint.toString(),
+                mApp2AppEndpoint.toString(),
                 MainApplication.AUTHGEAR_APP2APP_REDIRECT_URI);
         mAuthgear.startApp2AppAuthentication(options, new OnAuthenticateListener() {
             @Override

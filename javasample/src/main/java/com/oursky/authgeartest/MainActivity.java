@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     private EditText mClientId;
     private EditText mEndpoint;
+    private EditText mApp2AppEndpoint;
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
@@ -73,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
+        mApp2AppEndpoint = findViewById(R.id.app2appendpointInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthenticate = findViewById(R.id.authenticate);
@@ -135,7 +137,8 @@ public class MainActivity extends AppCompatActivity {
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mIsSsoEnabled.isChecked()
+                        mIsSsoEnabled.isChecked(),
+                        mApp2AppEndpoint.getText().toString()
                 )
         );
         mAuthenticate.setOnClickListener(view -> viewModel.authenticate());
@@ -219,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
+        mApp2AppEndpoint.setText(viewModel.app2appEndpoint().getValue());
         mIsSsoEnabled.setChecked(viewModel.isSsoEnabled().getValue());
         mSessionState.setText(viewModel.sessionState().getValue().toString());
 
