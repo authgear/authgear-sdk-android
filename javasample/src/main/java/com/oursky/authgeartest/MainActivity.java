@@ -1,5 +1,6 @@
 package com.oursky.authgeartest;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -11,6 +12,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -27,6 +29,7 @@ import com.oursky.authgear.SessionState;
 import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
 
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
@@ -44,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mLoading;
     private View mConfigure;
     private View mAuthenticate;
+    private View mAuthenticateApp2App;
     private View mAuthenticateAnonymously;
     private View mPromoteAnonymousUser;
     private View mReauthenticate;
@@ -55,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private View mFetchUserInfo;
     private View mShowAuthTime;
     private View mLogout;
+    private MainViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,12 +69,14 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         final MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        this.viewModel = viewModel;
 
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthenticate = findViewById(R.id.authenticate);
+        mAuthenticateApp2App = findViewById(R.id.authenticateapp2app);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mPromoteAnonymousUser = findViewById(R.id.promoteAnonymousUser);
         mReauthenticate = findViewById(R.id.reauthenticate);
@@ -132,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
                 )
         );
         mAuthenticate.setOnClickListener(view -> viewModel.authenticate());
+        mAuthenticateApp2App.setOnClickListener(view -> viewModel.authenticateApp2App());
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
         mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
@@ -258,6 +266,17 @@ public class MainActivity extends AppCompatActivity {
             });
             builder.create().show();
         });
+
+        if (savedInstanceState == null) {
+            // Is first launch
+            viewModel.appendApp2AppRequest(this.getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        viewModel.appendApp2AppRequest(intent);
     }
 
     private void updateButtonDisabledState(MainViewModel viewModel) {

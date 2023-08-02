@@ -306,6 +306,15 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
+                    android:id="@+id/authenticateapp2app"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Authenticate App2App"
+                    tools:ignore="HardcodedText" />
+
+                <Button
                     android:id="@+id/authenticateAnonymously"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

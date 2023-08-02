@@ -2,8 +2,10 @@ package com.oursky.authgeartest;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
@@ -28,6 +30,7 @@ import com.oursky.authgear.OnAuthenticateListener;
 import com.oursky.authgear.OnConfigureListener;
 import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
+import com.oursky.authgear.OnHandleApp2AppAuthenticationRequestListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
@@ -44,6 +47,8 @@ import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
+import com.oursky.authgear.app2app.App2AppAuthenticateOptions;
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
@@ -72,6 +77,8 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
     final private MutableLiveData<SessionState> mSessionState = new MutableLiveData<>(SessionState.UNKNOWN);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
+    private Intent pendingApp2AppIntent = null;
+    final private MutableLiveData<Boolean> mAuthgearConfigured = new MutableLiveData<>(false);
 
     public MainViewModel(Application application) {
         super(application);
@@ -214,7 +221,9 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onConfigured() {
                 mIsLoading.setValue(false);
+                mAuthgearConfigured.setValue(true);
                 updateBiometricState();
+                handlePendingApp2AppRequest();
             }
 
             @Override
@@ -278,6 +287,75 @@ public class MainViewModel extends AndroidViewModel {
         options.setPage(mPage.getValue());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
+            @Override
+            public void onAuthenticated(@Nullable UserInfo userInfo) {
+                mUserInfo.setValue(userInfo);
+                mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
+                mIsLoading.setValue(false);
+                updateBiometricState();
+            }
+
+            @Override
+            public void onAuthenticationFailed(@NonNull Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
+    public void appendApp2AppRequest(Intent intent) {
+        this.pendingApp2AppIntent = intent;
+        if (mAuthgearConfigured.getValue()) {
+            handlePendingApp2AppRequest();
+        }
+    }
+
+    private void handlePendingApp2AppRequest() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+            throw new RuntimeException("app2app is not supported in current android version");
+        }
+        if (this.pendingApp2AppIntent == null) {
+            return;
+        }
+        Uri intentUri = this.pendingApp2AppIntent.getData();
+        this.pendingApp2AppIntent = null;
+        if (intentUri == null) {
+            return;
+        }
+        App2AppAuthenticateRequest request = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            request = mAuthgear.parseApp2AppAuthenticationRequest(intentUri);
+        }
+        if (request == null) {
+            setError(new RuntimeException("Unexpected app2app uri"));
+            return;
+        }
+        if (mAuthgear.getSessionState() != SessionState.AUTHENTICATED) {
+            setError(new RuntimeException("must be in authenticated state to handle app2app request"));
+            return;
+        }
+        mAuthgear.handleApp2AppAuthenticationRequest(request, new OnHandleApp2AppAuthenticationRequestListener() {
+            @Override
+            public void onFinished() {
+                Log.d(TAG, "Handled app2app request successfully");
+            }
+
+            @Override
+            public void onFailed(@NonNull Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
+    public void authenticateApp2App() {
+        mIsLoading.setValue(true);
+        App2AppAuthenticateOptions options = new App2AppAuthenticateOptions(
+                mEndpoint.toString(),
+                MainApplication.AUTHGEAR_APP2APP_REDIRECT_URI);
+        mAuthgear.startApp2AppAuthentication(options, new OnAuthenticateListener() {
             @Override
             public void onAuthenticated(@Nullable UserInfo userInfo) {
                 mUserInfo.setValue(userInfo);
