@@ -234,7 +234,7 @@ internal class App2App(
             }
         }
         if (matchedPackageLink == null) {
-            throw AuthgearException("No package found to handle uri: $uri")
+            throw App2AppException.PackageNotFoundException(uri)
         }
         val expectedPackageName = matchedPackageLink.target.packageName
         val actualSigningCertHashes = getSigningCertificatesHexHashes(expectedPackageName)
@@ -247,7 +247,7 @@ internal class App2App(
         ) {
             return
         }
-        throw AuthgearException("package integrity cannot be verified: $expectedPackageName")
+        throw App2AppException.PackageIntegrityException(expectedPackageName)
     }
 
     private fun getSigningCertificatesHexHashes(packageName: String): Set<String?>? {
