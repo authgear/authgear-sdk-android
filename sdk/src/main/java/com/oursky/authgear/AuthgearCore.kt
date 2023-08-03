@@ -1108,8 +1108,14 @@ internal class AuthgearCore(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    suspend fun handleApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest) {
+    suspend fun approveApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest) {
         requireMinimumApp2AppAPILevel()
-        return app2app.handleApp2AppAuthenticationRequest(refreshToken, request)
+        return app2app.approveApp2AppAuthenticationRequest(refreshToken, request)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
+        requireMinimumApp2AppAPILevel()
+        return app2app.rejectApp2AppAuthenticationRequest(request, reason)
     }
 }

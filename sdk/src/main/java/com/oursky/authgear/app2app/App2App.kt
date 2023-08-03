@@ -169,8 +169,32 @@ internal class App2App(
         return Intent(Intent.ACTION_VIEW, resultURI)
     }
 
+    private fun constructErrorUri(redirectURI: Uri, defaultError: String, e: Throwable): Uri {
+        var error = defaultError
+        var errorDescription: String? = (e.message ?: "Unknown error")
+        when (e) {
+            is OAuthException -> {
+                error = e.error
+                errorDescription = e.errorDescription
+            }
+            is ServerException -> {
+                error = "server_error"
+                errorDescription = e.message
+            }
+        }
+        val query = hashMapOf(
+            "error" to error
+        )
+        if (errorDescription != null) {
+            query["error_description"] = errorDescription
+        }
+        return redirectURI.buildUpon()
+            .encodedQuery(query.toQueryParameter())
+            .build()
+    }
+
     @RequiresApi(Build.VERSION_CODES.M)
-    suspend fun handleApp2AppAuthenticationRequest(maybeRefreshToken: String?, request: App2AppAuthenticateRequest) {
+    suspend fun approveApp2AppAuthenticationRequest(maybeRefreshToken: String?, request: App2AppAuthenticateRequest) {
         var redirectURI: Uri? = null
         try {
             redirectURI = Uri.parse(request.redirectUri)
@@ -186,31 +210,20 @@ internal class App2App(
                 // Can't parse redirect_uri, throw the error
                 throw e
             }
-            var error = "unknown_error"
-            var errorDescription: String? = (e.message ?: "Unknown error")
-            when (e) {
-                is OAuthException -> {
-                    error = e.error
-                    errorDescription = e.errorDescription
-                }
-                is ServerException -> {
-                    error = "server_error"
-                    errorDescription = e.message
-                }
-            }
-            val query = hashMapOf(
-                "error" to error
-            )
-            if (errorDescription != null) {
-                query["error_description"] = errorDescription
-            }
-            val errorURI = redirectURI.buildUpon()
-                .encodedQuery(query.toQueryParameter())
-                .build()
+            val errorURI = constructErrorUri(redirectURI, "unknown_error", e)
             val intent = Intent(Intent.ACTION_VIEW, errorURI)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             application.startActivity(intent)
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
+        val redirectURI = Uri.parse(request.redirectUri)
+        val errorURI = constructErrorUri(redirectURI, "invalid_grant", reason)
+        val intent = Intent(Intent.ACTION_VIEW, errorURI)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        application.startActivity(intent)
     }
 
     private suspend fun verifyAppIntegrityByUri(uri: Uri) {

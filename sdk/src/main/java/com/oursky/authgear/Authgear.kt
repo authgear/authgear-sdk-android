@@ -718,20 +718,52 @@ constructor(
     }
 
     /**
-     * Parse an uri into app2app authentication request.
-     * @param uri The received uri.
+     * Approve a app2app authentication request.
+     * @param request The received request.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
      */
     @MainThread
     @JvmOverloads
     @RequiresApi(api = Build.VERSION_CODES.M)
-    fun handleApp2AppAuthenticationRequest(
+    fun approveApp2AppAuthenticationRequest(
         request: App2AppAuthenticateRequest,
         listener: OnHandleApp2AppAuthenticationRequestListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
-                core.handleApp2AppAuthenticationRequest(request)
+                core.approveApp2AppAuthenticationRequest(request)
+                handler.post {
+                    listener.onFinished()
+                }
+            } catch (e: Throwable) {
+                handler.post {
+                    listener.onFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Reject a app2app authentication request.
+     * @param request The received request.
+     * @param reason The reason to reject. The error message will be returned using the redirect uri.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun rejectApp2AppAuthenticationRequest(
+        request: App2AppAuthenticateRequest,
+        reason: Throwable,
+        listener: OnHandleApp2AppAuthenticationRequestListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.rejectApp2AppAuthenticationRequest(request, reason)
                 handler.post {
                     listener.onFinished()
                 }

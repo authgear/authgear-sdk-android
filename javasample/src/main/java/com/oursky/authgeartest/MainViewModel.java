@@ -21,6 +21,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthenticateOptions;
+import com.oursky.authgear.AuthgearException;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ColorScheme;
@@ -350,7 +351,7 @@ public class MainViewModel extends AndroidViewModel {
         mApp2AppConfirmation.setValue(new ConfirmListener() {
             @Override
             public void onConfirm() {
-                mAuthgear.handleApp2AppAuthenticationRequest(request, new OnHandleApp2AppAuthenticationRequestListener() {
+                mAuthgear.approveApp2AppAuthenticationRequest(request, new OnHandleApp2AppAuthenticationRequestListener() {
                     @Override
                     public void onFinished() {
                         Log.d(TAG, "Handled app2app request successfully");
@@ -359,7 +360,6 @@ public class MainViewModel extends AndroidViewModel {
                     @Override
                     public void onFailed(@NonNull Throwable throwable) {
                         Log.d(TAG, throwable.toString());
-                        mIsLoading.setValue(false);
                         setError(throwable);
                     }
                 });
@@ -368,6 +368,18 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onCancel() {
                 mApp2AppConfirmation.postValue(null);
+                mAuthgear.rejectApp2AppAuthenticationRequest(request, new AuthgearException("rejected"),new OnHandleApp2AppAuthenticationRequestListener() {
+                    @Override
+                    public void onFinished() {
+                        Log.d(TAG, "Rejected app2app request successfully");
+                    }
+
+                    @Override
+                    public void onFailed(@NonNull Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        setError(throwable);
+                    }
+                });
             }
         });
     }
