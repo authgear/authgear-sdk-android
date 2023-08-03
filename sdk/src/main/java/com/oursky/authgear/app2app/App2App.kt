@@ -90,8 +90,9 @@ internal class App2App(
 
     suspend fun startAuthenticateRequest(request: App2AppAuthenticateRequest): Uri {
         val uri = request.toUri()
-        val integrityCheckError = verifyAppIntegrityByUri(uri)
-        if (integrityCheckError != null) {
+        try {
+            verifyAppIntegrityByUri(uri)
+        } catch (integrityCheckError: Throwable) {
             throw OAuthException(
                 error = "invalid_client",
                 errorDescription = "integrity check error: ${integrityCheckError.message}",
@@ -131,8 +132,9 @@ internal class App2App(
         redirectURI: Uri,
         request: App2AppAuthenticateRequest
     ): Intent {
-        val integrityCheckError = verifyAppIntegrityByUri(redirectURI)
-        if (integrityCheckError != null) {
+        try {
+            verifyAppIntegrityByUri(redirectURI)
+        } catch (integrityCheckError: Throwable) {
             throw OAuthException(
                 error = "invalid_client",
                 errorDescription = "integrity check error: ${integrityCheckError.message}",
@@ -211,13 +213,8 @@ internal class App2App(
         }
     }
 
-    private suspend fun verifyAppIntegrityByUri(uri: Uri): Throwable? {
-        val assetLinks: List<AssetLink>
-        try {
-            assetLinks = assetLinkRepo.getAssetLinks(uri)
-        } catch (e: Throwable) {
-            return e
-        }
+    private suspend fun verifyAppIntegrityByUri(uri: Uri) {
+        val assetLinks: List<AssetLink> = assetLinkRepo.getAssetLinks(uri)
         val intent = Intent(Intent.ACTION_VIEW, uri)
         val pm = application.packageManager
         val packageInfos = pm.queryIntentActivities(intent, PackageManager.GET_RESOLVED_FILTER)
@@ -237,7 +234,7 @@ internal class App2App(
             }
         }
         if (matchedPackageLink == null) {
-            return AuthgearException("No package found to handle uri: $uri")
+            throw AuthgearException("No package found to handle uri: $uri")
         }
         val expectedPackageName = matchedPackageLink.target.packageName
         val actualSigningCertHashes = getSigningCertificatesHexHashes(expectedPackageName)
@@ -248,9 +245,9 @@ internal class App2App(
             actualSigningCertHashes != null &&
             actualSigningCertHashes.intersect(expectedHashes).isNotEmpty()
         ) {
-            return null
+            return
         }
-        return AuthgearException("package integrity cannot be verified: $expectedPackageName")
+        throw AuthgearException("package integrity cannot be verified: $expectedPackageName")
     }
 
     private fun getSigningCertificatesHexHashes(packageName: String): Set<String?>? {
