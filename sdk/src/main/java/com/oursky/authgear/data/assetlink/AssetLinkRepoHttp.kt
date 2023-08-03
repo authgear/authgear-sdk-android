@@ -12,8 +12,8 @@ internal class AssetLinkRepoHttp : AssetLinkRepo {
         private val TAG = AssetLinkRepoHttp::class.java.simpleName
     }
 
-    override fun getAssetLinks(domain: Uri): List<AssetLink> {
-        val assetLinkUri = domain.buildUpon()
+    override fun getAssetLinks(origin: Uri): List<AssetLink> {
+        val assetLinkUri = origin.buildUpon()
             .path("/.well-known/assetlinks.json")
             .clearQuery()
             .build()
