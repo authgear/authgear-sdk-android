@@ -184,8 +184,8 @@ internal class App2App(
                 // Can't parse redirect_uri, throw the error
                 throw e
             }
-            var error: String = "unknown_error"
-            var errorDescription: String? = "Unknown error"
+            var error = "unknown_error"
+            var errorDescription: String? = (e.message ?: "Unknown error")
             when (e) {
                 is OAuthException -> {
                     error = e.error
