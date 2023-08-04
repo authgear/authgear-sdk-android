@@ -220,7 +220,7 @@ internal class App2App(
     @RequiresApi(Build.VERSION_CODES.M)
     suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
         val redirectURI = Uri.parse(request.redirectUri)
-        val errorURI = constructErrorUri(redirectURI, "invalid_grant", reason)
+        val errorURI = constructErrorUri(redirectURI, "x_app2app_rejected", reason)
         val intent = Intent(Intent.ACTION_VIEW, errorURI)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         application.startActivity(intent)
