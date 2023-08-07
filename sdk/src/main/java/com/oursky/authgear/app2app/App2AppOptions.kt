@@ -5,9 +5,5 @@ data class App2AppOptions constructor(
     /**
      * If true, new sessions will be prepared for participating in app2app authentication
     */
-    var isEnabled: Boolean,
-    /**
-     * If true, the sdk will try to create and bind device key during refresh tokens to "migrate" to app2app sessions
-    */
-    var isInsecureDeviceKeyBindingEnabled: Boolean = false
+    var isEnabled: Boolean
 )

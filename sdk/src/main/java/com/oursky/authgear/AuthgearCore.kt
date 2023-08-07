@@ -633,21 +633,12 @@ internal class AuthgearCore(
         }
         val tokenResponse: OidcTokenResponse?
         try {
-            var app2appJwt: String? = null
-            if (
-                app2AppOptions.isEnabled &&
-                app2AppOptions.isInsecureDeviceKeyBindingEnabled &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-            ) {
-                app2appJwt = app2app.generateApp2AppJWT(forceNewKey = false)
-            }
             tokenResponse = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
                     grantType = GrantType.REFRESH_TOKEN,
                     clientId = clientId,
                     xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                    refreshToken = refreshToken,
-                    xApp2AppDeviceKeyJwt = app2appJwt
+                    refreshToken = refreshToken
                 )
             )
         } catch (e: Exception) {
