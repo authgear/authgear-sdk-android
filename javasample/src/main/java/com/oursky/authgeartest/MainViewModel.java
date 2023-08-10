@@ -2,8 +2,10 @@ package com.oursky.authgeartest;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
@@ -19,6 +21,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthenticateOptions;
+import com.oursky.authgear.AuthgearException;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ColorScheme;
@@ -28,6 +31,7 @@ import com.oursky.authgear.OnAuthenticateListener;
 import com.oursky.authgear.OnConfigureListener;
 import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
+import com.oursky.authgear.OnHandleApp2AppAuthenticationRequestListener;
 import com.oursky.authgear.OnLogoutListener;
 import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
@@ -44,12 +48,14 @@ import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
+import com.oursky.authgear.app2app.App2AppAuthenticateOptions;
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
+import com.oursky.authgear.app2app.App2AppOptions;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
-import java.util.Arrays;
 import java.util.Date;
 
 @SuppressWarnings("ConstantConditions")
@@ -61,6 +67,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Boolean> mIsConfigured = new MutableLiveData<>(false);
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
+    final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
@@ -72,6 +79,9 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
     final private MutableLiveData<SessionState> mSessionState = new MutableLiveData<>(SessionState.UNKNOWN);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
+    private Intent pendingApp2AppIntent = null;
+    final private MutableLiveData<Boolean> mAuthgearConfigured = new MutableLiveData<>(false);
+    final private MutableLiveData<ConfirmListener> mApp2AppConfirmation = new MutableLiveData<>(null);
 
     public MainViewModel(Application application) {
         super(application);
@@ -80,11 +90,13 @@ public class MainViewModel extends AndroidViewModel {
         if (preferences != null) {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
+            String storedApp2AppEndpoint = preferences.getString("app2appendpoint", "");
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
             Boolean storedIsSsoEnabled = preferences.getBoolean("isSsoEnabled", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
+            mApp2AppEndpoint.setValue(storedApp2AppEndpoint);
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
             mIsSsoEnabled.setValue(storedIsSsoEnabled);
@@ -151,6 +163,9 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<String> endpoint() {
         return mEndpoint;
     }
+    public LiveData<String> app2appEndpoint() {
+        return mApp2AppEndpoint;
+    }
 
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
@@ -177,20 +192,24 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<Throwable> error() {
         return mError;
     }
+    public LiveData<ConfirmListener> app2appConfirmation() { return mApp2AppConfirmation; }
 
-    public void configure(String clientID, String endpoint, Boolean isSsoEnabled) {
+    public void configure(String clientID, String endpoint, Boolean isSsoEnabled, String app2appEndpoint) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
         mClientID.setValue(clientID);
         mEndpoint.setValue(endpoint);
+        mApp2AppEndpoint.setValue(app2appEndpoint);
         mIsSsoEnabled.setValue(isSsoEnabled);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
+                .putString("app2appendpoint", app2appEndpoint)
                 .putBoolean("isSsoEnabled", isSsoEnabled)
                 .apply();
+        App2AppOptions app2appOptions = new App2AppOptions(true);
         if (mTokenStorage.getValue().equals(TransientTokenStorage.class.getSimpleName())) {
             mAuthgear = new Authgear(
                     getApplication(),
@@ -198,7 +217,9 @@ public class MainViewModel extends AndroidViewModel {
                     endpoint,
                     new TransientTokenStorage(),
                     isSsoEnabled,
-                    mUIVariant.getValue()
+                    mUIVariant.getValue(),
+                    null,
+                    app2appOptions
             );
         } else {
             mAuthgear = new Authgear(
@@ -207,14 +228,18 @@ public class MainViewModel extends AndroidViewModel {
                     endpoint,
                     new PersistentTokenStorage(getApplication()),
                     isSsoEnabled,
-                    mUIVariant.getValue()
+                    mUIVariant.getValue(),
+                    null,
+                    app2appOptions
             );
         }
         mAuthgear.configure(new OnConfigureListener() {
             @Override
             public void onConfigured() {
                 mIsLoading.setValue(false);
+                mAuthgearConfigured.setValue(true);
                 updateBiometricState();
+                handlePendingApp2AppRequest();
             }
 
             @Override
@@ -278,6 +303,93 @@ public class MainViewModel extends AndroidViewModel {
         options.setPage(mPage.getValue());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
+            @Override
+            public void onAuthenticated(@Nullable UserInfo userInfo) {
+                mUserInfo.setValue(userInfo);
+                mCanReauthenticate.setValue(mAuthgear.getCanReauthenticate());
+                mIsLoading.setValue(false);
+                updateBiometricState();
+            }
+
+            @Override
+            public void onAuthenticationFailed(@NonNull Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
+    public void appendApp2AppRequest(Intent intent) {
+        this.pendingApp2AppIntent = intent;
+        if (mAuthgearConfigured.getValue()) {
+            handlePendingApp2AppRequest();
+        }
+    }
+
+    private void handlePendingApp2AppRequest() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+            throw new RuntimeException("app2app is not supported in current android version");
+        }
+        if (this.pendingApp2AppIntent == null) {
+            return;
+        }
+        Uri intentUri = this.pendingApp2AppIntent.getData();
+        this.pendingApp2AppIntent = null;
+        if (intentUri == null) {
+            return;
+        }
+        final App2AppAuthenticateRequest request = mAuthgear.parseApp2AppAuthenticationRequest(intentUri);
+        if (request == null) {
+            setError(new RuntimeException("Unexpected app2app uri"));
+            return;
+        }
+        if (mAuthgear.getSessionState() != SessionState.AUTHENTICATED) {
+            setError(new RuntimeException("must be in authenticated state to handle app2app request"));
+            return;
+        }
+        mApp2AppConfirmation.setValue(new ConfirmListener() {
+            @Override
+            public void onConfirm() {
+                mAuthgear.approveApp2AppAuthenticationRequest(request, new OnHandleApp2AppAuthenticationRequestListener() {
+                    @Override
+                    public void onFinished() {
+                        Log.d(TAG, "Handled app2app request successfully");
+                    }
+
+                    @Override
+                    public void onFailed(@NonNull Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        setError(throwable);
+                    }
+                });
+            }
+
+            @Override
+            public void onCancel() {
+                mApp2AppConfirmation.postValue(null);
+                mAuthgear.rejectApp2AppAuthenticationRequest(request, new AuthgearException("rejected"),new OnHandleApp2AppAuthenticationRequestListener() {
+                    @Override
+                    public void onFinished() {
+                        Log.d(TAG, "Rejected app2app request successfully");
+                    }
+
+                    @Override
+                    public void onFailed(@NonNull Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        setError(throwable);
+                    }
+                });
+            }
+        });
+    }
+
+    public void authenticateApp2App() {
+        mIsLoading.setValue(true);
+        App2AppAuthenticateOptions options = new App2AppAuthenticateOptions(
+                mApp2AppEndpoint.getValue(),
+                MainApplication.AUTHGEAR_APP2APP_REDIRECT_URI);
+        mAuthgear.startApp2AppAuthentication(options, new OnAuthenticateListener() {
             @Override
             public void onAuthenticated(@Nullable UserInfo userInfo) {
                 mUserInfo.setValue(userInfo);

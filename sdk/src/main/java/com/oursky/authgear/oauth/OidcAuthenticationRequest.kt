@@ -32,7 +32,7 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
     )
 
     codeVerifier?.let {
-        query["code_challenge_method"] = "S256"
+        query["code_challenge_method"] = AuthgearCore.CODE_CHALLENGE_METHOD
         query["code_challenge"] = it.challenge
     }
 

@@ -14,5 +14,7 @@ internal data class OidcTokenResponse(
     @SerialName("expires_in")
     val expiresIn: Long? = null,
     @SerialName("refresh_token")
-    val refreshToken: String? = null
+    val refreshToken: String? = null,
+    @SerialName("code")
+    val code: String? = null
 )

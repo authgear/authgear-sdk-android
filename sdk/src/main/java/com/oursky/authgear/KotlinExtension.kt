@@ -3,6 +3,10 @@
 package com.oursky.authgear
 
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresApi
+import com.oursky.authgear.app2app.App2AppAuthenticateOptions
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -94,6 +98,30 @@ suspend fun Authgear.enableBiometric(options: BiometricOptions) {
  */
 suspend fun Authgear.authenticateBiometric(options: BiometricOptions): UserInfo {
     return core.authenticateBiometric(options)
+}
+
+/**
+ * @see [Authgear.startApp2AppAuthentication]
+ */
+@RequiresApi(Build.VERSION_CODES.M)
+suspend fun Authgear.startApp2AppAuthentication(options: App2AppAuthenticateOptions): UserInfo {
+    return core.startApp2AppAuthentication(options)
+}
+
+/**
+ * @see [Authgear.approveApp2AppAuthenticationRequest]
+ */
+@RequiresApi(Build.VERSION_CODES.M)
+suspend fun Authgear.approveApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest) {
+    return core.approveApp2AppAuthenticationRequest(request)
+}
+
+/**
+ * @see [Authgear.rejectApp2AppAuthenticationRequest]
+ */
+@RequiresApi(Build.VERSION_CODES.M)
+suspend fun Authgear.rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
+    return core.rejectApp2AppAuthenticationRequest(request, reason)
 }
 
 /**
