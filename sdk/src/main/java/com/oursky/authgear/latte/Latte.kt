@@ -67,6 +67,9 @@ class Latte(
                         LatteFragment.BroadcastType.OPEN_EMAIL_CLIENT.name -> {
                             delegate?.onOpenEmailClient(context)
                         }
+                        LatteFragment.BroadcastType.OPEN_SMS_CLIENT.name -> {
+                            delegate?.onOpenSMSClient(context)
+                        }
                         LatteFragment.BroadcastType.TRACKING.name -> {
                             val eventStr = intent.getStringExtra(LatteFragment.INTENT_KEY_EVENT) ?: return
                             val event = Json.decodeFromString<LatteTrackingEvent>(eventStr)

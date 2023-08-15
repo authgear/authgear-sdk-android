@@ -58,6 +58,7 @@ internal class LatteFragment() : Fragment() {
     internal enum class BroadcastType {
         COMPLETE,
         OPEN_EMAIL_CLIENT,
+        OPEN_SMS_CLIENT,
         TRACKING
     }
 
@@ -86,6 +87,9 @@ internal class LatteFragment() : Fragment() {
             when (event) {
                 is WebViewEvent.OpenEmailClient -> {
                     fragment.broadcastOnOpenEmailClientIntent()
+                }
+                is WebViewEvent.OpenSMSClient -> {
+                    fragment.broadcastOnOpenSMSClientIntent()
                 }
                 is WebViewEvent.Tracking -> {
                     fragment.broadcastTrackingIntent(event.event)
@@ -148,6 +152,13 @@ internal class LatteFragment() : Fragment() {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_EMAIL_CLIENT.toString())
+        ctx.sendOrderedBroadcast(broadcastIntent, null)
+    }
+
+    private fun broadcastOnOpenSMSClientIntent() {
+        val ctx = context ?: return
+        val broadcastIntent = Intent(latteID)
+        broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_SMS_CLIENT.toString())
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
 
