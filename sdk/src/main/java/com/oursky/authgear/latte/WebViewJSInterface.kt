@@ -20,6 +20,7 @@ internal class WebViewJSInterface(private val webView: WebView) {
 
     enum class BuiltInEvent(val eventName: String) {
         OPEN_EMAIL_CLIENT("openEmailClient"),
+        OPEN_SMS_CLIENT("openSMSClient"),
         TRACKING("tracking"),
         READY("ready")
     }
@@ -35,6 +36,7 @@ internal class WebViewJSInterface(private val webView: WebView) {
 
         when (type) {
             BuiltInEvent.OPEN_EMAIL_CLIENT -> this.webView.listener?.onEvent(WebViewEvent.OpenEmailClient)
+            BuiltInEvent.OPEN_SMS_CLIENT -> this.webView.listener?.onEvent(WebViewEvent.OpenSMSClient)
             BuiltInEvent.TRACKING -> {
                 val event_name = try {
                     event.jsonObject["event_name"]?.jsonPrimitive?.contentOrNull
