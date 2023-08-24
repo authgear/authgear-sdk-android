@@ -12,11 +12,22 @@ import java.net.URL
 internal class HttpClient {
     companion object {
         val json = Json { ignoreUnknownKeys = true }
-        fun <T> fetch(url: URL, method: String, headers: Map<String, String>, callback: (conn: HttpURLConnection) -> T): T {
+        fun <T> fetch(
+            url: URL,
+            method: String,
+            headers: Map<String, String>,
+            followRedirect: Boolean = true,
+            callback: (conn: HttpURLConnection) -> T
+        ): T {
             val conn = url.openConnection() as HttpURLConnection
             try {
                 conn.requestMethod = method
                 conn.doInput = true
+
+                if (!followRedirect) {
+                    conn.instanceFollowRedirects = false
+                }
+
                 if (method != "GET" && method != "HEAD") {
                     conn.doOutput = true
                 }

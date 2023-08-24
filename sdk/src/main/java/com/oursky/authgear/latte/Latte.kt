@@ -28,7 +28,9 @@ class Latte(
     internal val customUIEndpoint: String,
     internal val tokenizeEndpoint: String,
     private val appLinkOrigin: Uri,
+    private val shortLinkOrigin: Uri,
     private val rewriteAppLinkOrigin: Uri? = null,
+    private val rewriteShortLinkOrigin: Uri? = null,
     private val webContentsDebuggingEnabled: Boolean = false
 ) {
     var delegate: LatteDelegate? = null
@@ -282,23 +284,35 @@ class Latte(
     ) {
         coroutineScope.launch {
             intents.collect {
+                val uri = it?.data ?: return@collect
+                val link = LatteAppLink.create(
+                    uri,
+                    appLinkOrigin,
+                    rewriteAppLinkOrigin) ?: return@collect
+                callback(link)
+            }
+        }
+    }
+
+    fun listenForShortLinks(
+        coroutineScope: CoroutineScope,
+        callback: suspend (LatteShortLink) -> Unit
+    ) {
+        coroutineScope.launch {
+            intents.collect {
                 var uri = it?.data ?: return@collect
                 val origin = uri.getOrigin() ?: return@collect
                 val path = uri.path ?: return@collect
-                if (origin != appLinkOrigin.getOrigin()) {
+                if (origin == shortLinkOrigin.getOrigin()) {
+                    if (rewriteShortLinkOrigin != null) {
+                        uri = uri.rewriteOrigin(rewriteShortLinkOrigin)
+                    }
+                    if (!path.startsWith("/s")) {
+                        return@collect
+                    }
+                    callback(LatteShortLink(uri, appLinkOrigin, rewriteAppLinkOrigin))
                     return@collect
                 }
-                if (rewriteAppLinkOrigin != null) {
-                    uri = uri.rewriteOrigin(rewriteAppLinkOrigin)
-                }
-
-                val link = when {
-                    path.endsWith("/reset_link") -> LatteAppLink.ResetLink(uri)
-                    path.endsWith("/login_link") -> LatteAppLink.LoginLink(uri)
-                    else -> null
-                }
-
-                link?.let { callback(link) }
             }
         }
     }
