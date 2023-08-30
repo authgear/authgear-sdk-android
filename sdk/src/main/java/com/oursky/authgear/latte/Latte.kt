@@ -116,6 +116,31 @@ class Latte(
         return Pair(fragment, handle)
     }
 
+    suspend fun reauthenticate(
+        context: Context,
+        coroutineScope: CoroutineScope,
+        options: ReauthenticateOptions
+    ): Pair<Fragment, LatteHandle<Boolean>> {
+        val request = authgear.createReauthenticateRequest(makeAuthgearReauthenticateOptions(options))
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
+            context = context,
+            id = makeID(),
+            url = request.url,
+            redirectUri = request.redirectUri,
+            webContentsDebuggingEnabled = webContentsDebuggingEnabled
+        )
+        fragment.waitWebViewToLoad()
+
+        val d = coroutineScope.async {
+            val result = waitForResult(fragment)
+            authgear.finishAuthentication(result.getOrThrow().toString(), request)
+            true
+        }
+
+        val handle = LatteHandle(fragment.latteID, d)
+        return Pair(fragment, handle)
+    }
+
     suspend fun verifyEmail(
         context: Context,
         coroutineScope: CoroutineScope,
@@ -363,6 +388,16 @@ class Latte(
             colorScheme = latteOptions.colorScheme,
             wechatRedirectURI = latteOptions.wechatRedirectURI,
             page = latteOptions.page
+        )
+    }
+
+    private suspend fun makeAuthgearReauthenticateOptions(latteOptions: ReauthenticateOptions): com.oursky.authgear.ReauthentcateOptions {
+        val finalXState = makeXStateWithSecrets(latteOptions.xState, latteOptions.xSecrets)
+
+        return ReauthentcateOptions(
+            xState = finalXState.toQueryParameter(),
+            redirectUri = "latte://complete",
+            uiLocales = latteOptions.uiLocales
         )
     }
 }

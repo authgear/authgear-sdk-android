@@ -292,6 +292,21 @@ internal class AuthgearCore(
         return finishAuthorization(deepLink, codeVerifier)
     }
 
+    @ExperimentalAuthgearApi
+    @Suppress("RedundantSuspendModifier")
+    suspend fun createReauthenticateRequest(
+        options: ReauthentcateOptions,
+        verifier: Verifier = generateCodeVerifier()
+    ): AuthenticationRequest {
+        requireIsInitialized()
+        val idTokenHint = this.idToken ?: throw AuthgearException("Call refreshIDToken first")
+        val request = options.toRequest(idTokenHint, this.isSsoEnabled)
+        val authorizeUrl = authorizeEndpoint(request, verifier)
+        return AuthenticationRequest(authorizeUrl, request.redirectUri, verifier)
+    }
+
+    @Suppress("BlockingMethodInNonBlockingContext")
+    @OptIn(ExperimentalAuthgearApi::class)
     suspend fun reauthenticate(
         options: ReauthentcateOptions,
         biometricOptions: BiometricOptions?
@@ -308,14 +323,10 @@ internal class AuthgearCore(
         if (!this.canReauthenticate) {
             throw AuthgearException("canReauthenticate is false")
         }
-        val idTokenHint = this.idToken
-        if (idTokenHint == null) {
-            throw AuthgearException("Call refreshIDToken first")
-        }
+
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(idTokenHint, this.isSsoEnabled)
-        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
+        val request = createReauthenticateRequest(options, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, request.url)
         return finishReauthentication(deepLink)
     }
 
