@@ -22,7 +22,8 @@ internal class WebViewJSInterface(private val webView: WebView) {
         OPEN_EMAIL_CLIENT("openEmailClient"),
         OPEN_SMS_CLIENT("openSMSClient"),
         TRACKING("tracking"),
-        READY("ready")
+        READY("ready"),
+        REAUTH_WITH_BIOMETRIC("reauthWithBiometric")
     }
 
     @JavascriptInterface
@@ -48,6 +49,9 @@ internal class WebViewJSInterface(private val webView: WebView) {
             }
             BuiltInEvent.READY -> {
                 this.webView.listener?.onReady(this.webView)
+            }
+            BuiltInEvent.REAUTH_WITH_BIOMETRIC -> {
+                this.webView.listener?.onEvent(WebViewEvent.ReauthWithBiometric)
             }
         }
     }

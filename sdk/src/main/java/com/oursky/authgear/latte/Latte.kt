@@ -5,10 +5,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.Fragment
 import com.oursky.authgear.*
 import com.oursky.authgear.data.HttpClient
 import com.oursky.authgear.latte.fragment.LatteFragment
+import com.oursky.authgear.latte.fragment.LatteFragmentListener
 import com.oursky.authgear.net.toQueryParameter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
@@ -57,9 +62,26 @@ class Latte(
     }
 
     private suspend fun waitForResult(fragment: LatteFragment): LatteResult {
+        return waitForResult(fragment, null) { result, resumeWith ->
+            resumeWith(Result.success(result))
+        }
+    }
+
+    private suspend fun <T> waitForResult(
+        fragment: LatteFragment,
+        listener: LatteFragmentListener<T>?,
+        callback: (LatteResult, (Result<T>) -> Unit) -> Unit
+    ): T {
         val application = authgear.core.application
-        val result: LatteResult = suspendCoroutine<LatteResult> { k ->
+        val result: T = suspendCoroutine<T> { k ->
             var isResumed = false
+            val resumeWith = fun(result: Result<T>) {
+                if (isResumed) {
+                    return
+                }
+                isResumed = true
+                k.resumeWith(result)
+            }
             val intentFilter = IntentFilter(fragment.latteID)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
@@ -81,11 +103,17 @@ class Latte(
                             if (isResumed) {
                                 return
                             }
-                            isResumed = true
                             val resultStr = intent.getStringExtra(LatteFragment.INTENT_KEY_RESULT) ?: return
                             val result = Json.decodeFromString<LatteResult>(resultStr)
-                            k.resumeWith(Result.success(result))
+                            try {
+                                callback(result, resumeWith)
+                            } catch (e: Throwable) {
+                                resumeWith(Result.failure(e))
+                            }
                             application.unregisterReceiver(this)
+                        }
+                        LatteFragment.BroadcastType.REAUTH_WITH_BIOMETRIC.name -> {
+                            listener?.onReauthWithBiometric(resumeWith)
                         }
                     }
                 }
@@ -121,7 +149,7 @@ class Latte(
         coroutineScope: CoroutineScope,
         options: ReauthenticateOptions
     ): Pair<Fragment, LatteHandle<Boolean>> {
-        val request = authgear.createReauthenticateRequest(makeAuthgearReauthenticateOptions(options))
+        val request = authgear.createReauthenticateRequest(makeAuthgearReauthenticateOptions(context, options))
         val fragment = LatteFragment.makeWithPreCreatedWebView(
             context = context,
             id = makeID(),
@@ -131,10 +159,77 @@ class Latte(
         )
         fragment.waitWebViewToLoad()
 
+        val listener = object : LatteFragmentListener<Boolean> {
+            override fun onReauthWithBiometric(resumeWith: (Result<Boolean>) -> Unit) {
+                val biometricOptions = options.biometricOptions ?: return
+                val builder = BiometricPrompt.PromptInfo.Builder()
+                    .setTitle(biometricOptions.title)
+                    .setAllowedAuthenticators(biometricOptions.allowedAuthenticators)
+                val subtitle = biometricOptions.subtitle
+                if (subtitle != null) {
+                    builder.setSubtitle(subtitle)
+                }
+                val description = biometricOptions.description
+                if (description != null) {
+                    builder.setSubtitle(description)
+                }
+                val negativeButtonText = biometricOptions.negativeButtonText
+                if (negativeButtonText != null) {
+                    builder.setNegativeButtonText(negativeButtonText)
+                }
+                val promptInfo = builder.build()
+                val prompt =
+                    BiometricPrompt(
+                        biometricOptions.activity,
+                        object : BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationFailed() {
+                                // This callback will be invoked EVERY time the recognition failed.
+                                // So while the prompt is still opened, this callback can be called repetitively.
+                                // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
+                                // So this callback is not important to the developer.
+                            }
+
+                            override fun onAuthenticationError(
+                                errorCode: Int,
+                                errString: CharSequence
+                            ) {
+                                if (isBiometricCancelError(errorCode)) {
+                                    return
+                                }
+                                resumeWith(
+                                    Result.failure(
+                                        wrapException(BiometricPromptAuthenticationException(
+                                            errorCode
+                                        ))
+                                    )
+                                )
+                            }
+
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                resumeWith(Result.success(true))
+                            }
+                        })
+
+                val handler = Handler(Looper.getMainLooper())
+                handler.post {
+                    prompt.authenticate(promptInfo)
+                }
+            }
+        }
+
         val d = coroutineScope.async {
-            val result = waitForResult(fragment)
-            authgear.finishAuthentication(result.getOrThrow().toString(), request)
-            true
+            val result = waitForResult<Boolean>(fragment, listener) { r, resumeWith ->
+                val uri = r.getOrThrow()
+                coroutineScope.launch {
+                    try {
+                        authgear.finishAuthentication(uri.toString(), request)
+                        resumeWith(Result.success(true))
+                    } catch (e: Throwable) {
+                        resumeWith(Result.failure(e))
+                    }
+                }
+            }
+            result
         }
 
         val handle = LatteHandle(fragment.latteID, d)
@@ -391,8 +486,22 @@ class Latte(
         )
     }
 
-    private suspend fun makeAuthgearReauthenticateOptions(latteOptions: ReauthenticateOptions): com.oursky.authgear.ReauthentcateOptions {
-        val finalXState = makeXStateWithSecrets(latteOptions.xState, latteOptions.xSecrets)
+    private suspend fun makeAuthgearReauthenticateOptions(context: Context, latteOptions: ReauthenticateOptions): com.oursky.authgear.ReauthentcateOptions {
+        val reauthXState = HashMap(latteOptions.xState)
+        reauthXState["user_initiate"] = "reauth"
+        val capabilities = mutableListOf<Capability>()
+
+        val biometricOptions = latteOptions.biometricOptions
+        if (biometricOptions != null) {
+            val result = BiometricManager.from(context).canAuthenticate(biometricOptions.allowedAuthenticators)
+            if (result == BiometricManager.BIOMETRIC_SUCCESS) {
+                capabilities.add(Capability.BIOMETRIC)
+            }
+        }
+
+        reauthXState["capabilities"] = capabilities.joinToString(separator = ",") { it.raw }
+
+        val finalXState = makeXStateWithSecrets(reauthXState, latteOptions.xSecrets)
 
         return ReauthentcateOptions(
             xState = finalXState.toQueryParameter(),

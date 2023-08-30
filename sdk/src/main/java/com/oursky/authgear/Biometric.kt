@@ -174,3 +174,10 @@ internal fun buildPromptInfo(
     }
     return builder.build()
 }
+
+internal fun isBiometricCancelError(errorCode: Int): Boolean {
+    if (errorCode == BiometricPrompt.ERROR_CANCELED || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON || errorCode == BiometricPrompt.ERROR_USER_CANCELED) {
+        return true
+    }
+    return false
+}
