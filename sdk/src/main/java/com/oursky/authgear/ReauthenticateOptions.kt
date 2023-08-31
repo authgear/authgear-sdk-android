@@ -5,7 +5,7 @@ import com.oursky.authgear.oauth.OidcAuthenticationRequest
 /**
  * Reauthentication options.
  */
-data class ReauthentcateOptions @JvmOverloads constructor(
+data class ReauthenticateOptions @JvmOverloads constructor(
     /**
      * Redirection URI to which the response will be sent after authorization.
      */
@@ -40,7 +40,7 @@ data class ReauthentcateOptions @JvmOverloads constructor(
     var wechatRedirectURI: String? = null
 )
 
-internal fun ReauthentcateOptions.toRequest(idTokenHint: String, isSsoEnabled: Boolean): OidcAuthenticationRequest {
+internal fun ReauthenticateOptions.toRequest(idTokenHint: String, isSsoEnabled: Boolean): OidcAuthenticationRequest {
     return OidcAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",

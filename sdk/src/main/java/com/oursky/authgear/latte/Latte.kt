@@ -475,7 +475,7 @@ class Latte(
         )
     }
 
-    private suspend fun makeAuthgearReauthenticateOptions(context: Context, latteOptions: ReauthenticateOptions): com.oursky.authgear.ReauthentcateOptions {
+    private suspend fun makeAuthgearReauthenticateOptions(context: Context, latteOptions: ReauthenticateOptions): com.oursky.authgear.ReauthenticateOptions {
         val reauthXState = HashMap(latteOptions.xState)
         reauthXState["user_initiate"] = "reauth"
         val capabilities = mutableListOf<Capability>()
@@ -492,7 +492,7 @@ class Latte(
 
         val finalXState = makeXStateWithSecrets(reauthXState, latteOptions.xSecrets)
 
-        return ReauthentcateOptions(
+        return ReauthenticateOptions(
             xState = finalXState.toQueryParameter(),
             redirectUri = "latte://complete",
             uiLocales = latteOptions.uiLocales

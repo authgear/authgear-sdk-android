@@ -295,7 +295,7 @@ internal class AuthgearCore(
     @ExperimentalAuthgearApi
     @Suppress("RedundantSuspendModifier")
     suspend fun createReauthenticateRequest(
-        options: ReauthentcateOptions,
+        options: ReauthenticateOptions,
         verifier: Verifier = generateCodeVerifier()
     ): AuthenticationRequest {
         requireIsInitialized()
@@ -308,7 +308,7 @@ internal class AuthgearCore(
     @Suppress("BlockingMethodInNonBlockingContext")
     @OptIn(ExperimentalAuthgearApi::class)
     suspend fun reauthenticate(
-        options: ReauthentcateOptions,
+        options: ReauthenticateOptions,
         biometricOptions: BiometricOptions?
     ): UserInfo {
         requireIsInitialized()
