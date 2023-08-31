@@ -19,7 +19,7 @@ internal fun wrapException(e: Exception): Exception {
 
     // CancelException
     if (e is BiometricPromptAuthenticationException) {
-        if (e.errorCode == BiometricPrompt.ERROR_CANCELED || e.errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON || e.errorCode == BiometricPrompt.ERROR_USER_CANCELED) {
+        if (isBiometricCancelError(e.errorCode)) {
             return CancelException(e)
         }
     }

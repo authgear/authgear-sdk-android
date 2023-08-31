@@ -44,6 +44,16 @@ suspend fun Authgear.createAuthenticateRequest(options: AuthenticateOptions): Au
 }
 
 /**
+ * @see [Authgear.createReauthenticateRequest].
+ */
+@ExperimentalAuthgearApi
+suspend fun Authgear.createReauthenticateRequest(options: ReauthenticateOptions): AuthenticationRequest {
+    return withContext(Dispatchers.IO) {
+        core.createReauthenticateRequest(options)
+    }
+}
+
+/**
  * @see [Authgear.finishAuthentication].
  */
 @ExperimentalAuthgearApi

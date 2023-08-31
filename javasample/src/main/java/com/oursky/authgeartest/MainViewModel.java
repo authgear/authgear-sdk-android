@@ -41,7 +41,7 @@ import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.PromoteOptions;
-import com.oursky.authgear.ReauthentcateOptions;
+import com.oursky.authgear.ReauthenticateOptions;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
@@ -414,7 +414,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onFinished() {
                 if (mAuthgear.getCanReauthenticate()) {
-                    ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+                    ReauthenticateOptions options = new ReauthenticateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     options.setColorScheme(getColorScheme());
                     mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
@@ -450,7 +450,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onFinished() {
                 if (mAuthgear.getCanReauthenticate()) {
-                    ReauthentcateOptions options = new ReauthentcateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
+                    ReauthenticateOptions options = new ReauthenticateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     mAuthgear.reauthenticate(options, null, new OnReauthenticateListener() {
                         @Override

@@ -59,7 +59,8 @@ internal class LatteFragment() : Fragment() {
         COMPLETE,
         OPEN_EMAIL_CLIENT,
         OPEN_SMS_CLIENT,
-        TRACKING
+        TRACKING,
+        REAUTH_WITH_BIOMETRIC
     }
 
     val latteID: String
@@ -93,6 +94,9 @@ internal class LatteFragment() : Fragment() {
                 }
                 is WebViewEvent.Tracking -> {
                     fragment.broadcastTrackingIntent(event.event)
+                }
+                is WebViewEvent.ReauthWithBiometric -> {
+                    fragment.broadcastOnReauthWithBiometricIntent()
                 }
             }
         }
@@ -159,6 +163,13 @@ internal class LatteFragment() : Fragment() {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_SMS_CLIENT.toString())
+        ctx.sendOrderedBroadcast(broadcastIntent, null)
+    }
+
+    private fun broadcastOnReauthWithBiometricIntent() {
+        val ctx = context ?: return
+        val broadcastIntent = Intent(latteID)
+        broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.REAUTH_WITH_BIOMETRIC.toString())
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
 

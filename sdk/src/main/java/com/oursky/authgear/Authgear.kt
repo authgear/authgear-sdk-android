@@ -233,7 +233,7 @@ constructor(
     @MainThread
     @JvmOverloads
     fun reauthenticate(
-        options: ReauthentcateOptions,
+        options: ReauthenticateOptions,
         biometricOptions: BiometricOptions?,
         listener: OnReauthenticateListener,
         handler: Handler = Handler(Looper.getMainLooper())
