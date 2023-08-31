@@ -178,35 +178,24 @@ class Latte(
                     builder.setNegativeButtonText(negativeButtonText)
                 }
                 val promptInfo = builder.build()
+                val callback = options.biometricCallback
                 val prompt =
                     BiometricPrompt(
                         biometricOptions.activity,
                         object : BiometricPrompt.AuthenticationCallback() {
                             override fun onAuthenticationFailed() {
-                                // This callback will be invoked EVERY time the recognition failed.
-                                // So while the prompt is still opened, this callback can be called repetitively.
-                                // Finally, either onAuthenticationError or onAuthenticationSucceeded will be called.
-                                // So this callback is not important to the developer.
+                                callback.onAuthenticationFailed(resumeWith)
                             }
 
                             override fun onAuthenticationError(
                                 errorCode: Int,
                                 errString: CharSequence
                             ) {
-                                if (isBiometricCancelError(errorCode)) {
-                                    return
-                                }
-                                resumeWith(
-                                    Result.failure(
-                                        wrapException(BiometricPromptAuthenticationException(
-                                            errorCode
-                                        ))
-                                    )
-                                )
+                                callback.onAuthenticationError(errorCode, errString, resumeWith)
                             }
 
                             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                                resumeWith(Result.success(true))
+                                callback.onAuthenticationSucceeded(result, resumeWith)
                             }
                         })
 
