@@ -490,7 +490,12 @@ class Latte(
 
         reauthXState["capabilities"] = capabilities.joinToString(separator = ",") { it.raw }
 
-        val finalXState = makeXStateWithSecrets(reauthXState, latteOptions.xSecrets)
+        val reauthXSecrets = hashMapOf(
+            "email" to latteOptions.email,
+            "phone" to latteOptions.phone
+        )
+
+        val finalXState = makeXStateWithSecrets(reauthXState, reauthXSecrets)
 
         return ReauthenticateOptions(
             xState = finalXState.toQueryParameter(),
