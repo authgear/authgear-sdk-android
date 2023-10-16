@@ -18,6 +18,9 @@ import kotlinx.serialization.encodeToString
 import com.oursky.authgear.CancelException
 import com.oursky.authgear.R
 import com.oursky.authgear.latte.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -111,16 +114,17 @@ internal class LatteFragment() : Fragment() {
         }
     }
 
-    internal suspend fun waitWebViewToLoad() {
+    internal suspend fun waitWebViewToLoad() = coroutineScope {
         suspendCoroutine<Unit> { k ->
             var isResumed = false
-            lateinit var cleanup: () -> Unit
+            lateinit var cleanup: (Boolean) -> Unit
+
             val webViewOnReady: (() -> Unit) = fun() {
                 if (isResumed) {
                     return
                 }
                 isResumed = true
-                cleanup()
+                cleanup(true)
                 k.resume(Unit)
             }
             val webViewOnComplete: ((result: Result<WebViewResult>) -> Unit) = fun(result) {
@@ -128,7 +132,7 @@ internal class LatteFragment() : Fragment() {
                     return
                 }
                 isResumed = true
-                cleanup()
+                cleanup(true)
                 k.resumeWith(result.mapCatching {
                     // Throw error if needed
                     LatteResult(
@@ -138,16 +142,29 @@ internal class LatteFragment() : Fragment() {
                     return
                 })
             }
-            cleanup = fun() {
-                if (this.webViewOnReady == webViewOnReady) {
-                    this.webViewOnReady = null
+
+            val timer = async {
+                delay(10000)
+                if (isResumed) {
+                    return@async
                 }
-                if (this.webViewOnComplete == webViewOnComplete) {
-                    this.webViewOnComplete = null
+                isResumed = true
+                cleanup(false)
+                k.resumeWith(Result.failure(LatteException.Timeout))
+            }
+            cleanup = fun(cancelTimer: Boolean) {
+                if (this@LatteFragment.webViewOnReady == webViewOnReady) {
+                    this@LatteFragment.webViewOnReady = null
+                }
+                if (this@LatteFragment.webViewOnComplete == webViewOnComplete) {
+                    this@LatteFragment.webViewOnComplete = null
+                }
+                if (cancelTimer && timer.isActive) {
+                    timer.cancel()
                 }
             }
-            this.webViewOnReady = webViewOnReady
-            this.webViewOnComplete = webViewOnComplete
+            this@LatteFragment.webViewOnReady = webViewOnReady
+            this@LatteFragment.webViewOnComplete = webViewOnComplete
             webView.load()
         }
     }
