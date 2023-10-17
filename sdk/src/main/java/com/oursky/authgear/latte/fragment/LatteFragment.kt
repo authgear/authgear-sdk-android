@@ -114,7 +114,7 @@ internal class LatteFragment() : Fragment() {
         }
     }
 
-    internal suspend fun waitWebViewToLoad() = coroutineScope {
+    internal suspend fun waitWebViewToLoad(timeout: Long) = coroutineScope {
         suspendCoroutine<Unit> { k ->
             var isResumed = false
             lateinit var cleanup: (Boolean) -> Unit
@@ -144,7 +144,7 @@ internal class LatteFragment() : Fragment() {
             }
 
             val timer = async {
-                delay(10000)
+                delay(timeout)
                 if (isResumed) {
                     return@async
                 }
