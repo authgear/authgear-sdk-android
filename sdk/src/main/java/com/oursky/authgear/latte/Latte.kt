@@ -36,7 +36,8 @@ class Latte(
     private val shortLinkOrigin: Uri,
     private val rewriteAppLinkOrigin: Uri? = null,
     private val rewriteShortLinkOrigin: Uri? = null,
-    private val webContentsDebuggingEnabled: Boolean = false
+    private val webContentsDebuggingEnabled: Boolean = false,
+    private val webViewLoadTimeoutMillis: Long = 15000
 ) {
     var delegate: LatteDelegate? = null
     private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
@@ -58,7 +59,7 @@ class Latte(
             url = url,
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
-        ).waitWebViewToLoad()
+        ).waitWebViewToLoad(webViewLoadTimeoutMillis)
     }
 
     private suspend fun waitForResult(fragment: LatteFragment): LatteResult {
@@ -132,7 +133,7 @@ class Latte(
             redirectUri = request.redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.waitWebViewToLoad()
+        fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
             val result = waitForResult(fragment)
@@ -157,7 +158,7 @@ class Latte(
             redirectUri = request.redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.waitWebViewToLoad()
+        fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val listener = object : LatteFragmentListener<Boolean> {
             override fun onReauthWithBiometric(resumeWith: (Result<Boolean>) -> Unit) {
@@ -257,7 +258,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.waitWebViewToLoad()
+        fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
@@ -287,7 +288,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.waitWebViewToLoad()
+        fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
@@ -325,7 +326,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.waitWebViewToLoad()
+        fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
@@ -371,7 +372,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
-        fragment.waitWebViewToLoad()
+        fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
             waitForResult(fragment).getOrThrow()
