@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -86,6 +87,22 @@ internal class LatteFragment() : Fragment() {
 
     private var webViewOnReady: (() -> Unit)? = null
     private var webViewOnComplete: ((result: Result<WebViewResult>) -> Unit)? = null
+
+    private val broadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context?, intent: Intent?) {
+            if (intent == null) {
+                return
+            }
+            when (intent.action) {
+                Latte.BroadcastType.RESET_PASSWORD_COMPLETED.action -> {
+                    mutWebView?.dispatchSignal(WebViewSignal.RESET_PASSWORD_COMPLETED)
+                }
+                else -> {
+                    // Ignore
+                }
+            }
+        }
+    }
 
     private class LatteWebViewListener(val fragment: LatteFragment) : WebViewListener {
         override fun onEvent(event: WebViewEvent) {
@@ -284,8 +301,12 @@ internal class LatteFragment() : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val webViewStateBundle = savedInstanceState?.getBundle(KEY_WEBVIEW_STATE)
-        constructWebViewIfNeeded(requireContext(), webViewStateBundle)
+        val ctx = requireContext()
+        constructWebViewIfNeeded(ctx, webViewStateBundle)
         removeWebViewFromParent(webView)
+        val intentFilter = IntentFilter(Latte.BroadcastType.RESET_PASSWORD_COMPLETED.action)
+        ctx.registerReceiver(broadcastReceiver, intentFilter)
+
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
             addView(webView)
         }
@@ -295,6 +316,8 @@ internal class LatteFragment() : Fragment() {
         super.onDestroyView()
         removeWebViewFromParent(webView)
         mutWebView = null
+        val ctx = requireContext()
+        ctx.unregisterReceiver(broadcastReceiver)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

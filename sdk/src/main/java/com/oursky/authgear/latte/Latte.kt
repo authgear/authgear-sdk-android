@@ -42,7 +42,7 @@ class Latte(
     var delegate: LatteDelegate? = null
     private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
 
-    internal enum class LatteBroadcastType(val action: String) {
+    internal enum class BroadcastType(val action: String) {
         RESET_PASSWORD_COMPLETED("com.oursky.authgear.latte.RESET_PASSWORD_COMPLETED")
     }
 
@@ -299,7 +299,7 @@ class Latte(
 
         val listener = object : LatteFragmentListener<Uri> {
             override fun onResetPasswordCompleted(resumeWith: (Result<Uri>) -> Unit) {
-                val broadcastIntent = Intent(LatteBroadcastType.RESET_PASSWORD_COMPLETED.action)
+                val broadcastIntent = Intent(BroadcastType.RESET_PASSWORD_COMPLETED.action)
                 authgear.core.application.sendOrderedBroadcast(broadcastIntent, null)
             }
         }
