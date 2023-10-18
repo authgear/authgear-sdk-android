@@ -42,6 +42,10 @@ class Latte(
     var delegate: LatteDelegate? = null
     private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
 
+    internal enum class LatteBroadcastType(val action: String) {
+        RESET_PASSWORD_COMPLETED("com.oursky.authgear.latte.RESET_PASSWORD_COMPLETED")
+    }
+
     private fun makeID(): String {
         val rng = SecureRandom()
         val byteArray = ByteArray(32)
@@ -115,6 +119,9 @@ class Latte(
                         }
                         LatteFragment.BroadcastType.REAUTH_WITH_BIOMETRIC.name -> {
                             listener?.onReauthWithBiometric(resumeWith)
+                        }
+                        LatteFragment.BroadcastType.RESET_PASSWORD_COMPLETED.name -> {
+                            listener?.onResetPasswordCompleted(resumeWith)
                         }
                     }
                 }
@@ -290,8 +297,18 @@ class Latte(
         )
         fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
+        val listener = object : LatteFragmentListener<Uri> {
+            override fun onResetPasswordCompleted(resumeWith: (Result<Uri>) -> Unit) {
+                val broadcastIntent = Intent(LatteBroadcastType.RESET_PASSWORD_COMPLETED.action)
+                authgear.core.application.sendOrderedBroadcast(broadcastIntent, null)
+            }
+        }
+
         val d = coroutineScope.async {
-            waitForResult(fragment).getOrThrow()
+            waitForResult(fragment, listener) { r, resumeWith ->
+                val ruri = r.getOrThrow()
+                resumeWith(Result.success(ruri))
+            }
             Unit
         }
 
