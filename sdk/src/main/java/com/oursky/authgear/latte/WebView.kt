@@ -27,6 +27,16 @@ internal class WebView(context: Context, val request: WebViewRequest, webContent
         this.loadUrl(url.toString())
     }
 
+    fun dispatchSignal(signal: WebViewSignal) {
+        evaluateJavascript("""
+            document.dispatchEvent(
+              new CustomEvent("latte:signal", {
+                detail: { type: "${signal.value}" },
+              })
+            );
+        """, null)
+    }
+
     override fun onCreateInputConnection(outAttrs: EditorInfo?): InputConnection? {
         val conn = super.onCreateInputConnection(outAttrs)
         post { showSoftInputIfNeeded() }
