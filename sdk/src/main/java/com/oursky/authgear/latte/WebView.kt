@@ -29,7 +29,11 @@ internal class WebView(context: Context, val request: WebViewRequest, webContent
 
     fun dispatchSignal(signal: WebViewSignal) {
         evaluateJavascript("""
-            window.dispatchSignal("${signal.value}");
+            document.dispatchEvent(
+              new CustomEvent("latte:signal", {
+                detail: { type: "${signal.value}" },
+              })
+            );
         """, null)
     }
 
