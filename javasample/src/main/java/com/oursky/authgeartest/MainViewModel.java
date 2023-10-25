@@ -209,7 +209,8 @@ public class MainViewModel extends AndroidViewModel {
                 .putString("app2appendpoint", app2appEndpoint)
                 .putBoolean("isSsoEnabled", isSsoEnabled)
                 .apply();
-        App2AppOptions app2appOptions = new App2AppOptions(true);
+        Boolean isApp2AppEnabled = !app2appEndpoint.isEmpty();
+        App2AppOptions app2appOptions = new App2AppOptions(isApp2AppEnabled);
         if (mTokenStorage.getValue().equals(TransientTokenStorage.class.getSimpleName())) {
             mAuthgear = new Authgear(
                     getApplication(),
