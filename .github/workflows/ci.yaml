@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - '*'
+    - '!gh-pages'
+  pull_request:
+    branches:
+    - '*'
+    - '!gh-pages'
+
+jobs:
+  test:
+    # The default Java on macos-12 is 11
+    # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#java
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build sdk
+      run: ./gradlew sdk:assembleRelease
+    - name: Build sdk-okhttp
+      run: ./gradlew sdk-okhttp:assembleRelease
+  app:
+    runs-on: macos-12
+    needs: ["test"]
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: "18.x"
+    - run: npm install -g appcenter-cli
+    - name: Set versionCode
+      run: |
+        VERSION_CODE=$(date +%s)
+        sed -I "" "s/versionCode 1/versionCode $VERSION_CODE/" ./javasample/build.gradle
+    - name: Build unsigned APK
+      run: ./gradlew javasample:assembleRelease
+    - name: Install keystore
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      run: |
+        KEYSTORE_PATH=$RUNNER_TEMP/keystore.jks
+        echo -n "$ANDROID_KEYSTORE_BASE64" | base64 --decode -o $KEYSTORE_PATH
+    - name: Run zipalign
+      run: |
+        BUILD_TOOLS_VERSION=$(sed -n -E 's/.*buildToolsVersion "(.*)"/\1/p' ./javasample/build.gradle)
+        "$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/zipalign" -c -v 4 ./javasample/build/outputs/apk/release/javasample-release-unsigned.apk
+    - name: Run apksigner
+      env:
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        BUILD_TOOLS_VERSION=$(sed -n -E 's/.*buildToolsVersion "(.*)"/\1/p' ./javasample/build.gradle)
+        "$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner" sign \
+          --ks $RUNNER_TEMP/keystore.jks \
+          --ks-key-alias "$ANDROID_KEY_ALIAS" \
+          --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
+          --key-pass "pass:$ANDROID_KEY_PASSWORD" \
+          --out ./javasample/build/outputs/apk/release/javasample-release-signed.apk \
+          ./javasample/build/outputs/apk/release/javasample-release-unsigned.apk
+    - name: Distribute to App Center
+      env:
+        APPCENTER_ACCESS_TOKEN: ${{ secrets.ANDROID_APPCENTER_ACCESS_TOKEN }}
+      run: appcenter distribute release --debug --silent --file ./javasample/build/outputs/apk/release/javasample-release-signed.apk --group "Collaborators" --app "Oursky/Authgear-demo-Android" --release-notes "no release notes"
