@@ -1,5 +1,9 @@
 <resources>
-
-    <style name="AuthgearTheme" parent="Theme.AppCompat.DayNight.DarkActionBar"></style>
-
+    <style name="AuthgearTheme" parent="Theme.AppCompat.DayNight.DarkActionBar" />
+    <style name="LatteTheme" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+    <style name="LatteFragmentTheme">
+    </style>
 </resources>
