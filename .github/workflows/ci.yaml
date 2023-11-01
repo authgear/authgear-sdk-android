@@ -38,7 +38,7 @@ jobs:
   app:
     runs-on: macos-13
     needs: ["test"]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/2023C01'
     steps:
     # The default Java on macos-13 is 17. So we no longer need to set it.
     # https://github.com/actions/runner-images/blob/main/images/macos/macos-13-Readme.md#java
