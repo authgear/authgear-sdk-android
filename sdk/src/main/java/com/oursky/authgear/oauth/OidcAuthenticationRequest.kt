@@ -3,6 +3,7 @@ package com.oursky.authgear.oauth
 import com.oursky.authgear.AuthgearCore
 import com.oursky.authgear.ColorScheme
 import com.oursky.authgear.PromptOption
+import com.oursky.authgear.UILocales
 
 internal data class OidcAuthenticationRequest constructor(
     var redirectUri: String,
@@ -10,6 +11,7 @@ internal data class OidcAuthenticationRequest constructor(
     var scope: List<String>,
     var isSsoEnabled: Boolean,
     var state: String? = null,
+    var xState: String? = null,
     var prompt: List<PromptOption>? = null,
     var maxAge: Int? = null,
     var loginHint: String? = null,
@@ -30,7 +32,7 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
     )
 
     codeVerifier?.let {
-        query["code_challenge_method"] = "S256"
+        query["code_challenge_method"] = AuthgearCore.CODE_CHALLENGE_METHOD
         query["code_challenge"] = it.challenge
     }
 
@@ -42,12 +44,16 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
         query["state"] = it
     }
 
+    this.xState?.let {
+        query["x_state"] = it
+    }
+
     this.loginHint?.let {
         query["login_hint"] = it
     }
 
     this.uiLocales?.let {
-        query["ui_locales"] = it.joinToString(separator = " ")
+        query["ui_locales"] = UILocales.stringify(it)
     }
 
     this.colorScheme?.let {

@@ -54,12 +54,15 @@ internal class OAuthRepoHttp : OAuthRepo {
         val body = mutableMapOf<String, String>()
         body["grant_type"] = request.grantType.raw
         body["client_id"] = request.clientId
-        body["x_device_info"] = request.xDeviceInfo
+        request.xDeviceInfo?.let { body["x_device_info"] = it }
         request.redirectUri?.let { body["redirect_uri"] = it }
         request.code?.let { body["code"] = it }
         request.codeVerifier?.let { body["code_verifier"] = it }
         request.refreshToken?.let { body["refresh_token"] = it }
         request.jwt?.let { body["jwt"] = it }
+        request.xApp2AppDeviceKeyJwt?.let { body["x_app2app_device_key_jwt"] = it }
+        request.codeChallenge?.let { body["code_challenge"] = it }
+        request.codeChallengeMethod?.let { body["code_challenge_method"] = it }
         val headers = mutableMapOf(
             "content-type" to "application/x-www-form-urlencoded"
         )

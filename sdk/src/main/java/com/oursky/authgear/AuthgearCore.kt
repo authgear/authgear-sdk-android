@@ -14,6 +14,11 @@ import android.util.Base64
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import com.oursky.authgear.app2app.App2App
+import com.oursky.authgear.app2app.App2AppAuthenticateOptions
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest
+import com.oursky.authgear.app2app.App2AppOptions
+import com.oursky.authgear.data.assetlink.AssetLinkRepo
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
 import com.oursky.authgear.net.toQueryParameter
@@ -47,14 +52,17 @@ import kotlin.coroutines.suspendCoroutine
  */
 internal class AuthgearCore(
     private val authgear: Authgear,
-    private val application: Application,
+    val application: Application,
     val clientId: String,
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
+    private val app2AppOptions: App2AppOptions,
+    private val uiVariant: UIVariant,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
+    private val assetLinkRepo: AssetLinkRepo,
     name: String? = null
 ) {
     companion object {
@@ -73,6 +81,10 @@ internal class AuthgearCore(
          * [EXPIRE_IN_PERCENTAGE] of [OidcTokenResponse.expiresIn] to calculate the expiry time.
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
+
+        const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
+        const val KEY_REDIRECT_URL = "redirectUrl"
+        const val CODE_CHALLENGE_METHOD = "S256"
 
         /**
          * Check and handle wehchat redirect uri and trigger delegate function if needed
@@ -144,8 +156,21 @@ internal class AuthgearCore(
     private val refreshAccessTokenJob = AtomicReference<Job>(null)
     var delegate: AuthgearDelegate? = null
 
+    private val app2app: App2App = App2App(
+        application,
+        this.name,
+        storage,
+        oauthRepo,
+        keyRepo,
+        assetLinkRepo
+    )
+
     init {
         oauthRepo.endpoint = authgearEndpoint
+
+        if (app2AppOptions.isEnabled) {
+            requireMinimumApp2AppAPILevel()
+        }
     }
 
     val canReauthenticate: Boolean
@@ -182,6 +207,12 @@ internal class AuthgearCore(
     private fun requireMinimumBiometricAPILevel() {
         require(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             "Biometric authentication requires at least API Level 23"
+        }
+    }
+
+    private fun requireMinimumApp2AppAPILevel() {
+        require(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            "App2App authentication requires at least API Level 23"
         }
     }
 
@@ -239,18 +270,45 @@ internal class AuthgearCore(
         return userInfo
     }
 
+    @ExperimentalAuthgearApi
+    @Suppress("RedundantSuspendModifier")
+    suspend fun createAuthenticateRequest(
+        options: AuthenticateOptions,
+        verifier: Verifier = generateCodeVerifier()
+    ): AuthenticationRequest {
+        requireIsInitialized()
+        val request = options.toRequest(this.isSsoEnabled)
+        val authorizeUri = authorizeEndpoint(request, verifier)
+        return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
+    }
+
     @Suppress("BlockingMethodInNonBlockingContext")
+    @OptIn(ExperimentalAuthgearApi::class)
     suspend fun authenticate(options: AuthenticateOptions): UserInfo {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(this.isSsoEnabled)
-        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
-        return finishAuthorization(deepLink)
+        val request = createAuthenticateRequest(options, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, request.url)
+        return finishAuthorization(deepLink, codeVerifier)
     }
 
+    @ExperimentalAuthgearApi
+    @Suppress("RedundantSuspendModifier")
+    suspend fun createReauthenticateRequest(
+        options: ReauthenticateOptions,
+        verifier: Verifier = generateCodeVerifier()
+    ): AuthenticationRequest {
+        requireIsInitialized()
+        val idTokenHint = this.idToken ?: throw AuthgearException("Call refreshIDToken first")
+        val request = options.toRequest(idTokenHint, this.isSsoEnabled)
+        val authorizeUrl = authorizeEndpoint(request, verifier)
+        return AuthenticationRequest(authorizeUrl, request.redirectUri, verifier)
+    }
+
+    @Suppress("BlockingMethodInNonBlockingContext")
+    @OptIn(ExperimentalAuthgearApi::class)
     suspend fun reauthenticate(
-        options: ReauthentcateOptions,
+        options: ReauthenticateOptions,
         biometricOptions: BiometricOptions?
     ): UserInfo {
         requireIsInitialized()
@@ -265,14 +323,10 @@ internal class AuthgearCore(
         if (!this.canReauthenticate) {
             throw AuthgearException("canReauthenticate is false")
         }
-        val idTokenHint = this.idToken
-        if (idTokenHint == null) {
-            throw AuthgearException("Call refreshIDToken first")
-        }
+
         val codeVerifier = this.setupVerifier()
-        val request = options.toRequest(idTokenHint, this.isSsoEnabled)
-        val authorizeUrl = authorizeEndpoint(request, codeVerifier)
-        val deepLink = openAuthorizeUrl(request.redirectUri, authorizeUrl)
+        val request = createReauthenticateRequest(options, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, request.url)
         return finishReauthentication(deepLink)
     }
 
@@ -309,7 +363,8 @@ internal class AuthgearCore(
         oauthRepo.wechatAuthCallback(code, state)
     }
 
-    suspend fun openUrl(path: String, options: SettingOptions? = null) {
+    @Suppress("RedundantSuspendModifier")
+    suspend fun generateUrl(redirectUri: String, options: SettingOptions? = null): Uri {
         requireIsInitialized()
 
         val refreshToken = tokenStorage.getRefreshToken(name)
@@ -323,22 +378,13 @@ internal class AuthgearCore(
             throw e
         }
 
-        val builder = Uri.parse(authgearEndpoint).buildUpon()
-        builder.path(path)
-        options?.colorScheme?.let {
-            builder.appendQueryParameter("x_color_scheme", it.raw)
-        }
-        options?.uiLocales?.let {
-            builder.appendQueryParameter("ui_locales", it.joinToString(" "))
-        }
-        val url = builder.build()
-
         val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
-        URLEncoder.encode(token, StandardCharsets.UTF_8.name())
+            URLEncoder.encode(token, StandardCharsets.UTF_8.name())
         }"
-        val authorizeUrl = authorizeEndpoint(
+
+        return authorizeEndpoint(
             OidcAuthenticationRequest(
-                redirectUri = url.toString(),
+                redirectUri = redirectUri,
                 responseType = "none",
                 scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
                 isSsoEnabled = this.isSsoEnabled,
@@ -350,19 +396,40 @@ internal class AuthgearCore(
             ),
             null
         )
+    }
+
+    suspend fun openUrl(path: String, options: SettingOptions? = null) {
+        requireIsInitialized()
+
+        val builder = Uri.parse(authgearEndpoint).buildUpon()
+        builder.path(path)
+        options?.colorScheme?.let {
+            builder.appendQueryParameter("x_color_scheme", it.raw)
+        }
+        options?.uiLocales?.let {
+            builder.appendQueryParameter("ui_locales", it.joinToString(" "))
+        }
+        val url = builder.build()
+
+        val authorizeUrl = generateUrl(url.toString(), options)
 
         return suspendCoroutine { k ->
             val action = newRandomAction()
             val intentFilter = IntentFilter(action)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    application.unregisterReceiver(this)
-                    k.resume(Unit)
+                    val type = intent?.getStringExtra(WebViewActivity.KEY_BROADCAST_TYPE) ?: return
+                    when (type) {
+                        WebViewActivity.BroadcastType.END.name -> {
+                            application.unregisterReceiver(this)
+                            k.resume(Unit)
+                        }
+                    }
                 }
             }
             application.registerReceiver(br, intentFilter)
             application.startActivity(
-                WebViewActivity.createIntent(application, action, Uri.parse(authorizeUrl))
+                WebViewActivity.createIntent(application, action, authorizeUrl)
             )
         }
     }
@@ -370,8 +437,8 @@ internal class AuthgearCore(
     suspend fun open(page: Page, options: SettingOptions? = null) {
         openUrl(
             when (page) {
-                Page.Settings -> "/settings"
-                Page.Identity -> "/settings/identities"
+                Page.SETTINGS -> "/settings"
+                Page.IDENTITY -> "/settings/identities"
             },
             options
         )
@@ -421,6 +488,7 @@ internal class AuthgearCore(
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
                 state = options.state,
+                xState = options.xState,
                 uiLocales = options.uiLocales,
                 colorScheme = options.colorScheme,
                 wechatRedirectURI = options.wechatRedirectURI
@@ -495,24 +563,28 @@ internal class AuthgearCore(
         }
     }
 
-    private fun authorizeEndpoint(request: OidcAuthenticationRequest, codeVerifier: Verifier?): String {
+    private fun authorizeEndpoint(request: OidcAuthenticationRequest, codeVerifier: Verifier?): Uri {
         val config = oauthRepo.getOidcConfiguration()
         val query = request.toQuery(this.clientId, codeVerifier)
-        return "${config.authorizationEndpoint}?${query.toQueryParameter()}"
+        return Uri.parse(config.authorizationEndpoint).buildUpon().let {
+            it.encodedQuery(query.toQueryParameter())
+        }.build()
     }
 
     private fun setupVerifier(): Verifier {
         val verifier = generateCodeVerifier()
-        storage.setOidcCodeVerifier(name, verifier)
-        return Verifier(verifier, computeCodeChallenge(verifier))
+        // TODO: need store verifier?
+        storage.setOidcCodeVerifier(name, verifier.verifier)
+        return verifier
     }
 
-    private fun generateCodeVerifier(): String {
+    private fun generateCodeVerifier(): Verifier {
         val bytes = ByteArray(32)
         SecureRandom().nextBytes(bytes)
-        return bytes.joinToString(separator = "") {
+        val verifier = bytes.joinToString(separator = "") {
             it.toString(16).padStart(2, '0')
         }
+        return Verifier(verifier, computeCodeChallenge(verifier))
     }
 
     private fun computeCodeChallenge(verifier: String): String {
@@ -615,6 +687,7 @@ internal class AuthgearCore(
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
         tokenStorage.deleteRefreshToken(name)
+        storage.deleteApp2AppDeviceKeyId(name)
         synchronized(this) {
             accessToken = null
             refreshToken = null
@@ -626,35 +699,41 @@ internal class AuthgearCore(
 
     private suspend fun openAuthorizeUrl(
         redirectUrl: String,
-        authorizeUrl: String
+        authorizeUri: Uri
     ): String {
         return suspendCoroutine { k ->
             val action = newRandomAction()
             val intentFilter = IntentFilter(action)
             val br = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    application.unregisterReceiver(this)
-                    val output = intent?.getStringExtra(OAuthActivity.KEY_REDIRECT_URL)
-                    if (output != null) {
-                        k.resume(output)
-                    } else {
-                        k.resumeWithException(CancelException())
+                    val type = intent?.getStringExtra(KEY_OAUTH_BOARDCAST_TYPE) ?: return
+                    when (type) {
+                        OAuthBroadcastType.REDIRECT_URL.name -> {
+                            application.unregisterReceiver(this)
+                            val output = intent.getStringExtra(KEY_REDIRECT_URL)
+                            if (output != null) {
+                                k.resume(output)
+                            } else {
+                                k.resumeWithException(CancelException())
+                            }
+                        }
                     }
                 }
             }
             application.registerReceiver(br, intentFilter)
+            val redirectUri = Uri.parse(redirectUrl)
             application.startActivity(
                 OAuthActivity.createAuthorizationIntent(
                     application,
                     action,
                     redirectUrl,
-                    authorizeUrl
+                    authorizeUri.toString()
                 )
             )
         }
     }
 
-    private fun finishAuthorization(deepLink: String): UserInfo {
+    fun finishAuthorization(deepLink: String, verifier: Verifier? = null): UserInfo {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val state = uri.getQueryParameter("state")
@@ -662,6 +741,9 @@ internal class AuthgearCore(
         val errorDescription = uri.getQueryParameter("error_description")
         var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
+            if (error == "cancel") {
+                throw CancelException()
+            }
             throw OAuthException(
                 error = error,
                 errorDescription = errorDescription,
@@ -676,7 +758,11 @@ internal class AuthgearCore(
                 state = state,
                 errorURI = errorURI
             )
-        val codeVerifier = storage.getOidcCodeVerifier(name)
+        val codeVerifier = verifier?.verifier ?: storage.getOidcCodeVerifier(name)
+        var app2appJwt: String? = null
+        if (app2AppOptions.isEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            app2appJwt = app2app.generateApp2AppJWT(forceNewKey = true)
+        }
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OidcTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
@@ -684,7 +770,8 @@ internal class AuthgearCore(
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                 code = code,
                 redirectUri = redirectUri,
-                codeVerifier = codeVerifier ?: ""
+                codeVerifier = codeVerifier ?: "",
+                xApp2AppDeviceKeyJwt = app2appJwt
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
@@ -701,6 +788,9 @@ internal class AuthgearCore(
         val errorDescription = uri.getQueryParameter("error_description")
         var errorURI = uri.getQueryParameter("error_uri")
         if (error != null) {
+            if (error == "cancel") {
+                throw CancelException()
+            }
             throw OAuthException(
                 error = error,
                 errorDescription = errorDescription,
@@ -801,7 +891,10 @@ internal class AuthgearCore(
 
         val kid = UUID.randomUUID().toString()
         val alias = "com.authgear.keys.biometric.$kid"
-        val spec = makeGenerateKeyPairSpec(alias, authenticatorTypesToKeyProperties(allowed), options.invalidatedByBiometricEnrollment)
+        val spec = makeGenerateKeyPairSpec(
+            alias,
+            authenticatorTypesToKeyProperties(allowed),
+            options.invalidatedByBiometricEnrollment)
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
         val keyPair = createKeyPair(spec)
         val jwk = publicKeyToJWK(kid, keyPair.public)
@@ -974,5 +1067,37 @@ internal class AuthgearCore(
         } catch (e: Exception) {
             throw wrapException(e)
         }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    suspend fun startApp2AppAuthentication(options: App2AppAuthenticateOptions): UserInfo {
+        requireIsInitialized()
+        requireMinimumApp2AppAPILevel()
+        val verifier = setupVerifier()
+        val request = app2app.createAuthenticateRequest(
+            clientID = clientId,
+            options = options,
+            verifier = verifier
+        )
+        val resultURI = app2app.startAuthenticateRequest(request)
+        return finishAuthorization(resultURI.toString(), verifier)
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun parseApp2AppAuthenticationRequest(uri: Uri): App2AppAuthenticateRequest? {
+        requireMinimumApp2AppAPILevel()
+        return app2app.parseApp2AppAuthenticationRequest(uri)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    suspend fun approveApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest) {
+        requireMinimumApp2AppAPILevel()
+        return app2app.approveApp2AppAuthenticationRequest(refreshToken, request)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
+        requireMinimumApp2AppAPILevel()
+        return app2app.rejectApp2AppAuthenticationRequest(request, reason)
     }
 }

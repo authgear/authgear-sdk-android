@@ -11,4 +11,8 @@ internal interface ContainerStorage {
     fun getBiometricKeyId(namespace: String): String?
     fun setBiometricKeyId(namespace: String, keyId: String)
     fun deleteBiometricKeyId(namespace: String)
+
+    fun getApp2AppDeviceKeyId(namespace: String): String?
+    fun setApp2AppDeviceKeyId(namespace: String, keyId: String)
+    fun deleteApp2AppDeviceKeyId(namespace: String)
 }

@@ -15,6 +15,10 @@ data class AuthenticateOptions @JvmOverloads constructor(
      */
     var state: String? = null,
     /**
+     * Custom state.
+     */
+    var xState: String? = null,
+    /**
      * OIDC response type parameter.
      */
     var responseType: String? = "code",
@@ -61,6 +65,7 @@ internal fun AuthenticateOptions.toRequest(isSsoEnabled: Boolean): OidcAuthentic
         scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
         isSsoEnabled = isSsoEnabled,
         state = this.state,
+        xState = this.xState,
         prompt = this.prompt,
         loginHint = this.loginHint,
         idTokenHint = null,

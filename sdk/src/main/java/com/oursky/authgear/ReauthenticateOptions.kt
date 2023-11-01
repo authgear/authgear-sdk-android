@@ -5,7 +5,7 @@ import com.oursky.authgear.oauth.OidcAuthenticationRequest
 /**
  * Reauthentication options.
  */
-data class ReauthentcateOptions @JvmOverloads constructor(
+data class ReauthenticateOptions @JvmOverloads constructor(
     /**
      * Redirection URI to which the response will be sent after authorization.
      */
@@ -14,6 +14,10 @@ data class ReauthentcateOptions @JvmOverloads constructor(
      * OAuth 2.0 state value.
      */
     var state: String? = null,
+    /**
+     * Custom state.
+     */
+    var xState: String? = null,
     /**
      * UI locale tags
      */
@@ -36,13 +40,14 @@ data class ReauthentcateOptions @JvmOverloads constructor(
     var wechatRedirectURI: String? = null
 )
 
-internal fun ReauthentcateOptions.toRequest(idTokenHint: String, isSsoEnabled: Boolean): OidcAuthenticationRequest {
+internal fun ReauthenticateOptions.toRequest(idTokenHint: String, isSsoEnabled: Boolean): OidcAuthenticationRequest {
     return OidcAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
         scope = listOf("openid", "https://authgear.com/scopes/full-access"),
         isSsoEnabled = isSsoEnabled,
         state = this.state,
+        xState = this.xState,
         prompt = null,
         loginHint = null,
         idTokenHint = idTokenHint,

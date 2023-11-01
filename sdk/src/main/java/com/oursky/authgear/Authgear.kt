@@ -2,12 +2,17 @@ package com.oursky.authgear
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
+import com.oursky.authgear.app2app.App2AppAuthenticateOptions
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest
+import com.oursky.authgear.app2app.App2AppOptions
+import com.oursky.authgear.data.assetlink.AssetLinkRepoHttp
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
 import kotlinx.coroutines.*
@@ -20,7 +25,9 @@ constructor(
     authgearEndpoint: String,
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
     isSsoEnabled: Boolean = false,
-    name: String? = null
+    uiVariant: UIVariant = UIVariant.CUSTOM_TABS,
+    name: String? = null,
+    app2AppOptions: App2AppOptions = App2AppOptions(isEnabled = false)
 ) {
     companion object {
         @Suppress("unused")
@@ -36,10 +43,13 @@ constructor(
             clientId,
             authgearEndpoint,
             isSsoEnabled,
+            app2AppOptions,
+            uiVariant,
             tokenStorage,
             PersistentContainerStorage(application),
             OAuthRepoHttp(),
             KeyRepoKeystore(),
+            AssetLinkRepoHttp(),
             name
         )
     }
@@ -166,13 +176,64 @@ constructor(
         }
     }
 
+    @MainThread
+    @JvmOverloads
+    @ExperimentalAuthgearApi
+    fun createAuthenticateRequest(
+        options: AuthenticateOptions,
+        listener: OnCreateAuthenticationRequestListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val request = core.createAuthenticateRequest(options)
+                handler.post {
+                    listener.onCreated(request)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onFailed(e)
+                }
+            } finally {
+                AuthgearCore.unregisteredWechatRedirectURI()
+            }
+        }
+    }
+
+    @MainThread
+    @JvmOverloads
+    @ExperimentalAuthgearApi
+    fun finishAuthentication(
+        finishUri: String,
+        request: AuthenticationRequest,
+        listener: OnAuthenticateListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val userInfo = core.finishAuthorization(finishUri, request.verifier)
+                handler.post {
+                    listener.onAuthenticated(userInfo)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener.onAuthenticationFailed(e)
+                }
+            } finally {
+                AuthgearCore.unregisteredWechatRedirectURI()
+            }
+        }
+    }
+
     /**
      * Reauthenticate the user either by biometric or web.
      */
     @MainThread
     @JvmOverloads
     fun reauthenticate(
-        options: ReauthentcateOptions,
+        options: ReauthenticateOptions,
         biometricOptions: BiometricOptions?,
         listener: OnReauthenticateListener,
         handler: Handler = Handler(Looper.getMainLooper())
@@ -319,6 +380,32 @@ constructor(
     @MainThread
     fun clearSessionState() {
         core.clearSessionState()
+    }
+
+    /**
+     * Generate URL for opening webpage with current session.
+     *
+     * @param redirectURI URI to be opened in web view
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    @ExperimentalAuthgearApi
+    fun generateUrl(redirectURI: String, listener: OnGenerateURLListener, handler: Handler = Handler(Looper.getMainLooper())) {
+        scope.launch {
+            try {
+                val url = core.generateUrl(redirectURI)
+                handler.post {
+                    listener?.onGenerated(url)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener?.onFailed(e)
+                }
+            }
+        }
     }
 
     /**
@@ -585,6 +672,104 @@ constructor(
                 e.printStackTrace()
                 handler.post {
                     onAuthenticateBiometricListener.onAuthenticationFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Start app2app authentication.
+     * @param options App2App authenticate options.
+     * @param onAuthenticateListener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun startApp2AppAuthentication(
+        options: App2AppAuthenticateOptions,
+        onAuthenticateListener: OnAuthenticateListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val userInfo = core.startApp2AppAuthentication(options)
+                handler.post {
+                    onAuthenticateListener.onAuthenticated(userInfo)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    onAuthenticateListener.onAuthenticationFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse an uri into app2app authentication request.
+     * @param uri The received uri.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun parseApp2AppAuthenticationRequest(uri: Uri): App2AppAuthenticateRequest? {
+        return core.parseApp2AppAuthenticationRequest(uri)
+    }
+
+    /**
+     * Approve a app2app authentication request.
+     * @param request The received request.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun approveApp2AppAuthenticationRequest(
+        request: App2AppAuthenticateRequest,
+        listener: OnHandleApp2AppAuthenticationRequestListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.approveApp2AppAuthenticationRequest(request)
+                handler.post {
+                    listener.onFinished()
+                }
+            } catch (e: Throwable) {
+                handler.post {
+                    listener.onFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Reject a app2app authentication request.
+     * @param request The received request.
+     * @param reason The reason to reject. The error message will be returned using the redirect uri.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun rejectApp2AppAuthenticationRequest(
+        request: App2AppAuthenticateRequest,
+        reason: Throwable,
+        listener: OnHandleApp2AppAuthenticationRequestListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.rejectApp2AppAuthenticationRequest(request, reason)
+                handler.post {
+                    listener.onFinished()
+                }
+            } catch (e: Throwable) {
+                handler.post {
+                    listener.onFailed(e)
                 }
             }
         }

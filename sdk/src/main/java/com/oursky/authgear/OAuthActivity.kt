@@ -10,7 +10,7 @@ internal class OAuthActivity : AppCompatActivity() {
     companion object {
         @Suppress("unused")
         private val TAG = OAuthActivity::class.java.simpleName
-        const val KEY_REDIRECT_URL = "redirectUrl"
+        private const val KEY_REDIRECT_URL = "redirectUrl"
         private const val KEY_AUTHORIZATION_URL = "authorizationUrl"
         private const val KEY_BROADCAST_ACTION = "broadcastAction"
         /**
@@ -48,8 +48,9 @@ internal class OAuthActivity : AppCompatActivity() {
 
         intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBroadcastType.REDIRECT_URL.name)
             this.intent.data?.toString()?.let {
-                broadcastIntent.putExtra(KEY_REDIRECT_URL, it)
+                broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, it)
             }
             this.sendBroadcast(broadcastIntent)
         }
