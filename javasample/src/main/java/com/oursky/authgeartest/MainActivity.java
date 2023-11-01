@@ -1,6 +1,9 @@
 package com.oursky.authgeartest;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -9,6 +12,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -23,7 +27,9 @@ import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.TransientTokenStorage;
+import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
+import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
 
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
@@ -32,14 +38,17 @@ public class MainActivity extends AppCompatActivity {
 
     private EditText mClientId;
     private EditText mEndpoint;
+    private EditText mApp2AppEndpoint;
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
+    private Spinner mUIVariant;
     private CheckBox mIsSsoEnabled;
     private TextView mSessionState;
     private TextView mLoading;
     private View mConfigure;
     private View mAuthenticate;
+    private View mAuthenticateApp2App;
     private View mAuthenticateAnonymously;
     private View mPromoteAnonymousUser;
     private View mReauthenticate;
@@ -51,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private View mFetchUserInfo;
     private View mShowAuthTime;
     private View mLogout;
+    private MainViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,12 +70,15 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         final MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        this.viewModel = viewModel;
 
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
+        mApp2AppEndpoint = findViewById(R.id.app2appendpointInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthenticate = findViewById(R.id.authenticate);
+        mAuthenticateApp2App = findViewById(R.id.authenticateapp2app);
         mAuthenticateAnonymously = findViewById(R.id.authenticateAnonymously);
         mPromoteAnonymousUser = findViewById(R.id.promoteAnonymousUser);
         mReauthenticate = findViewById(R.id.reauthenticate);
@@ -102,22 +115,32 @@ public class MainActivity extends AppCompatActivity {
 
         String[] colorSchemes = {
                 COLOR_SCHEME_USE_SYSTEM,
-                ColorScheme.Light.name(),
-                ColorScheme.Dark.name(),
+                ColorScheme.LIGHT.name(),
+                ColorScheme.DARK.name(),
         };
         mColorScheme = findViewById(R.id.colorSchemeSpinner);
         ArrayAdapter<String> colorSchemeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, colorSchemes);
         colorSchemeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mColorScheme.setAdapter(colorSchemeAdapter);
 
+        String[] uiVariants = {
+                UIVariant.CUSTOM_TABS.name(),
+        };
+        mUIVariant = findViewById(R.id.uiVariantSpinner);
+        ArrayAdapter<String> mUIVariantAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, uiVariants);
+        mUIVariantAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mUIVariant.setAdapter(mUIVariantAdapter);
+
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
-                        mIsSsoEnabled.isChecked()
+                        mIsSsoEnabled.isChecked(),
+                        mApp2AppEndpoint.getText().toString()
                 )
         );
         mAuthenticate.setOnClickListener(view -> viewModel.authenticate());
+        mAuthenticateApp2App.setOnClickListener(view -> viewModel.authenticateApp2App());
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
         mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
@@ -164,10 +187,24 @@ public class MainActivity extends AppCompatActivity {
                 String value = (String) parent.getItemAtPosition(position);
                 if (COLOR_SCHEME_USE_SYSTEM.equals(value)) {
                     viewModel.setColorScheme(null);
-                } else if (ColorScheme.Light.name().equals(value)) {
-                    viewModel.setColorScheme(ColorScheme.Light);
-                } else if (ColorScheme.Dark.name().equals(value)) {
-                    viewModel.setColorScheme(ColorScheme.Dark);
+                } else if (ColorScheme.LIGHT.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.LIGHT);
+                } else if (ColorScheme.DARK.name().equals(value)) {
+                    viewModel.setColorScheme(ColorScheme.DARK);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+        mUIVariant.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String value = (String) parent.getItemAtPosition(position);
+                if (UIVariant.CUSTOM_TABS.name().equals(value)) {
+                    viewModel.setUIVariant(UIVariant.CUSTOM_TABS);
                 }
             }
 
@@ -179,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
+        mApp2AppEndpoint.setText(viewModel.app2appEndpoint().getValue());
         mIsSsoEnabled.setChecked(viewModel.isSsoEnabled().getValue());
         mSessionState.setText(viewModel.sessionState().getValue().toString());
 
@@ -226,6 +264,33 @@ public class MainActivity extends AppCompatActivity {
             });
             builder.create().show();
         });
+
+        viewModel.app2appConfirmation().observe(this, c -> {
+            if (c == null) {
+                return;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("App2App");
+            builder.setMessage("Approve app2app authentication request?");
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+                c.onConfirm();
+            });
+            builder.setNegativeButton("Cancel", (dialogInterface, i) -> {
+                c.onCancel();
+            });
+            builder.create().show();
+        });
+
+        if (savedInstanceState == null) {
+            // Is first launch
+            viewModel.appendApp2AppRequest(this.getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        viewModel.appendApp2AppRequest(intent);
     }
 
     private void updateButtonDisabledState(MainViewModel viewModel) {
@@ -236,9 +301,11 @@ public class MainActivity extends AppCompatActivity {
         boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
         boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
         boolean canReauthenticate = viewModel.canReauthenticate().getValue();
+        String app2appEndpoint = viewModel.app2appEndpoint().getValue();
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mConfigure.setEnabled(!isLoading);
         mAuthenticate.setEnabled(!isLoading && isConfigured && !isLoggedIn);
+        mAuthenticateApp2App.setEnabled(!isLoading && isConfigured && !isLoggedIn && !app2appEndpoint.isEmpty());
         mAuthenticateAnonymously.setEnabled(!isLoading && isConfigured && !isLoggedIn);
         mPromoteAnonymousUser.setEnabled(!isLoading && isConfigured && isLoggedIn && isAnonymous);
         mReauthenticate.setEnabled(!isLoading && isConfigured && isLoggedIn && !isAnonymous);
