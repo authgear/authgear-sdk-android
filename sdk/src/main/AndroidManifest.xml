@@ -11,5 +11,18 @@
         <activity android:name=".CustomTabActivity"
             android:exported="false"
             android:launchMode="singleTask" />
+        <activity
+            android:name=".OAuthWebViewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OAuthWebViewFullScreenActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:exported="false" />
     </application>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mailto"/>
+        </intent>
+    </queries>
 </manifest>
