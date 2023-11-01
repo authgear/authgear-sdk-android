@@ -737,14 +737,34 @@ internal class AuthgearCore(
             }
             application.registerReceiver(br, intentFilter)
             val redirectUri = Uri.parse(redirectUrl)
-            application.startActivity(
-                OAuthActivity.createAuthorizationIntent(
-                    application,
-                    action,
-                    redirectUrl,
-                    authorizeUri.toString()
+            if (uiVariant == UIVariant.WEB_VIEW) {
+                application.startActivity(
+                    OAuthWebViewActivity.createIntent(
+                        application,
+                        action,
+                        authorizeUri,
+                        redirectUri
+                    )
                 )
-            )
+            } else if (uiVariant == UIVariant.WEB_VIEW_FULL_SCREEN) {
+                application.startActivity(
+                    OAuthWebViewFullScreenActivity.createIntent(
+                        application,
+                        action,
+                        authorizeUri,
+                        redirectUri
+                    )
+                )
+            } else {
+                application.startActivity(
+                    OAuthActivity.createAuthorizationIntent(
+                        application,
+                        action,
+                        redirectUrl,
+                        authorizeUri.toString()
+                    )
+                )
+            }
         }
     }
 

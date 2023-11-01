@@ -27,7 +27,7 @@ jobs:
   app:
     runs-on: macos-12
     needs: ["test"]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/2023C01'
     env:
       # The version depends on the Android Gradle Plugin version in /build.gradle.kts
       BUILD_TOOLS_VERSION: "33.0.1"
