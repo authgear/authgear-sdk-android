@@ -1,3 +1,0 @@
-include ':sdk-okhttp'
-include ':sdk', ':javasample'
-rootProject.name='Authgear'

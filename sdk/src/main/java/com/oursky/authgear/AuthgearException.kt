@@ -1,5 +1,6 @@
 package com.oursky.authgear
 
+import android.os.Build
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -13,8 +14,10 @@ open class AuthgearException : RuntimeException {
 
 internal fun wrapException(e: Exception): Exception {
     // BiometricPrivateKeyNotFoundException
-    if (e is KeyPermanentlyInvalidatedException) {
-        return BiometricPrivateKeyNotFoundException(e)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (e is KeyPermanentlyInvalidatedException) {
+            return BiometricPrivateKeyNotFoundException(e)
+        }
     }
 
     // CancelException

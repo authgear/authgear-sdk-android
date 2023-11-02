@@ -1,7 +1,6 @@
 #!/bin/sh
 
 cd build/dokka/htmlMultiModule || exit 1
-mv -- -modules.html index.html
 
 git init
 git checkout -b gh-pages
