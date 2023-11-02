@@ -2,7 +2,6 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization")
-    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -35,16 +34,9 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-
-    //afterEvaluate {
-    //    ktlint.dependsOn ktlintFormat
-    //    check.dependsOn ktlint
-    //    preBuild.dependsOn ktlint
-    //}
 }
 
 dependencies {
-    //ktlint "com.pinterest:ktlint:0.33.0"
     // https://developer.android.com/studio/write/java8-support#library-desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")

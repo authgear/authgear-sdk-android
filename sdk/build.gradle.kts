@@ -2,7 +2,6 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization")
-    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -35,12 +34,6 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-
-    // afterEvaluate {
-    //    ktlint.dependsOn ktlintFormat
-    //    check.dependsOn ktlint
-    //    preBuild.dependsOn ktlint
-    // }
 }
 
 dependencies {
