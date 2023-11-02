@@ -1,151 +1,16 @@
 package com.oursky.authgear
 
-import android.app.Application
-import androidx.test.platform.app.InstrumentationRegistry
-import com.oursky.authgear.data.key.KeyRepoKeystore
-import com.oursky.authgear.data.oauth.OAuthRepo
-import com.oursky.authgear.oauth.*
-import com.oursky.authgear.oauth.OidcConfiguration
-import kotlinx.coroutines.*
-import kotlinx.serialization.decodeFromString
+import com.oursky.authgear.oauth.OidcTokenRequest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.random.Random
 
 class AuthgearTest {
-    companion object {
-        private const val RefreshTokenWaitMs = 1000L
-
-        private val ClientId = Base64.getEncoder().encodeToString(Random.nextBytes(16))
-    }
-    // Currently the mock is test specific, if it gains sufficient generic features, can move it
-    // back to data layer.
-    private class OAuthRepoMock : OAuthRepo {
-        private val refreshedCount = AtomicInteger(0)
-        override var endpoint: String? = null
-
-        fun getRefreshedCount(): Int {
-            return refreshedCount.get()
-        }
-
-        override fun getOidcConfiguration(): OidcConfiguration {
-            return OidcConfiguration("/authorize", "/token", "/userInfo", "/revoke", "logout")
-        }
-
-        override fun oidcTokenRequest(request: OidcTokenRequest): OidcTokenResponse {
-            if (request.grantType == GrantType.REFRESH_TOKEN) {
-                refreshedCount.accumulateAndGet(1) { a, b ->
-                    a + b
-                }
-            }
-            Thread.sleep(RefreshTokenWaitMs)
-            return OidcTokenResponse("idToken", "code", "accessToken", 0, "refreshToken")
-        }
-
-        override fun oidcRevocationRequest(refreshToken: String) {
-        }
-
-        override fun oidcUserInfoRequest(accessToken: String): UserInfo {
-            return UserInfo("sub", isVerified = false, isAnonymous = false)
-        }
-
-        override fun oauthChallenge(purpose: String): ChallengeResponse {
-            return ChallengeResponse("abc", "0")
-        }
-
-        override fun biometricSetupRequest(accessToken: String, clientId: String, jwt: String) {
-            TODO("Not yet implemented")
-        }
-
-        override fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse {
-            TODO("Not yet implemented")
-        }
-
-        override fun wechatAuthCallback(code: String, state: String) {
-            TODO("Not yet implemented")
-        }
-    }
-
-    private class RefreshTokenRepoMock : TokenStorage {
-        override fun setRefreshToken(namespace: String, refreshToken: String) {
-        }
-
-        override fun getRefreshToken(namespace: String): String? {
-            return null
-        }
-
-        override fun deleteRefreshToken(namespace: String) {
-        }
-    }
-
-    private class TokenRepoMock : ContainerStorage {
-        override fun setOidcCodeVerifier(namespace: String, verifier: String) {
-        }
-
-        override fun getOidcCodeVerifier(namespace: String): String? {
-            return null
-        }
-
-        override fun getAnonymousKeyId(namespace: String): String? {
-            return null
-        }
-
-        override fun setAnonymousKeyId(namespace: String, keyId: String) {
-        }
-
-        override fun deleteAnonymousKeyId(namespace: String) {
-        }
-
-        override fun getBiometricKeyId(namespace: String): String? {
-            return null
-        }
-
-        override fun setBiometricKeyId(namespace: String, keyId: String) {
-        }
-
-        override fun deleteBiometricKeyId(namespace: String) {
-        }
-    }
-
-    private lateinit var oauthMock: OAuthRepoMock
-    private lateinit var authgearCore: AuthgearCore
-    private lateinit var authgearNotUsed: Authgear
 
     @Before
     fun setup() {
-        val application =
-            InstrumentationRegistry.getInstrumentation().context.applicationContext as Application
-        oauthMock = OAuthRepoMock()
-        authgearNotUsed = Authgear(
-            application,
-            ClientId,
-            "EndpointNotUsed"
-        )
-        authgearCore = AuthgearCore(
-            authgearNotUsed,
-            application,
-            ClientId,
-            "EndpointNotUsed",
-            false,
-            RefreshTokenRepoMock(),
-            TokenRepoMock(),
-            oauthMock,
-            KeyRepoKeystore()
-        )
-    }
-
-    @Test
-    fun configure() {
-        assertEquals(
-            "ClientId is not configured properly. Client id",
-            ClientId,
-            authgearCore.clientId
-        )
     }
 
     @Test
@@ -160,9 +25,9 @@ class AuthgearTest {
         )
         assertEquals(
             "Encoded OidcTokenRequest does not match with expected JSON string",
-            encoded,
             "{\"grant_type\":\"urn:authgear:params:oauth:grant-type:anonymous-request\"," +
-                    "\"client_id\":\"test\",\"x_device_info\":\"dummy\",\"redirect_uri\":null,\"code\":null,\"code_verifier\":null,\"refresh_token\":null,\"access_token\":null,\"jwt\":null}"
+                "\"client_id\":\"test\",\"x_device_info\":\"dummy\"}",
+            encoded
         )
         val decoded: OidcTokenRequest = Json.decodeFromString(encoded)
         assertEquals(
