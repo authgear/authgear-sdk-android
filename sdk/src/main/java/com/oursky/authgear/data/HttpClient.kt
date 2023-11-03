@@ -8,8 +8,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 internal class HttpClient {
     companion object {
@@ -18,59 +16,28 @@ internal class HttpClient {
             url: URL,
             method: String,
             headers: Map<String, String>,
-            body: ByteArray? = null,
             followRedirect: Boolean = true,
-            callback: (responseBody: ByteArray?) -> T
+            callback: (conn: HttpURLConnection) -> T
         ): T {
-            var responseBody: ByteArray? = null
-            var currentUrl = url
-            // Follow redirects by max. 5 times
-            val maxRedirects = 5
-            for (i in 1..maxRedirects) {
-                val conn = currentUrl.openConnection() as HttpURLConnection
-                try {
-                    conn.requestMethod = method
-                    conn.doInput = true
-                    // We handle redirects below
-                    conn.instanceFollowRedirects = false
-                    headers.forEach { (key, value) ->
-                        conn.setRequestProperty(key, value)
-                    }
-                    if (method != "GET" && method != "HEAD" && body != null) {
-                        conn.doOutput = true
-                        conn.outputStream.use {
-                            it.write(body)
-                        }
-                    }
-                    // Follow redirects
-                    // We need this because instanceFollowRedirects do not follow redirects on POST requests
-                    if (conn.responseCode in 300..399 && followRedirect) {
-                        val location = conn.getHeaderField("Location")
-                        val locationUtf8 = URLDecoder.decode(location, "UTF-8")
-                        val next = URL(currentUrl, locationUtf8)
-                        currentUrl = next
-                        if (i >= maxRedirects) {
-                            throw AuthgearException("maximum count of redirect reached")
-                        }
-                        continue
-                    }
+            val conn = url.openConnection() as HttpURLConnection
+            try {
+                conn.requestMethod = method
+                conn.doInput = true
 
-                    conn.errorStream?.use {
-                        val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                        throwErrorIfNeeded(conn, responseString)
-                    }
-                    conn.inputStream.use {
-                        val bytes = it.readBytes()
-                        responseBody = bytes
-                        val responseString = String(bytes, StandardCharsets.UTF_8)
-                        throwErrorIfNeeded(conn, responseString)
-                    }
-                    break
-                } finally {
-                    conn.disconnect()
+                if (!followRedirect) {
+                    conn.instanceFollowRedirects = false
                 }
+
+                if (method != "GET" && method != "HEAD") {
+                    conn.doOutput = true
+                }
+                headers.forEach { (key, value) ->
+                    conn.setRequestProperty(key, value)
+                }
+                return callback(conn)
+            } finally {
+                conn.disconnect()
             }
-            return callback(responseBody)
         }
 
         fun throwErrorIfNeeded(conn: HttpURLConnection, responseString: String) {

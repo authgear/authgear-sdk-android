@@ -33,12 +33,16 @@ internal class OAuthRepoHttp : OAuthRepo {
             val configAfterAcquire = this.config
             if (configAfterAcquire != null) return configAfterAcquire
             val url = URL(URL(endpoint), "/.well-known/openid-configuration")
-            val newConfig: OidcConfiguration = HttpClient.fetch(
-                url = url,
-                method = "GET",
-                headers = emptyMap()) { respBody ->
-                val responseString = String(respBody!!, StandardCharsets.UTF_8)
-                HttpClient.json.decodeFromString(responseString)
+            val newConfig: OidcConfiguration = HttpClient.fetch(url = url, method = "GET", headers = emptyMap()) { conn ->
+                conn.errorStream?.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                }
+                conn.inputStream.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                    HttpClient.json.decodeFromString(responseString)
+                }
             }
             this.config = newConfig
             return newConfig
@@ -68,11 +72,20 @@ internal class OAuthRepoHttp : OAuthRepo {
         return HttpClient.fetch(
             url = URL(config.tokenEndpoint),
             method = "POST",
-            body = body.toFormData().toByteArray(StandardCharsets.UTF_8),
             headers = headers
-        ) { respBody ->
-            val responseString = String(respBody!!, StandardCharsets.UTF_8)
-            HttpClient.json.decodeFromString(responseString)
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
         }
     }
 
@@ -88,9 +101,20 @@ internal class OAuthRepoHttp : OAuthRepo {
             headers = mutableMapOf(
                 "authorization" to "Bearer $accessToken",
                 "content-type" to "application/x-www-form-urlencoded"
-            ),
-            body = body.toFormData().toByteArray(StandardCharsets.UTF_8)
-        ) { }
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+        }
     }
 
     override fun oidcRevocationRequest(refreshToken: String) {
@@ -102,9 +126,19 @@ internal class OAuthRepoHttp : OAuthRepo {
             method = "POST",
             headers = mutableMapOf(
                 "content-type" to "application/x-www-form-urlencoded"
-            ),
-            body = body.toFormData().toByteArray(StandardCharsets.UTF_8)
-        ) {
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
         }
     }
 
@@ -116,9 +150,16 @@ internal class OAuthRepoHttp : OAuthRepo {
             headers = mutableMapOf(
                 "authorization" to "Bearer $accessToken"
             )
-        ) { respBody ->
-            val responseString = String(respBody!!, StandardCharsets.UTF_8)
-            HttpClient.json.decodeFromString(responseString)
+        ) { conn ->
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
         }
     }
 
@@ -130,11 +171,20 @@ internal class OAuthRepoHttp : OAuthRepo {
             method = "POST",
             headers = mutableMapOf(
                 "content-type" to "application/json"
-            ),
-            body = HttpClient.json.encodeToString(body).toByteArray(StandardCharsets.UTF_8)
-        ) { respBody ->
-            val responseString = String(respBody!!, StandardCharsets.UTF_8)
-            HttpClient.json.decodeFromString(responseString)
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(HttpClient.json.encodeToString(body).toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
         }
         return response.result
     }
@@ -147,11 +197,20 @@ internal class OAuthRepoHttp : OAuthRepo {
             method = "POST",
             headers = mutableMapOf(
                 "content-type" to "application/json"
-            ),
-            body = HttpClient.json.encodeToString(body).toByteArray(StandardCharsets.UTF_8)
-        ) { respBody ->
-            val responseString = String(respBody!!, StandardCharsets.UTF_8)
-            HttpClient.json.decodeFromString(responseString)
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(HttpClient.json.encodeToString(body).toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+                HttpClient.json.decodeFromString(responseString)
+            }
         }
         return response.result
     }
@@ -166,8 +225,19 @@ internal class OAuthRepoHttp : OAuthRepo {
             method = "POST",
             headers = mutableMapOf(
                 "content-type" to "application/x-www-form-urlencoded"
-            ),
-            body = body.toFormData().toByteArray(StandardCharsets.UTF_8)
-        ) { }
+            )
+        ) { conn ->
+            conn.outputStream.use {
+                it.write(body.toFormData().toByteArray(StandardCharsets.UTF_8))
+            }
+            conn.errorStream?.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+            conn.inputStream.use {
+                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                HttpClient.throwErrorIfNeeded(conn, responseString)
+            }
+        }
     }
 }
