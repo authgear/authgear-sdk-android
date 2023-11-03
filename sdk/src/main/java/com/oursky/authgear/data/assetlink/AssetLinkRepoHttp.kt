@@ -21,16 +21,9 @@ internal class AssetLinkRepoHttp : AssetLinkRepo {
             url = URL(assetLinkUri.toString()),
             method = "GET",
             headers = hashMapOf()
-        ) { conn ->
-            conn.errorStream?.use {
-                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                HttpClient.throwErrorIfNeeded(conn, responseString)
-            }
-            conn.inputStream.use {
-                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                HttpClient.throwErrorIfNeeded(conn, responseString)
-                HttpClient.json.decodeFromString(responseString)
-            }
+        ) { respBody ->
+            val responseString = String(respBody!!, StandardCharsets.UTF_8)
+            HttpClient.json.decodeFromString(responseString)
         }
         return result
     }
