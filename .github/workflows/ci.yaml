@@ -12,10 +12,10 @@ on:
 
 jobs:
   test:
-    # The default Java on macos-12 is 8, we need 17
-    # https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md#java
     runs-on: macos-12
     steps:
+    # The default Java on macos-12 is 8, we need 17
+    # https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md#java
     - name: Set java version
       run: |
         echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
@@ -28,7 +28,15 @@ jobs:
     runs-on: macos-12
     needs: ["test"]
     if: github.ref == 'refs/heads/main'
+    env:
+      # The version depends on the Android Gradle Plugin version in /build.gradle.kts
+      BUILD_TOOLS_VERSION: "33.0.1"
     steps:
+    # The default Java on macos-12 is 8, we need 17
+    # https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md#java
+    - name: Set java version
+      run: |
+        echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
       with:
@@ -37,7 +45,7 @@ jobs:
     - name: Set versionCode
       run: |
         VERSION_CODE=$(date +%s)
-        sed -I "" "s/versionCode 1/versionCode $VERSION_CODE/" ./javasample/build.gradle
+        sed -I "" "s/versionCode = 1/versionCode = $VERSION_CODE/" ./javasample/build.gradle.kts
     - name: Build unsigned APK
       run: ./gradlew javasample:assembleRelease
     - name: Install keystore
@@ -48,7 +56,6 @@ jobs:
         echo -n "$ANDROID_KEYSTORE_BASE64" | base64 --decode -o $KEYSTORE_PATH
     - name: Run zipalign
       run: |
-        BUILD_TOOLS_VERSION=$(sed -n -E 's/.*buildToolsVersion "(.*)"/\1/p' ./javasample/build.gradle)
         "$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/zipalign" -c -v 4 ./javasample/build/outputs/apk/release/javasample-release-unsigned.apk
     - name: Run apksigner
       env:
@@ -56,7 +63,6 @@ jobs:
         ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       run: |
-        BUILD_TOOLS_VERSION=$(sed -n -E 's/.*buildToolsVersion "(.*)"/\1/p' ./javasample/build.gradle)
         "$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner" sign \
           --ks $RUNNER_TEMP/keystore.jks \
           --ks-key-alias "$ANDROID_KEY_ALIAS" \
