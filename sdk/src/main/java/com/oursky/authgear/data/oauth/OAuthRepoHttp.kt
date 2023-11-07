@@ -1,8 +1,11 @@
 package com.oursky.authgear.data.oauth
 
+import android.net.Uri
+import com.oursky.authgear.AuthgearException
 import com.oursky.authgear.GrantType
 import com.oursky.authgear.UserInfo
 import com.oursky.authgear.data.HttpClient
+import com.oursky.authgear.getOrigin
 import com.oursky.authgear.net.toFormData
 import com.oursky.authgear.oauth.*
 import kotlinx.serialization.decodeFromString
@@ -167,7 +170,7 @@ internal class OAuthRepoHttp : OAuthRepo {
         val body = mutableMapOf<String, String>()
         body["purpose"] = purpose
         val response: ChallengeResponseResult = HttpClient.fetch(
-            url = URL(URL(endpoint), "/oauth2/challenge"),
+            url = buildApiUrl("/oauth2/challenge"),
             method = "POST",
             headers = mutableMapOf(
                 "content-type" to "application/json"
@@ -193,7 +196,7 @@ internal class OAuthRepoHttp : OAuthRepo {
         val body = mutableMapOf<String, String>()
         body["refresh_token"] = refreshToken
         val response: AppSessionTokenResponseResult = HttpClient.fetch(
-            url = URL(URL(endpoint), "/oauth2/app_session_token"),
+            url = buildApiUrl("/oauth2/app_session_token"),
             method = "POST",
             headers = mutableMapOf(
                 "content-type" to "application/json"
@@ -221,7 +224,7 @@ internal class OAuthRepoHttp : OAuthRepo {
         body["state"] = state
         body["x_platform"] = "android"
         HttpClient.fetch(
-            url = URL(URL(endpoint), "/sso/wechat/callback"),
+            url = buildApiUrl("/sso/wechat/callback"),
             method = "POST",
             headers = mutableMapOf(
                 "content-type" to "application/x-www-form-urlencoded"
@@ -239,5 +242,14 @@ internal class OAuthRepoHttp : OAuthRepo {
                 HttpClient.throwErrorIfNeeded(conn, responseString)
             }
         }
+    }
+
+    private fun buildApiUrl(path: String): URL {
+        val config = getOidcConfiguration()
+        val builder = Uri.parse(config.authorizationEndpoint).getOrigin()?.let {
+            Uri.parse(it).buildUpon()
+        } ?: throw AuthgearException("invalid authorization_endpoint")
+        builder.path(path)
+        return URL(builder.build().toString())
     }
 }

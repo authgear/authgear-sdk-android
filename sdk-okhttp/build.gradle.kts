@@ -33,6 +33,9 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
+        // -Xjvm-default=all is required to use Java 8 default methods in interface.
+        // Using @JvmDefault annotation is an error.
+        freeCompilerArgs += listOf("-Xjvm-default=all")
     }
 }
 

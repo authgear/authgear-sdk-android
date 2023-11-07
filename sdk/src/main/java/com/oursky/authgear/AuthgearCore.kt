@@ -363,6 +363,28 @@ internal class AuthgearCore(
         oauthRepo.wechatAuthCallback(code, state)
     }
 
+    suspend fun generateAuthgearUrl(
+        path: String,
+        options: SettingOptions? = null
+    ): Uri {
+        requireIsInitialized()
+
+        val oidcConfig = oauthRepo.getOidcConfiguration()
+        val authzUri = Uri.parse(oidcConfig.authorizationEndpoint)
+        val builder = authzUri.getOrigin()?.let {
+            Uri.parse(it).buildUpon()
+        } ?: throw AuthgearException("invalid authorization_endpoint")
+        builder.path(path)
+        options?.colorScheme?.let {
+            builder.appendQueryParameter("x_color_scheme", it.raw)
+        }
+        options?.uiLocales?.let {
+            builder.appendQueryParameter("ui_locales", it.joinToString(" "))
+        }
+        val redirectUri = builder.build()
+        return generateUrl(redirectUri.toString(), options)
+    }
+
     @Suppress("RedundantSuspendModifier")
     suspend fun generateUrl(redirectUri: String, options: SettingOptions? = null): Uri {
         requireIsInitialized()
@@ -401,17 +423,10 @@ internal class AuthgearCore(
     suspend fun openUrl(path: String, options: SettingOptions? = null) {
         requireIsInitialized()
 
-        val builder = Uri.parse(authgearEndpoint).buildUpon()
-        builder.path(path)
-        options?.colorScheme?.let {
-            builder.appendQueryParameter("x_color_scheme", it.raw)
-        }
-        options?.uiLocales?.let {
-            builder.appendQueryParameter("ui_locales", it.joinToString(" "))
-        }
-        val url = builder.build()
-
-        val authorizeUrl = generateUrl(url.toString(), options)
+        val authorizeUrl = generateAuthgearUrl(
+            path = path,
+            options = options
+        )
 
         return suspendCoroutine { k ->
             val action = newRandomAction()
