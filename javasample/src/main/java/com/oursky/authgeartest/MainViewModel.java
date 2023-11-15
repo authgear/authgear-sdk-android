@@ -81,7 +81,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
     private Intent pendingApp2AppIntent = null;
     final private MutableLiveData<Boolean> mAuthgearConfigured = new MutableLiveData<>(false);
-    final private MutableLiveData<ConfirmListener> mApp2AppConfirmation = new MutableLiveData<>(null);
+    final private MutableLiveData<ConfirmationViewModel> mApp2AppConfirmation = new MutableLiveData<>(null);
 
     public MainViewModel(Application application) {
         super(application);
@@ -192,7 +192,7 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<Throwable> error() {
         return mError;
     }
-    public LiveData<ConfirmListener> app2appConfirmation() { return mApp2AppConfirmation; }
+    public LiveData<ConfirmationViewModel> app2appConfirmation() { return mApp2AppConfirmation; }
 
     public void configure(String clientID, String endpoint, Boolean isSsoEnabled, String app2appEndpoint) {
         if (mIsLoading.getValue()) return;
@@ -349,7 +349,36 @@ public class MainViewModel extends AndroidViewModel {
             setError(new RuntimeException("must be in authenticated state to handle app2app request"));
             return;
         }
-        mApp2AppConfirmation.setValue(new ConfirmListener() {
+        mAuthgear.fetchUserInfo(new OnFetchUserInfoListener() {
+            @Override
+            public void onFetchedUserInfo(@NonNull UserInfo userInfo) {
+                promptApp2AppConfirmation(userInfo, request);
+            }
+
+            @Override
+            public void onFetchingUserInfoFailed(@NonNull Throwable throwable) {
+                setError(throwable);
+            }
+        });
+    }
+
+    private void promptApp2AppConfirmation(UserInfo userInfo, App2AppAuthenticateRequest request) {
+        String message = "Approve app2app request?";
+        String userIdentity = "";
+
+        if (userInfo.getPhoneNumber() != null) {
+            userIdentity = userIdentity + "\n  phone: " + userInfo.getPhoneNumber();
+        }
+        if (userInfo.getEmail() != null) {
+            userIdentity = userIdentity + "\n  email: " + userInfo.getEmail();
+        }
+        if (!userIdentity.isEmpty()) {
+            message = message + "\ncurrent user:" + userIdentity;
+        }
+        if (request.getState() != null && !request.getState().isEmpty()) {
+            message = message + "\nstate: " + request.getState();
+        }
+        mApp2AppConfirmation.setValue(new ConfirmationViewModel(message) {
             @Override
             public void onConfirm() {
                 mAuthgear.approveApp2AppAuthenticationRequest(request, new OnHandleApp2AppAuthenticationRequestListener() {
@@ -385,11 +414,12 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
-    public void authenticateApp2App() {
+    public void authenticateApp2App(String state) {
         mIsLoading.setValue(true);
         App2AppAuthenticateOptions options = new App2AppAuthenticateOptions(
                 mApp2AppEndpoint.getValue(),
-                MainApplication.AUTHGEAR_APP2APP_REDIRECT_URI);
+                MainApplication.AUTHGEAR_APP2APP_REDIRECT_URI,
+                state);
         mAuthgear.startApp2AppAuthentication(options, new OnAuthenticateListener() {
             @Override
             public void onAuthenticated(@Nullable UserInfo userInfo) {
