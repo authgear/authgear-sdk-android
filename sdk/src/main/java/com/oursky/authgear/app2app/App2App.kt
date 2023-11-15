@@ -160,16 +160,19 @@ internal class App2App(
                 codeChallengeMethod = AuthgearCore.CODE_CHALLENGE_METHOD
             )
         )
-        val query: Map<String, String> = hashMapOf(
+        val query = hashMapOf(
             "code" to tokenResponse.code!!
         )
+        request.state?.let {
+            query["state"] = it
+        }
         val resultURI = redirectURI.buildUpon()
             .encodedQuery(query.toQueryParameter())
             .build()
         return Intent(Intent.ACTION_VIEW, resultURI)
     }
 
-    private fun constructErrorUri(redirectURI: Uri, defaultError: String, e: Throwable): Uri {
+    private fun constructErrorUri(redirectURI: Uri, request: App2AppAuthenticateRequest, defaultError: String, e: Throwable): Uri {
         var error = defaultError
         var errorDescription: String? = (e.message ?: "Unknown error")
         when (e) {
@@ -187,6 +190,9 @@ internal class App2App(
         )
         if (errorDescription != null) {
             query["error_description"] = errorDescription
+        }
+        request.state?.let {
+            query["state"] = it
         }
         return redirectURI.buildUpon()
             .encodedQuery(query.toQueryParameter())
@@ -210,7 +216,7 @@ internal class App2App(
                 // Can't parse redirect_uri, throw the error
                 throw e
             }
-            val errorURI = constructErrorUri(redirectURI, "unknown_error", e)
+            val errorURI = constructErrorUri(redirectURI, request,"unknown_error", e)
             val intent = Intent(Intent.ACTION_VIEW, errorURI)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             application.startActivity(intent)
@@ -220,7 +226,7 @@ internal class App2App(
     @RequiresApi(Build.VERSION_CODES.M)
     suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
         val redirectURI = Uri.parse(request.redirectUri)
-        val errorURI = constructErrorUri(redirectURI, "x_app2app_rejected", reason)
+        val errorURI = constructErrorUri(redirectURI, request,"x_app2app_rejected", reason)
         val intent = Intent(Intent.ACTION_VIEW, errorURI)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         application.startActivity(intent)
