@@ -140,6 +140,37 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/app2appstateField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    >
+
+                    <TextView
+                        android:id="@+id/app2appstateLabel"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="App2App State"
+                        tools:ignore="HardcodedText" />
+
+                    <EditText
+                        android:id="@+id/app2appstateInput"
+                        android:layout_height="wrap_content"
+                        android:layout_width="0dp"
+                        android:hint="Enter State"
+                        app:layout_constraintStart_toEndOf="@+id/app2appstateLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:inputType="text"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/pageField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

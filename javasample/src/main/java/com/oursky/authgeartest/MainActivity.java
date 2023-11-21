@@ -2,8 +2,6 @@ package com.oursky.authgeartest;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -12,7 +10,6 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -29,7 +26,6 @@ import com.oursky.authgear.SessionState;
 import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
-import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
 
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends AppCompatActivity {
@@ -39,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText mClientId;
     private EditText mEndpoint;
     private EditText mApp2AppEndpoint;
+    private EditText mApp2AppState;
+    private View mApp2AppstateField;
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
@@ -75,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
         mClientId = findViewById(R.id.clientIdInput);
         mEndpoint = findViewById(R.id.endpointInput);
         mApp2AppEndpoint = findViewById(R.id.app2appendpointInput);
+        mApp2AppState = findViewById(R.id.app2appstateInput);
+        mApp2AppstateField = findViewById(R.id.app2appstateField);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthenticate = findViewById(R.id.authenticate);
@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                 )
         );
         mAuthenticate.setOnClickListener(view -> viewModel.authenticate());
-        mAuthenticateApp2App.setOnClickListener(view -> viewModel.authenticateApp2App());
+        mAuthenticateApp2App.setOnClickListener(view -> viewModel.authenticateApp2App(mApp2AppState.getText().toString()));
         mAuthenticateAnonymously.setOnClickListener(view -> viewModel.authenticateAnonymously());
         mPromoteAnonymousUser.setOnClickListener(view -> viewModel.promoteAnonymousUser());
         mReauthenticate.setOnClickListener(view -> viewModel.reauthenticate(this));
@@ -223,6 +223,8 @@ public class MainActivity extends AppCompatActivity {
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
             mLoading.setText(isConfigured ? "Loading..." : "Configuring...");
+            boolean app2appEnabled = !viewModel.app2appEndpoint().getValue().isEmpty();
+            mApp2AppstateField.setVisibility(app2appEnabled ? View.VISIBLE : View.GONE);
         });
 
         viewModel.sessionState().observe(this, sessionState -> mSessionState.setText(viewModel.sessionState().getValue().toString()));
@@ -271,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("App2App");
-            builder.setMessage("Approve app2app authentication request?");
+            builder.setMessage(c.message);
             builder.setPositiveButton("OK", (dialogInterface, i) -> {
                 c.onConfirm();
             });
