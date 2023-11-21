@@ -172,7 +172,12 @@ internal class App2App(
         return Intent(Intent.ACTION_VIEW, resultURI)
     }
 
-    private fun constructErrorUri(redirectURI: Uri, request: App2AppAuthenticateRequest, defaultError: String, e: Throwable): Uri {
+    private fun constructErrorUri(
+        redirectURI: Uri,
+        request: App2AppAuthenticateRequest,
+        defaultError: String,
+        e: Throwable
+    ): Uri {
         var error = defaultError
         var errorDescription: String? = (e.message ?: "Unknown error")
         when (e) {
@@ -180,6 +185,7 @@ internal class App2App(
                 error = e.error
                 errorDescription = e.errorDescription
             }
+
             is ServerException -> {
                 error = "server_error"
                 errorDescription = e.message
@@ -200,7 +206,10 @@ internal class App2App(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    suspend fun approveApp2AppAuthenticationRequest(maybeRefreshToken: String?, request: App2AppAuthenticateRequest) {
+    suspend fun approveApp2AppAuthenticationRequest(
+        maybeRefreshToken: String?,
+        request: App2AppAuthenticateRequest
+    ) {
         var redirectURI: Uri? = null
         try {
             redirectURI = Uri.parse(request.redirectUri)
@@ -216,7 +225,7 @@ internal class App2App(
                 // Can't parse redirect_uri, throw the error
                 throw e
             }
-            val errorURI = constructErrorUri(redirectURI, request,"unknown_error", e)
+            val errorURI = constructErrorUri(redirectURI, request, "unknown_error", e)
             val intent = Intent(Intent.ACTION_VIEW, errorURI)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             application.startActivity(intent)
@@ -224,9 +233,12 @@ internal class App2App(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
+    suspend fun rejectApp2AppAuthenticationRequest(
+        request: App2AppAuthenticateRequest,
+        reason: Throwable
+    ) {
         val redirectURI = Uri.parse(request.redirectUri)
-        val errorURI = constructErrorUri(redirectURI, request,"x_app2app_rejected", reason)
+        val errorURI = constructErrorUri(redirectURI, request, "x_app2app_rejected", reason)
         val intent = Intent(Intent.ACTION_VIEW, errorURI)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         application.startActivity(intent)
@@ -245,7 +257,7 @@ internal class App2App(
         for (name in packageNames) {
             val entry = assetLinks.find { al ->
                 al.relation.contains("delegate_permission/common.handle_all_urls") &&
-                    al.target.packageName == name
+                        al.target.packageName == name
             }
             if (entry != null) {
                 matchedPackageLink = entry
