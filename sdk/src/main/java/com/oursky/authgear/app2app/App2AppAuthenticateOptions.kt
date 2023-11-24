@@ -18,6 +18,6 @@ internal fun App2AppAuthenticateOptions.toRequest(
         redirectUri = redirectUri,
         clientID = clientID,
         codeChallenge = codeVerifier.challenge,
-        state = state,
+        state = state
     )
 }
