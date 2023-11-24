@@ -99,7 +99,6 @@ suspend fun Authgear.fetchUserInfo(): UserInfo {
 /**
  * @see [Authgear.enableBiometric]
  */
-@RequiresApi(Build.VERSION_CODES.M)
 suspend fun Authgear.enableBiometric(options: BiometricOptions) {
     core.enableBiometric(options)
 }
@@ -107,7 +106,6 @@ suspend fun Authgear.enableBiometric(options: BiometricOptions) {
 /**
  * @see [Authgear.authenticateBiometric]
  */
-@RequiresApi(Build.VERSION_CODES.M)
 suspend fun Authgear.authenticateBiometric(options: BiometricOptions): UserInfo {
     return core.authenticateBiometric(options)
 }
