@@ -2,7 +2,6 @@ package com.oursky.authgear.app2app
 
 import com.oursky.authgear.AuthgearCore
 
-
 data class App2AppAuthenticateOptions @JvmOverloads constructor(
     var authorizationEndpoint: String,
     var redirectUri: String,
