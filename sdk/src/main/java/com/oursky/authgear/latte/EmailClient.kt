@@ -23,12 +23,13 @@ data class EmailClient(val packageName: String) {
             val pm: PackageManager = ctx.packageManager
             val mailtoIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
             val packageInfos = pm.queryIntentActivities(mailtoIntent, PackageManager.GET_RESOLVED_FILTER)
-            val packageNames = hashSetOf<String>()
-            for (info in packageInfos) {
-                packageNames.add(info.activityInfo.packageName)
-            }
+            // We need linked set to preserve the insertion order
+            val packageNames = linkedSetOf<String>()
             for (client in clients) {
                 packageNames.add(client.packageName)
+            }
+            for (info in packageInfos) {
+                packageNames.add(info.activityInfo.packageName)
             }
             for (packageName in packageNames) {
                 val intent = pm.getLaunchIntentForPackage(packageName) ?: continue
