@@ -47,7 +47,11 @@ data class EmailClient(val packageName: String) {
             }
             val firstIntent = launchIntents[0]
             val chooser = Intent.createChooser(firstIntent, title)
-            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, launchIntents.toTypedArray())
+            var extraIntents = mutableListOf<Intent>()
+            if (launchIntents.size > 1) {
+                extraIntents = launchIntents.subList(1, launchIntents.size)
+            }
+            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toTypedArray())
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             return chooser
         }
