@@ -1,9 +1,7 @@
 package com.oursky.authgear.latte
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -19,13 +17,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
-import kotlin.coroutines.suspendCoroutine
 
 @OptIn(ExperimentalAuthgearApi::class)
 class Latte(
@@ -66,69 +61,10 @@ class Latte(
         ).waitWebViewToLoad(webViewLoadTimeoutMillis)
     }
 
-    private suspend fun waitForResult(fragment: LatteFragment): LatteResult {
-        return waitForResult(fragment, null) { result, resumeWith ->
+    private suspend fun waitForResult(handle: LatteFragment.ListenHandle): LatteResult {
+        return handle.waitForResult(null) { result, resumeWith ->
             resumeWith(Result.success(result))
         }
-    }
-
-    private suspend fun <T> waitForResult(
-        fragment: LatteFragment,
-        listener: LatteFragmentListener<T>?,
-        callback: (LatteResult, (Result<T>) -> Unit) -> Unit
-    ): T {
-        val application = authgear.core.application
-        val result: T = suspendCoroutine<T> { k ->
-            var isResumed = false
-            val resumeWith = fun(result: Result<T>) {
-                if (isResumed) {
-                    return
-                }
-                isResumed = true
-                k.resumeWith(result)
-            }
-            val intentFilter = IntentFilter(fragment.latteID)
-            val br = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    val type = intent?.getStringExtra(LatteFragment.INTENT_KEY_TYPE) ?: return
-                    resultData = LatteFragment.INTENT_RESULT_OK
-                    when (type) {
-                        LatteFragment.BroadcastType.OPEN_EMAIL_CLIENT.name -> {
-                            delegate?.onOpenEmailClient(context)
-                        }
-                        LatteFragment.BroadcastType.OPEN_SMS_CLIENT.name -> {
-                            delegate?.onOpenSMSClient(context)
-                        }
-                        LatteFragment.BroadcastType.TRACKING.name -> {
-                            val eventStr = intent.getStringExtra(LatteFragment.INTENT_KEY_EVENT) ?: return
-                            val event = Json.decodeFromString<LatteTrackingEvent>(eventStr)
-                            delegate?.onTrackingEvent(event)
-                        }
-                        LatteFragment.BroadcastType.COMPLETE.name -> {
-                            if (isResumed) {
-                                return
-                            }
-                            val resultStr = intent.getStringExtra(LatteFragment.INTENT_KEY_RESULT) ?: return
-                            val result = Json.decodeFromString<LatteResult>(resultStr)
-                            try {
-                                callback(result, resumeWith)
-                            } catch (e: Throwable) {
-                                resumeWith(Result.failure(e))
-                            }
-                            application.unregisterReceiver(this)
-                        }
-                        LatteFragment.BroadcastType.REAUTH_WITH_BIOMETRIC.name -> {
-                            listener?.onReauthWithBiometric(resumeWith)
-                        }
-                        LatteFragment.BroadcastType.RESET_PASSWORD_COMPLETED.name -> {
-                            listener?.onResetPasswordCompleted(resumeWith)
-                        }
-                    }
-                }
-            }
-            application.registerReceiver(br, intentFilter)
-        }
-        return result
     }
 
     suspend fun authenticate(context: Context, coroutineScope: CoroutineScope, options: AuthenticateOptions): Pair<Fragment, LatteHandle<UserInfo>> {
@@ -140,10 +76,11 @@ class Latte(
             redirectUri = request.redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        val listenHandle = fragment.listen(authgear.core.application, this)
         fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
-            val result = waitForResult(fragment)
+            val result = waitForResult(listenHandle)
             val userInfo = authgear.finishAuthentication(result.getOrThrow().toString(), request)
             userInfo
         }
@@ -165,6 +102,7 @@ class Latte(
             redirectUri = request.redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        val listenHandle = fragment.listen(authgear.core.application, this)
         fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val listener = object : LatteFragmentListener<Boolean> {
@@ -215,7 +153,7 @@ class Latte(
         }
 
         val d = coroutineScope.async {
-            val result = waitForResult<Boolean>(fragment, listener) { r, resumeWith ->
+            val result = listenHandle.waitForResult<Boolean>(listener) { r, resumeWith ->
                 val uri = r.getOrThrow()
                 coroutineScope.launch {
                     try {
@@ -265,10 +203,11 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        val listenHandle = fragment.listen(authgear.core.application, this)
         fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
-            waitForResult(fragment).getOrThrow()
+            waitForResult(listenHandle).getOrThrow()
             val userInfo = authgear.fetchUserInfo()
             userInfo
         }
@@ -295,6 +234,7 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        val listenHandle = fragment.listen(authgear.core.application, this)
         fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val listener = object : LatteFragmentListener<Uri> {
@@ -305,7 +245,7 @@ class Latte(
         }
 
         val d = coroutineScope.async {
-            waitForResult(fragment, listener) { r, resumeWith ->
+            listenHandle.waitForResult(listener) { r, resumeWith ->
                 val ruri = r.getOrThrow()
                 resumeWith(Result.success(ruri))
             }
@@ -343,10 +283,11 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        val listenHandle = fragment.listen(authgear.core.application, this)
         fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
-            waitForResult(fragment).getOrThrow()
+            waitForResult(listenHandle).getOrThrow()
             Unit
         }
 
@@ -389,10 +330,11 @@ class Latte(
             redirectUri = redirectUri,
             webContentsDebuggingEnabled = webContentsDebuggingEnabled
         )
+        val listenHandle = fragment.listen(authgear.core.application, this)
         fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
 
         val d = coroutineScope.async {
-            waitForResult(fragment).getOrThrow()
+            waitForResult(listenHandle).getOrThrow()
             val userInfo = authgear.fetchUserInfo()
             userInfo
         }

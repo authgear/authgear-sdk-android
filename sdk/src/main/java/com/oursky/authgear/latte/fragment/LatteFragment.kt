@@ -22,6 +22,7 @@ import com.oursky.authgear.latte.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -337,5 +338,84 @@ internal class LatteFragment() : Fragment() {
 
     private fun preCreateWebView(ctx: Context) {
         constructWebViewIfNeeded(ctx, null)
+    }
+
+    fun listen(ctx: Context, latte: Latte): ListenHandle {
+        // This method setup broadcast receiver for the fragment but do not block the code
+        val intentFilter = IntentFilter(latteID)
+        var handle: ListenHandle? = null
+        val br = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val type = intent?.getStringExtra(INTENT_KEY_TYPE) ?: return
+                resultData = INTENT_RESULT_OK
+                when (type) {
+                    BroadcastType.OPEN_EMAIL_CLIENT.name -> {
+                        latte.delegate?.onOpenEmailClient(context)
+                    }
+                    BroadcastType.OPEN_SMS_CLIENT.name -> {
+                        latte.delegate?.onOpenSMSClient(context)
+                    }
+                    BroadcastType.TRACKING.name -> {
+                        val eventStr = intent.getStringExtra(INTENT_KEY_EVENT) ?: return
+                        val event = Json.decodeFromString<LatteTrackingEvent>(eventStr)
+                        latte.delegate?.onTrackingEvent(event)
+                    }
+                    BroadcastType.COMPLETE.name -> {
+                        val resultStr = intent.getStringExtra(INTENT_KEY_RESULT) ?: return
+                        val result = Json.decodeFromString<LatteResult>(resultStr)
+                        handle?.onComplete?.invoke(result)
+                    }
+                    BroadcastType.REAUTH_WITH_BIOMETRIC.name -> {
+                        handle?.onReauthWithBiometric?.invoke()
+                    }
+                    BroadcastType.RESET_PASSWORD_COMPLETED.name -> {
+                        handle?.onResetPasswordCompleted?.invoke()
+                    }
+                }
+            }
+        }
+        handle = ListenHandle(ctx, br)
+        ctx.registerReceiver(br, intentFilter)
+        return handle
+    }
+
+    class ListenHandle(private val ctx: Context, private val br: BroadcastReceiver) {
+        var onComplete: ((LatteResult) -> Unit)? = null
+        var onReauthWithBiometric: (() -> Unit)? = null
+        var onResetPasswordCompleted: (() -> Unit)? = null
+
+        suspend fun <T> waitForResult(
+            listener: LatteFragmentListener<T>?,
+            callback: (LatteResult, (Result<T>) -> Unit) -> Unit
+        ): T {
+            val result: T = suspendCoroutine<T> { k ->
+                var isResumed = false
+                val resumeWith = fun(result: Result<T>) {
+                    if (isResumed) {
+                        return
+                    }
+                    isResumed = true
+                    k.resumeWith(result)
+                }
+                onReauthWithBiometric = {
+                    listener?.onReauthWithBiometric(resumeWith)
+                }
+                onResetPasswordCompleted = {
+                    listener?.onResetPasswordCompleted(resumeWith)
+                }
+                onComplete = fun(latteResult: LatteResult) {
+                    if (isResumed) {
+                        return
+                    }
+                    try {
+                        callback(latteResult, resumeWith)
+                    } catch (e: Throwable) {
+                        resumeWith(Result.failure(e))
+                    }
+                    ctx.unregisterReceiver(br)
+                }
+            }
+            return result
+        }
     }
 }
