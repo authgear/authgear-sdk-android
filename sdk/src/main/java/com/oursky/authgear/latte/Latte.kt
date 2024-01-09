@@ -157,7 +157,7 @@ class Latte(
                 val uri = r.getOrThrow()
                 coroutineScope.launch {
                     try {
-                        authgear.finishAuthentication(uri.toString(), request)
+                        authgear.finishReauthentication(uri.toString(), request)
                         resumeWith(Result.success(true))
                     } catch (e: Throwable) {
                         resumeWith(Result.failure(e))
