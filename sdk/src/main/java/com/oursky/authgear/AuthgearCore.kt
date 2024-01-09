@@ -821,6 +821,10 @@ internal class AuthgearCore(
                 errorURI = errorURI
             )
         val codeVerifier = storage.getOidcCodeVerifier(name)
+        var app2appJwt: String? = null
+        if (app2AppOptions.isEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            app2appJwt = app2app.generateApp2AppJWT(forceNewKey = false)
+        }
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OidcTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
@@ -828,7 +832,8 @@ internal class AuthgearCore(
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                 code = code,
                 redirectUri = redirectUri,
-                codeVerifier = codeVerifier ?: ""
+                codeVerifier = codeVerifier ?: "",
+                xApp2AppDeviceKeyJwt = app2appJwt
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
