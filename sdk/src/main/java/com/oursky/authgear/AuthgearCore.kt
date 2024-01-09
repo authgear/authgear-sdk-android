@@ -795,7 +795,7 @@ internal class AuthgearCore(
         return userInfo
     }
 
-    private fun finishReauthentication(deepLink: String): UserInfo {
+    fun finishReauthentication(deepLink: String, verifier: Verifier? = null): UserInfo {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val state = uri.getQueryParameter("state")
@@ -820,7 +820,11 @@ internal class AuthgearCore(
                 state = state,
                 errorURI = errorURI
             )
-        val codeVerifier = storage.getOidcCodeVerifier(name)
+        val codeVerifier = verifier?.verifier ?: storage.getOidcCodeVerifier(name)
+        var app2appJwt: String? = null
+        if (app2AppOptions.isEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            app2appJwt = app2app.generateApp2AppJWT(forceNewKey = false)
+        }
         val tokenResponse = oauthRepo.oidcTokenRequest(
             OidcTokenRequest(
                 grantType = GrantType.AUTHORIZATION_CODE,
@@ -828,7 +832,8 @@ internal class AuthgearCore(
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                 code = code,
                 redirectUri = redirectUri,
-                codeVerifier = codeVerifier ?: ""
+                codeVerifier = codeVerifier ?: "",
+                xApp2AppDeviceKeyJwt = app2appJwt
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(tokenResponse.accessToken!!)
