@@ -67,6 +67,19 @@ suspend fun Authgear.finishAuthentication(
 }
 
 /**
+ * @see [Authgear.finishReauthentication].
+ */
+@ExperimentalAuthgearApi
+suspend fun Authgear.finishReauthentication(
+    finishUri: String,
+    request: AuthenticationRequest
+): UserInfo {
+    return withContext(Dispatchers.IO) {
+        core.finishReauthentication(finishUri, request.verifier)
+    }
+}
+
+/**
  * @see [Authgear.authenticateAnonymously]
  */
 suspend fun Authgear.authenticateAnonymousLy(): UserInfo {
