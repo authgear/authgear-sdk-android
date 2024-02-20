@@ -46,7 +46,6 @@ import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.TransientTokenStorage;
-import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions;
 import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
@@ -71,7 +70,6 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
-    final private MutableLiveData<UIVariant> mUIVariant = new MutableLiveData<>(UIVariant.CUSTOM_TABS);
     final private MutableLiveData<Boolean> mIsSsoEnabled = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
@@ -152,10 +150,6 @@ public class MainViewModel extends AndroidViewModel {
         mColorScheme.setValue(colorScheme);
     }
 
-    public void setUIVariant(UIVariant uiVariant) {
-        mUIVariant.setValue(uiVariant);
-    }
-
     public LiveData<String> clientID() {
         return mClientID;
     }
@@ -218,7 +212,6 @@ public class MainViewModel extends AndroidViewModel {
                     endpoint,
                     new TransientTokenStorage(),
                     isSsoEnabled,
-                    mUIVariant.getValue(),
                     null,
                     app2appOptions
             );
@@ -229,7 +222,6 @@ public class MainViewModel extends AndroidViewModel {
                     endpoint,
                     new PersistentTokenStorage(getApplication()),
                     isSsoEnabled,
-                    mUIVariant.getValue(),
                     null,
                     app2appOptions
             );

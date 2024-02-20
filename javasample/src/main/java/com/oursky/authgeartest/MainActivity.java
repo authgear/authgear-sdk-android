@@ -24,7 +24,6 @@ import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.TransientTokenStorage;
-import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
@@ -40,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
-    private Spinner mUIVariant;
     private CheckBox mIsSsoEnabled;
     private TextView mSessionState;
     private TextView mLoading;
@@ -123,14 +121,6 @@ public class MainActivity extends AppCompatActivity {
         colorSchemeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mColorScheme.setAdapter(colorSchemeAdapter);
 
-        String[] uiVariants = {
-                UIVariant.CUSTOM_TABS.name(),
-        };
-        mUIVariant = findViewById(R.id.uiVariantSpinner);
-        ArrayAdapter<String> mUIVariantAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, uiVariants);
-        mUIVariantAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mUIVariant.setAdapter(mUIVariantAdapter);
-
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
@@ -191,20 +181,6 @@ public class MainActivity extends AppCompatActivity {
                     viewModel.setColorScheme(ColorScheme.LIGHT);
                 } else if (ColorScheme.DARK.name().equals(value)) {
                     viewModel.setColorScheme(ColorScheme.DARK);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-        mUIVariant.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String value = (String) parent.getItemAtPosition(position);
-                if (UIVariant.CUSTOM_TABS.name().equals(value)) {
-                    viewModel.setUIVariant(UIVariant.CUSTOM_TABS);
                 }
             }
 

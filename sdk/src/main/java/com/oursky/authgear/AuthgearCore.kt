@@ -57,7 +57,6 @@ internal class AuthgearCore(
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
     private val app2AppOptions: App2AppOptions,
-    private val uiVariant: UIVariant,
     private val tokenStorage: TokenStorage,
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
