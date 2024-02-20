@@ -735,7 +735,6 @@ internal class AuthgearCore(
                 }
             }
             application.registerReceiver(br, intentFilter)
-            val redirectUri = Uri.parse(redirectUrl)
             application.startActivity(
                 OAuthActivity.createAuthorizationIntent(
                     application,
