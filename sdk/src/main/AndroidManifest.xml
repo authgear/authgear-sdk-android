@@ -8,8 +8,5 @@
             android:exported="false"
             android:theme="@style/AuthgearTheme"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".CustomTabActivity"
-            android:exported="false"
-            android:launchMode="singleTask" />
     </application>
 </manifest>
