@@ -258,6 +258,13 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <CheckBox
+                    android:id="@+id/useWebKitWebView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Use WebKit WebView"
+                    tools:ignore="HardcodedText" />
+
+                <CheckBox
                     android:id="@+id/isSsoEnabled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

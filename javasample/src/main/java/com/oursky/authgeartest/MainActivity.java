@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
+    private CheckBox mUseWebKitWebView;
     private CheckBox mIsSsoEnabled;
     private TextView mSessionState;
     private TextView mLoading;
@@ -88,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
+        mUseWebKitWebView = findViewById(R.id.useWebKitWebView);
         mIsSsoEnabled = findViewById(R.id.isSsoEnabled);
         mSessionState = findViewById(R.id.sessionStateInput);
 
@@ -126,6 +128,7 @@ public class MainActivity extends AppCompatActivity {
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
                         mIsSsoEnabled.isChecked(),
+                        mUseWebKitWebView.isChecked(),
                         mApp2AppEndpoint.getText().toString()
                 )
         );
@@ -194,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
         mEndpoint.setText(viewModel.endpoint().getValue());
         mApp2AppEndpoint.setText(viewModel.app2appEndpoint().getValue());
         mIsSsoEnabled.setChecked(viewModel.isSsoEnabled().getValue());
+        mUseWebKitWebView.setChecked(viewModel.useWebKitWebView().getValue());
         mSessionState.setText(viewModel.sessionState().getValue().toString());
 
         viewModel.isConfigured().observe(this, isConfigured -> {

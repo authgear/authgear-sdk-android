@@ -25,6 +25,7 @@ import com.oursky.authgear.AuthgearException;
 import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ColorScheme;
+import com.oursky.authgear.CustomTabsUIImplementation;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
 import com.oursky.authgear.OnAuthenticateListener;
@@ -45,7 +46,9 @@ import com.oursky.authgear.ReauthenticateOptions;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
+import com.oursky.authgear.TokenStorage;
 import com.oursky.authgear.TransientTokenStorage;
+import com.oursky.authgear.UIImplementation;
 import com.oursky.authgear.UserInfo;
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions;
 import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
@@ -70,6 +73,8 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
+
+    final private MutableLiveData<Boolean> mUseWebKitWebView = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsSsoEnabled = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
@@ -92,12 +97,14 @@ public class MainViewModel extends AndroidViewModel {
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
             Boolean storedIsSsoEnabled = preferences.getBoolean("isSsoEnabled", false);
+            Boolean storedUseWebKitWebView = preferences.getBoolean("useWebKitWebView", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mApp2AppEndpoint.setValue(storedApp2AppEndpoint);
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
             mIsSsoEnabled.setValue(storedIsSsoEnabled);
+            mUseWebKitWebView.setValue(storedUseWebKitWebView);
         }
     }
 
@@ -163,6 +170,8 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
+    public LiveData<Boolean> useWebKitWebView() { return mUseWebKitWebView; }
+
     public LiveData<Boolean> isSsoEnabled() { return mIsSsoEnabled; }
 
     public LiveData<Boolean> isConfigured() {
@@ -188,7 +197,7 @@ public class MainViewModel extends AndroidViewModel {
     }
     public LiveData<ConfirmationViewModel> app2appConfirmation() { return mApp2AppConfirmation; }
 
-    public void configure(String clientID, String endpoint, Boolean isSsoEnabled, String app2appEndpoint) {
+    public void configure(String clientID, String endpoint, Boolean isSsoEnabled, Boolean useWebKitWebView, String app2appEndpoint) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
@@ -196,36 +205,38 @@ public class MainViewModel extends AndroidViewModel {
         mEndpoint.setValue(endpoint);
         mApp2AppEndpoint.setValue(app2appEndpoint);
         mIsSsoEnabled.setValue(isSsoEnabled);
+        mUseWebKitWebView.setValue(useWebKitWebView);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
                 .putString("clientID", clientID)
                 .putString("endpoint", endpoint)
                 .putString("app2appendpoint", app2appEndpoint)
                 .putBoolean("isSsoEnabled", isSsoEnabled)
+                .putBoolean("useWebKitWebView", useWebKitWebView)
                 .apply();
         Boolean isApp2AppEnabled = !app2appEndpoint.isEmpty();
         App2AppOptions app2appOptions = new App2AppOptions(isApp2AppEnabled);
+
+        TokenStorage tokenStorage;
         if (mTokenStorage.getValue().equals(TransientTokenStorage.class.getSimpleName())) {
-            mAuthgear = new Authgear(
-                    getApplication(),
-                    clientID,
-                    endpoint,
-                    new TransientTokenStorage(),
-                    isSsoEnabled,
-                    null,
-                    app2appOptions
-            );
+            tokenStorage = new TransientTokenStorage();
         } else {
-            mAuthgear = new Authgear(
-                    getApplication(),
-                    clientID,
-                    endpoint,
-                    new PersistentTokenStorage(getApplication()),
-                    isSsoEnabled,
-                    null,
-                    app2appOptions
-            );
+            tokenStorage = new PersistentTokenStorage(getApplication());
         }
+
+        UIImplementation uiImplementation;
+        uiImplementation = new CustomTabsUIImplementation();
+
+        mAuthgear = new Authgear(
+                getApplication(),
+                clientID,
+                endpoint,
+                tokenStorage,
+                uiImplementation,
+                isSsoEnabled,
+                null,
+                app2appOptions
+        );
         mAuthgear.configure(new OnConfigureListener() {
             @Override
             public void onConfigured() {
