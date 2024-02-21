@@ -23,6 +23,7 @@ class WebKitWebViewActivity: AppCompatActivity() {
         private const val MENU_ID_CANCEL = 1
         private const val KEY_OPTIONS = "KEY_OPTIONS"
         private const val KEY_BROADCAST_ACTION = "broadcastAction"
+        private const val KEY_WEB_VIEW_STATE = "KEY_WEB_VIEW_STATE"
         private const val TAG_FILE_CHOOSER = 1
 
         fun createIntent(ctx: Context, broadcastAction: String, options: Options): Intent {
@@ -171,7 +172,24 @@ class WebKitWebViewActivity: AppCompatActivity() {
         val webSettings: WebSettings = this.mWebView.getSettings()
         webSettings.javaScriptEnabled = true
 
-        this.mWebView.loadUrl(options.url.toString())
+        if (savedInstanceState == null) {
+            this.mWebView.loadUrl(options.url.toString())
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val webViewBundle = Bundle()
+        this.mWebView.saveState(webViewBundle)
+        outState.putBundle(KEY_WEB_VIEW_STATE, webViewBundle)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        val bundle = savedInstanceState.getBundle(KEY_WEB_VIEW_STATE)
+        if (bundle != null) {
+            this.mWebView.restoreState(bundle)
+        }
     }
 
     override fun onBackPressed() {
