@@ -4,6 +4,9 @@
         <activity android:name=".OAuthActivity"
             android:exported="false"
             android:launchMode="singleTask" />
+        <activity android:name=".WebKitWebViewActivity"
+            android:exported="false"
+            android:launchMode="singleTask" />
         <activity android:name=".WebViewActivity"
             android:exported="false"
             android:theme="@style/AuthgearTheme"

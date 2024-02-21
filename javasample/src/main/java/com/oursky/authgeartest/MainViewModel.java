@@ -50,6 +50,7 @@ import com.oursky.authgear.TokenStorage;
 import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UIImplementation;
 import com.oursky.authgear.UserInfo;
+import com.oursky.authgear.WebKitWebViewUIImplementation;
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions;
 import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
 import com.oursky.authgear.app2app.App2AppOptions;
@@ -225,7 +226,11 @@ public class MainViewModel extends AndroidViewModel {
         }
 
         UIImplementation uiImplementation;
-        uiImplementation = new CustomTabsUIImplementation();
+        if (mUseWebKitWebView.getValue()) {
+            uiImplementation = new WebKitWebViewUIImplementation();
+        } else {
+            uiImplementation = new CustomTabsUIImplementation();
+        }
 
         mAuthgear = new Authgear(
                 getApplication(),
