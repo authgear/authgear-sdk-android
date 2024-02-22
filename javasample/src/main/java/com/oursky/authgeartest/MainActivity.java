@@ -24,7 +24,6 @@ import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.SessionState;
 import com.oursky.authgear.TransientTokenStorage;
-import com.oursky.authgear.UIVariant;
 import com.oursky.authgear.UserInfo;
 
 @SuppressWarnings("ConstantConditions")
@@ -40,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
-    private Spinner mUIVariant;
+    private CheckBox mUseWebKitWebView;
     private CheckBox mIsSsoEnabled;
     private TextView mSessionState;
     private TextView mLoading;
@@ -90,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
+        mUseWebKitWebView = findViewById(R.id.useWebKitWebView);
         mIsSsoEnabled = findViewById(R.id.isSsoEnabled);
         mSessionState = findViewById(R.id.sessionStateInput);
 
@@ -123,19 +123,12 @@ public class MainActivity extends AppCompatActivity {
         colorSchemeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mColorScheme.setAdapter(colorSchemeAdapter);
 
-        String[] uiVariants = {
-                UIVariant.CUSTOM_TABS.name(),
-        };
-        mUIVariant = findViewById(R.id.uiVariantSpinner);
-        ArrayAdapter<String> mUIVariantAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, uiVariants);
-        mUIVariantAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mUIVariant.setAdapter(mUIVariantAdapter);
-
         mConfigure.setOnClickListener(
                 view -> viewModel.configure(
                         mClientId.getText().toString(),
                         mEndpoint.getText().toString(),
                         mIsSsoEnabled.isChecked(),
+                        mUseWebKitWebView.isChecked(),
                         mApp2AppEndpoint.getText().toString()
                 )
         );
@@ -199,25 +192,12 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        mUIVariant.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String value = (String) parent.getItemAtPosition(position);
-                if (UIVariant.CUSTOM_TABS.name().equals(value)) {
-                    viewModel.setUIVariant(UIVariant.CUSTOM_TABS);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
 
         mClientId.setText(viewModel.clientID().getValue());
         mEndpoint.setText(viewModel.endpoint().getValue());
         mApp2AppEndpoint.setText(viewModel.app2appEndpoint().getValue());
         mIsSsoEnabled.setChecked(viewModel.isSsoEnabled().getValue());
+        mUseWebKitWebView.setChecked(viewModel.useWebKitWebView().getValue());
         mSessionState.setText(viewModel.sessionState().getValue().toString());
 
         viewModel.isConfigured().observe(this, isConfigured -> {

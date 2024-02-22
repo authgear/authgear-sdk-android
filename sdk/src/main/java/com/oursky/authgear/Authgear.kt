@@ -24,8 +24,8 @@ constructor(
     clientId: String,
     authgearEndpoint: String,
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
+    uiImplementation: UIImplementation = CustomTabsUIImplementation(),
     isSsoEnabled: Boolean = false,
-    uiVariant: UIVariant = UIVariant.CUSTOM_TABS,
     name: String? = null,
     app2AppOptions: App2AppOptions = App2AppOptions(isEnabled = false)
 ) {
@@ -44,8 +44,8 @@ constructor(
             authgearEndpoint,
             isSsoEnabled,
             app2AppOptions,
-            uiVariant,
             tokenStorage,
+            uiImplementation,
             PersistentContainerStorage(application),
             OAuthRepoHttp(),
             KeyRepoKeystore(),

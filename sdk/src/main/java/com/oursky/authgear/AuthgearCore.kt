@@ -57,8 +57,8 @@ internal class AuthgearCore(
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
     private val app2AppOptions: App2AppOptions,
-    private val uiVariant: UIVariant,
     private val tokenStorage: TokenStorage,
+    private val uiImplementation: UIImplementation,
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
@@ -716,35 +716,18 @@ internal class AuthgearCore(
         redirectUrl: String,
         authorizeUri: Uri
     ): String {
-        return suspendCoroutine { k ->
-            val action = newRandomAction()
-            val intentFilter = IntentFilter(action)
-            val br = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    val type = intent?.getStringExtra(KEY_OAUTH_BOARDCAST_TYPE) ?: return
-                    when (type) {
-                        OAuthBroadcastType.REDIRECT_URL.name -> {
-                            application.unregisterReceiver(this)
-                            val output = intent.getStringExtra(KEY_REDIRECT_URL)
-                            if (output != null) {
-                                k.resume(output)
-                            } else {
-                                k.resumeWithException(CancelException())
-                            }
-                        }
-                    }
+        return suspendCoroutine {
+            val options = OpenAuthorizationURLOptions(authorizeUri, Uri.parse(redirectUrl))
+            val listener = object : OnOpenAuthorizationURLListener {
+                override fun onSuccess(url: Uri) {
+                    it.resume(url.toString())
+                }
+
+                override fun onFailed(throwable: Throwable) {
+                    it.resumeWithException(throwable)
                 }
             }
-            application.registerReceiver(br, intentFilter)
-            val redirectUri = Uri.parse(redirectUrl)
-            application.startActivity(
-                OAuthActivity.createAuthorizationIntent(
-                    application,
-                    action,
-                    redirectUrl,
-                    authorizeUri.toString()
-                )
-            )
+            this.uiImplementation.openAuthorizationURL(this.application, options, listener)
         }
     }
 
