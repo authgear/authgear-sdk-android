@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private View mDisableBiometric;
     private View mAuthenticateBiometric;
     private View mOpenSettings;
+    private View mChangePassword;
     private View mFetchUserInfo;
     private View mShowAuthTime;
     private View mLogout;
@@ -86,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         mDisableBiometric = findViewById(R.id.disableBiometric);
         mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
         mOpenSettings = findViewById(R.id.openSettings);
+        mChangePassword = findViewById(R.id.changePassword);
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
@@ -142,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
         mDisableBiometric.setOnClickListener(view -> viewModel.disableBiometric());
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
         mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
+        mChangePassword.setOnClickListener(view -> viewModel.openChangePassword());
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());

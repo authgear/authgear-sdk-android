@@ -34,6 +34,7 @@ import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnHandleApp2AppAuthenticationRequestListener;
 import com.oursky.authgear.OnLogoutListener;
+import com.oursky.authgear.OnOpenSettingsActionListener;
 import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.OnReauthenticateListener;
@@ -47,6 +48,7 @@ import com.oursky.authgear.SessionState;
 import com.oursky.authgear.SessionStateChangeReason;
 import com.oursky.authgear.SettingOptions;
 import com.oursky.authgear.TokenStorage;
+import com.oursky.authgear.SettingsActionOptions;
 import com.oursky.authgear.TransientTokenStorage;
 import com.oursky.authgear.UIImplementation;
 import com.oursky.authgear.UserInfo;
@@ -657,6 +659,42 @@ public class MainViewModel extends AndroidViewModel {
             public void onClosed() {
                 mIsLoading.setValue(false);
                 Log.d(TAG, "openSettings closed");
+            }
+
+            @Override
+            public void onFailed(Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
+    public void openChangePassword() {
+        mIsLoading.setValue(true);
+
+        mAuthgear.refreshIDToken(new OnRefreshIDTokenListener() {
+            @Override
+            public void onFinished() {
+                SettingsActionOptions options = new SettingsActionOptions(
+                        MainApplication.AUTHGEAR_SETTINGS_ACTION_CHANGE_PASSWORD_REDIRECT_URI
+                );
+                options.setColorScheme(getColorScheme());
+                options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+                mAuthgear.changePassword(options, new OnOpenSettingsActionListener() {
+                    @Override
+                    public void onFinished() {
+                        mIsLoading.setValue(false);
+                        Log.d(TAG, "changePassword finished");
+                    }
+
+                    @Override
+                    public void onFailed(Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        mIsLoading.setValue(false);
+                        setError(throwable);
+                    }
+                });
             }
 
             @Override

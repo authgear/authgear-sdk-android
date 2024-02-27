@@ -54,6 +54,9 @@
                 <data android:scheme="com.authgear.exampleapp.android"
                     android:host="host"
                     android:pathPrefix="/open_wechat_app"/>
+                <data android:scheme="com.authgear.exampleapp.android"
+                    android:host="host"
+                    android:pathPrefix="/after-changing-password"/>
             </intent-filter>
         </activity>
 

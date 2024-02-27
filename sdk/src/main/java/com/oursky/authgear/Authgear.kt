@@ -475,6 +475,40 @@ constructor(
     }
 
     /**
+     * Open change password page in webview
+     *
+     * @param options Setting options.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    public fun changePassword(
+        options: SettingsActionOptions,
+        listener: OnOpenSettingsActionListener? = null,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                core.settingsAction(
+                    SettingsAction.CHANGE_PASSWORD,
+                    options
+                )
+                handler.post {
+                    listener?.onFinished()
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    listener?.onFailed(e)
+                }
+            } finally {
+                AuthgearCore.unregisteredWechatRedirectURI()
+            }
+        }
+    }
+
+    /**
      * Promote the current anonymous user. Note that this must not be called before there is an
      * anonymous user.
      *

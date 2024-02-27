@@ -294,6 +294,47 @@ internal class AuthgearCore(
 
     @ExperimentalAuthgearApi
     @Suppress("RedundantSuspendModifier")
+    suspend fun createSettingsActionRequest(
+        action: SettingsAction,
+        options: SettingsActionOptions,
+        verifier: Verifier = generateCodeVerifier()
+    ): AuthenticationRequest {
+        requireIsInitialized()
+
+        val refreshToken = tokenStorage.getRefreshToken(name)
+            ?: throw UnauthenticatedUserException()
+
+        val token: String
+        try {
+            token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+        } catch (e: Exception) {
+            handleInvalidGrantError(e)
+            throw e
+        }
+
+        val loginHint = "https://authgear.com/login_hint?type=app_session_token&app_session_token=${
+            URLEncoder.encode(token, StandardCharsets.UTF_8.name())
+        }"
+
+        val idTokenHint = this.idToken ?: throw AuthgearException("Call refreshIDToken first")
+
+        val request = options.toRequest(action = action, idTokenHint = idTokenHint, loginHint = loginHint)
+        val authorizeUri = authorizeEndpoint(request, verifier)
+        return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
+    }
+
+    @Suppress("BlockingMethodInNonBlockingContext")
+    @OptIn(ExperimentalAuthgearApi::class)
+    suspend fun settingsAction(action: SettingsAction, options: SettingsActionOptions) {
+        requireIsInitialized()
+        val codeVerifier = this.setupVerifier()
+        val request = createSettingsActionRequest(action, options, codeVerifier)
+        val deepLink = openAuthorizeUrl(request.redirectUri, request.url)
+        return finishSettingsAction(deepLink, codeVerifier)
+    }
+
+    @ExperimentalAuthgearApi
+    @Suppress("RedundantSuspendModifier")
     suspend fun createReauthenticateRequest(
         options: ReauthenticateOptions,
         verifier: Verifier = generateCodeVerifier()
@@ -776,6 +817,45 @@ internal class AuthgearCore(
         saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
         disableBiometric()
         return userInfo
+    }
+
+    fun finishSettingsAction(deepLink: String, verifier: Verifier? = null) {
+        val uri = Uri.parse(deepLink)
+        val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
+        val state = uri.getQueryParameter("state")
+        val error = uri.getQueryParameter("error")
+        val errorDescription = uri.getQueryParameter("error_description")
+        var errorURI = uri.getQueryParameter("error_uri")
+        if (error != null) {
+            if (error == "cancel") {
+                throw CancelException()
+            }
+            throw OAuthException(
+                error = error,
+                errorDescription = errorDescription,
+                state = state,
+                errorURI = errorURI
+            )
+        }
+        val code = uri.getQueryParameter("code")
+            ?: throw OAuthException(
+                error = "invalid_request",
+                errorDescription = "Missing parameter: code",
+                state = state,
+                errorURI = errorURI
+            )
+        val codeVerifier = verifier?.verifier ?: storage.getOidcCodeVerifier(name)
+        val tokenResponse = oauthRepo.oidcTokenRequest(
+            OidcTokenRequest(
+                grantType = GrantType.SETTINGS_ACTION,
+                clientId = clientId,
+                xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
+                code = code,
+                redirectUri = redirectUri,
+                codeVerifier = codeVerifier ?: "",
+            )
+        )
+        disableBiometric()
     }
 
     fun finishReauthentication(deepLink: String, verifier: Verifier? = null): UserInfo {

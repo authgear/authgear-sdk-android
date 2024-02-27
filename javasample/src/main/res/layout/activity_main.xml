@@ -426,6 +426,15 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
+                    android:id="@+id/changePassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Change password"
+                    tools:ignore="HardcodedText" />
+
+                <Button
                     android:id="@+id/fetchUserInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
