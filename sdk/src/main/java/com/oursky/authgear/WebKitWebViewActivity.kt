@@ -199,6 +199,7 @@ class WebKitWebViewActivity: AppCompatActivity() {
         // Configure web view.
         this.mWebView = WebView(this)
         this.mWebView.settings.setSupportMultipleWindows(true)
+        this.mWebView.settings.domStorageEnabled = true
         this.setContentView(this.mWebView)
         this.mWebView.setWebViewClient(MyWebViewClient(this))
         this.mWebView.setWebChromeClient(MyWebChromeClient(this))
