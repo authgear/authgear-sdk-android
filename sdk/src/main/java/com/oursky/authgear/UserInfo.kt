@@ -13,6 +13,8 @@ data class UserInfo(
     val isAnonymous: Boolean,
     @SerialName("https://authgear.com/claims/user/can_reauthenticate")
     val canReauthenticate: Boolean,
+    @SerialName("https://authgear.com/claims/user/roles")
+    val roles: Array<String>? = null,
     @SerialName("custom_attributes")
     val customAttributes: JsonObject,
     val email: String? = null,
