@@ -22,7 +22,7 @@ internal fun SettingsActionOptions.toRequest(action: SettingsAction, idTokenHint
         responseType = "urn:authgear:params:oauth:response-type:settings-action",
         scope = listOf("openid", "https://authgear.com/scopes/full-access"),
         isSsoEnabled = false,
-        prompt = null,
+        prompt = listOf(PromptOption.NONE),
         loginHint = loginHint,
         idTokenHint = idTokenHint,
         uiLocales = this.uiLocales,
