@@ -677,7 +677,7 @@ public class MainViewModel extends AndroidViewModel {
             @Override
             public void onFinished() {
                 SettingsActionOptions options = new SettingsActionOptions(
-                        MainApplication.AUTHGEAR_SETTINGS_ACTION_CHANGE_PASSWORD_REDIRECT_URI
+                        MainApplication.AUTHGEAR_REDIRECT_URI
                 );
                 options.setColorScheme(getColorScheme());
                 options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);

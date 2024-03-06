@@ -8,5 +8,4 @@ public class MainApplication extends Application {
     public static final String AUTHGEAR_APP2APP_REDIRECT_URI = "https://authgear-demo-android.pandawork.com/app2app/redirect";
     public static final String AUTHGEAR_WECHAT_REDIRECT_URI = "com.authgear.exampleapp.android://host/open_wechat_app";
     public static final String AUTHGEAR_WECHAT_APP_ID = "wxa2f631873c63add1";
-    public static final String AUTHGEAR_SETTINGS_ACTION_CHANGE_PASSWORD_REDIRECT_URI = "com.authgear.exampleapp.android://host/after-changing-password";
 }
