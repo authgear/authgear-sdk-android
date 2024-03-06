@@ -292,9 +292,9 @@ internal class AuthgearCore(
         return finishAuthorization(deepLink, codeVerifier)
     }
 
-    @ExperimentalAuthgearApi
     @Suppress("RedundantSuspendModifier")
-    suspend fun createSettingsActionRequest(
+    @OptIn(ExperimentalAuthgearApi::class)
+    private suspend fun createSettingsActionRequest(
         action: SettingsAction,
         options: SettingsActionOptions,
         verifier: Verifier = generateCodeVerifier()
@@ -325,7 +325,7 @@ internal class AuthgearCore(
 
     @Suppress("BlockingMethodInNonBlockingContext")
     @OptIn(ExperimentalAuthgearApi::class)
-    suspend fun settingsAction(action: SettingsAction, options: SettingsActionOptions) {
+    internal suspend fun settingsAction(action: SettingsAction, options: SettingsActionOptions) {
         requireIsInitialized()
         val codeVerifier = this.setupVerifier()
         val request = createSettingsActionRequest(action, options, codeVerifier)
@@ -819,7 +819,7 @@ internal class AuthgearCore(
         return userInfo
     }
 
-    fun finishSettingsAction(deepLink: String, verifier: Verifier? = null) {
+    private fun finishSettingsAction(deepLink: String, verifier: Verifier? = null) {
         val uri = Uri.parse(deepLink)
         val redirectUri = "${uri.scheme}://${uri.authority}${uri.path}"
         val state = uri.getQueryParameter("state")
