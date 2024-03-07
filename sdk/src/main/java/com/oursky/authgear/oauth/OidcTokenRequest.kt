@@ -1,6 +1,7 @@
 package com.oursky.authgear.oauth
 
 import com.oursky.authgear.GrantType
+import com.oursky.authgear.SettingsAction
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -28,5 +29,7 @@ internal data class OidcTokenRequest(
     @SerialName("code_challenge")
     val codeChallenge: String? = null,
     @SerialName("code_challenge_method")
-    val codeChallengeMethod: String? = null
+    val codeChallengeMethod: String? = null,
+    @SerialName("x_settings_action")
+    val settingsAction: SettingsAction? = null
 )

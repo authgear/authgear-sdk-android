@@ -17,7 +17,8 @@ enum class GrantType(val raw: String) {
     ANONYMOUS("urn:authgear:params:oauth:grant-type:anonymous-request"),
     BIOMETRIC("urn:authgear:params:oauth:grant-type:biometric-request"),
     ID_TOKEN("urn:authgear:params:oauth:grant-type:id-token"),
-    APP2APP("urn:authgear:params:oauth:grant-type:app2app-request")
+    APP2APP("urn:authgear:params:oauth:grant-type:app2app-request"),
+    SETTINGS_ACTION("urn:authgear:params:oauth:grant-type:settings-action")
 }
 
 @Serializer(forClass = GrantType::class)

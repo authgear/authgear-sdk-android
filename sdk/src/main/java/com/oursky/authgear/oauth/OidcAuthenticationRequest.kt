@@ -19,7 +19,8 @@ internal data class OidcAuthenticationRequest constructor(
     var colorScheme: ColorScheme? = null,
     var idTokenHint: String? = null,
     var wechatRedirectURI: String? = null,
-    var page: String? = null
+    var page: String? = null,
+    var settingsAction: String? = null
 )
 
 internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -74,6 +75,10 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
 
     this.page?.let {
         query["x_page"] = it
+    }
+
+    this.settingsAction?.let {
+        query["x_settings_action"] = it
     }
 
     if (!this.isSsoEnabled) {
