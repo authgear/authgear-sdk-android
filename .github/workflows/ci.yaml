@@ -11,6 +11,23 @@ on:
     - '!gh-pages'
 
 jobs:
+  gh-pages:
+    runs-on: macos-12
+    needs: ["app"]
+    steps:
+    # The default Java on macos-12 is 8, we need 17
+    # https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md#java
+    - name: Set java version
+      run: |
+        echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+    - run: make docs
+    - name: Deploy docs to gh-pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: ${{ github.ref == 'refs/heads/main' }}
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build/dokka/htmlMultiModule
   test:
     runs-on: macos-12
     steps:
