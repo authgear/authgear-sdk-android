@@ -1,0 +1,8 @@
+$dokka.format:html-v1
+$dokka.linkExtension:html
+
+module:sdk
+com.oursky.authgear
+com.oursky.authgear.app2app
+module:sdk-okhttp
+com.oursky.authgear.okhttp

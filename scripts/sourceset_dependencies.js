@@ -1,1 +1,1 @@
-sourceset_dependencies = '{}'
+sourceset_dependencies = '{":sdk-okhttp:dokkaHtmlPartial/debug":[],":sdk-okhttp:dokkaHtmlPartial/main":[],":sdk-okhttp:dokkaHtmlPartial/release":[],":sdk:dokkaHtmlPartial/debug":[],":sdk:dokkaHtmlPartial/main":[],":sdk:dokkaHtmlPartial/release":[]}'
