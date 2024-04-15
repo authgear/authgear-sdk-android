@@ -635,20 +635,20 @@ internal class AuthgearCore(
     }
 
     private fun generateCodeVerifier(): Verifier {
+        // https://datatracker.ietf.org/doc/html/rfc7636#section-4.1
+        // It is RECOMMENDED that the output of
+        // a suitable random number generator be used to create a 32-octet
+        // sequence.  The octet sequence is then base64url-encoded to produce a
+        // 43-octet URL safe string to use as the code verifier.
         val bytes = ByteArray(32)
         SecureRandom().nextBytes(bytes)
-        val verifier = bytes.joinToString(separator = "") {
-            it.toString(16).padStart(2, '0')
-        }
+        val verifier = base64UrlEncode(bytes)
         return Verifier(verifier, computeCodeChallenge(verifier))
     }
 
     private fun computeCodeChallenge(verifier: String): String {
         val hash = sha256(verifier)
-        return String(
-            Base64.encode(hash, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP),
-            StandardCharsets.UTF_8
-        )
+        return base64UrlEncode(hash)
     }
 
     private fun sha256(input: String): ByteArray {
