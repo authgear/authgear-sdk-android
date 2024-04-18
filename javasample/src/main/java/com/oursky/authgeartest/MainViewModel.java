@@ -73,6 +73,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
+    final private MutableLiveData<String> mAuthenticationiFlowGroup = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
@@ -97,6 +98,7 @@ public class MainViewModel extends AndroidViewModel {
             String storedClientID = preferences.getString("clientID", "");
             String storedEndpoint = preferences.getString("endpoint", "");
             String storedApp2AppEndpoint = preferences.getString("app2appendpoint", "");
+            String storedAuthenticationFlowGroup = preferences.getString("authenticationFlowGroup", "");
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
             Boolean storedIsSsoEnabled = preferences.getBoolean("isSsoEnabled", false);
@@ -104,6 +106,7 @@ public class MainViewModel extends AndroidViewModel {
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
             mApp2AppEndpoint.setValue(storedApp2AppEndpoint);
+            mAuthenticationiFlowGroup.setValue(storedAuthenticationFlowGroup);
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
             mIsSsoEnabled.setValue(storedIsSsoEnabled);
@@ -146,6 +149,10 @@ public class MainViewModel extends AndroidViewModel {
         } else {
             mError.setValue(e);
         }
+    }
+
+    public void setAuthenticationiFlowGroup(String flowGroup) {
+        mAuthenticationiFlowGroup.setValue(flowGroup);
     }
 
     public void setPage(String page) {
@@ -313,6 +320,7 @@ public class MainViewModel extends AndroidViewModel {
         options.setColorScheme(getColorScheme());
         options.setPage(mPage.getValue());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+        options.setAuthenticationFlowGroup(mAuthenticationiFlowGroup.getValue());
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
             public void onAuthenticated(@Nullable UserInfo userInfo) {
@@ -458,6 +466,7 @@ public class MainViewModel extends AndroidViewModel {
                     ReauthenticateOptions options = new ReauthenticateOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     options.setColorScheme(getColorScheme());
+                    options.setAuthenticationFlowGroup(mAuthenticationiFlowGroup.getValue());
                     mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
                         @Override
                         public void onFinished(@Nullable UserInfo userInfo) {

@@ -37,7 +37,12 @@ data class ReauthenticateOptions @JvmOverloads constructor(
      * WeChat redirect uri is needed when integrating WeChat login
      * The wechatRedirectURI will be called when user click the login with WeChat button
      */
-    var wechatRedirectURI: String? = null
+    var wechatRedirectURI: String? = null,
+
+    /**
+     * Authentication flow group
+     */
+    var authenticationFlowGroup: String? = null
 )
 
 internal fun ReauthenticateOptions.toRequest(idTokenHint: String, isSsoEnabled: Boolean): OidcAuthenticationRequest {
@@ -55,6 +60,7 @@ internal fun ReauthenticateOptions.toRequest(idTokenHint: String, isSsoEnabled: 
         uiLocales = this.uiLocales,
         colorScheme = this.colorScheme,
         wechatRedirectURI = this.wechatRedirectURI,
-        page = null
+        page = null,
+        authenticationFlowGroup = this.authenticationFlowGroup
     )
 }
