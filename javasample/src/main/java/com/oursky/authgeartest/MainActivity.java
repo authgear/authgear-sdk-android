@@ -2,6 +2,8 @@ package com.oursky.authgeartest;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mApp2AppEndpoint;
     private EditText mApp2AppState;
     private View mApp2AppstateField;
+    private EditText mAuthenticationFlowGroup;
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
@@ -75,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
         mApp2AppEndpoint = findViewById(R.id.app2appendpointInput);
         mApp2AppState = findViewById(R.id.app2appstateInput);
         mApp2AppstateField = findViewById(R.id.app2appstateField);
+        mAuthenticationFlowGroup = findViewById(R.id.authenticationFlowGroupInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthenticate = findViewById(R.id.authenticate);
@@ -148,6 +152,21 @@ public class MainActivity extends AppCompatActivity {
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
+
+        mAuthenticationFlowGroup.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                viewModel.setAuthenticationiFlowGroup(editable.toString());
+            }
+        });
 
         mPage.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
