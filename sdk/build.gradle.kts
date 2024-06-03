@@ -45,7 +45,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("androidx.core:core-ktx:1.8.0")
     implementation("androidx.appcompat:appcompat:1.4.0")
-    implementation("androidx.security:security-crypto:1.1.0-alpha02")
+    // NOTE(backup): Please search NOTE(backup) before you update security-crypto or tink-android.
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("com.google.crypto.tink:tink-android:1.8.0")
     implementation("androidx.browser:browser:1.2.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.2.0")
