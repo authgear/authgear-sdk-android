@@ -31,5 +31,7 @@ internal data class OidcTokenRequest(
     @SerialName("code_challenge_method")
     val codeChallengeMethod: String? = null,
     @SerialName("x_settings_action")
-    val settingsAction: SettingsAction? = null
+    val settingsAction: SettingsAction? = null,
+    @SerialName("device_secret")
+    val deviceSecret: String? = null
 )

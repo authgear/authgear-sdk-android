@@ -66,6 +66,7 @@ internal class OAuthRepoHttp : OAuthRepo {
         request.xApp2AppDeviceKeyJwt?.let { body["x_app2app_device_key_jwt"] = it }
         request.codeChallenge?.let { body["code_challenge"] = it }
         request.codeChallengeMethod?.let { body["code_challenge_method"] = it }
+        request.deviceSecret?.let { body["device_secret"] = it }
         val headers = mutableMapOf(
             "content-type" to "application/x-www-form-urlencoded"
         )

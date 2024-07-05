@@ -579,13 +579,16 @@ internal class AuthgearCore(
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
 
+        val deviceSecret = this.tokenStorage.getDeviceSecret(name)
+
         try {
             val tokenResponse = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
                     grantType = com.oursky.authgear.GrantType.ID_TOKEN,
                     clientId = clientId,
                     xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                    accessToken = accessToken
+                    accessToken = accessToken,
+                    deviceSecret = deviceSecret
                 )
             )
 
@@ -710,6 +713,7 @@ internal class AuthgearCore(
             clearSession(SessionStateChangeReason.NO_TOKEN)
             return
         }
+        val deviceSecret = tokenStorage.getDeviceSecret(name)
         val tokenResponse: OidcTokenResponse?
         try {
             tokenResponse = oauthRepo.oidcTokenRequest(
@@ -717,7 +721,8 @@ internal class AuthgearCore(
                     grantType = GrantType.REFRESH_TOKEN,
                     clientId = clientId,
                     xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                    refreshToken = refreshToken
+                    refreshToken = refreshToken,
+                    deviceSecret = deviceSecret
                 )
             )
         } catch (e: Exception) {
