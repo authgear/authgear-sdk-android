@@ -16,5 +16,7 @@ internal data class OidcTokenResponse(
     @SerialName("refresh_token")
     val refreshToken: String? = null,
     @SerialName("code")
-    val code: String? = null
+    val code: String? = null,
+    @SerialName("device_secret")
+    val deviceSecret: String? = null
 )

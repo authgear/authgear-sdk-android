@@ -589,8 +589,19 @@ internal class AuthgearCore(
                 )
             )
 
-            if (tokenResponse.idToken != null) {
-                this.idToken = tokenResponse.idToken
+            synchronized(this) {
+                if (tokenResponse.idToken != null) {
+                    this.idToken = tokenResponse.idToken
+                }
+            }
+
+            val idToken = this.idToken
+            val deviceSecret = tokenResponse.deviceSecret
+            if (idToken != null) {
+                tokenStorage.setIDToken(name, idToken)
+            }
+            if (deviceSecret != null) {
+                tokenStorage.setRefreshToken(name, deviceSecret)
             }
         } catch (e: Exception) {
             handleInvalidGrantError(e)
@@ -737,13 +748,23 @@ internal class AuthgearCore(
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
         val refreshToken = this.refreshToken
+        val idToken = this.idToken
+        val deviceSecret = tokenResponse.deviceSecret
         if (refreshToken != null) {
             tokenStorage.setRefreshToken(name, refreshToken)
+        }
+        if (idToken != null) {
+            tokenStorage.setIDToken(name, idToken)
+        }
+        if (deviceSecret != null) {
+            tokenStorage.setRefreshToken(name, deviceSecret)
         }
     }
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
         tokenStorage.deleteRefreshToken(name)
+        tokenStorage.deleteIDToken(name)
+        tokenStorage.deleteDeviceSecret(name)
         storage.deleteApp2AppDeviceKeyId(name)
         synchronized(this) {
             accessToken = null

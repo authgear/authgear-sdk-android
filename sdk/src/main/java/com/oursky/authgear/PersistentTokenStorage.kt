@@ -15,48 +15,86 @@ class PersistentTokenStorage(val context: Context) : TokenStorage {
     companion object {
         private const val LOGTAG = "Authgear"
         private const val RefreshToken = "refreshToken"
+        private const val IDToken = "idToken"
+        private const val DeviceSecret = "deviceSecret"
     }
 
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
 
-    override fun setRefreshToken(namespace: String, refreshToken: String) {
+    private fun setItem(namespace: String, key: String, value: String) {
         try {
-            getPref(namespace).edit().putString(RefreshToken, refreshToken).commit()
+            getPref(namespace).edit().putString(key, value).commit()
         } catch (e: Exception) {
             val handled = this.handleBackupProblem(e, namespace)
             if (handled) {
-                this.setRefreshToken(namespace, refreshToken)
+                this.setItem(namespace, key, value)
                 return
             }
             throw e
         }
+    }
+
+    private fun getItem(namespace: String, key: String): String? {
+        try {
+            return getPref(namespace).getString(key, null)
+        } catch (e: Exception) {
+            val handled = this.handleBackupProblem(e, namespace)
+            if (handled) {
+                return this.getItem(namespace, key)
+            }
+            throw e
+        }
+    }
+
+    private fun deleteItem(namespace: String, key: String) {
+        try {
+            getPref(namespace).edit().remove(key).commit()
+        } catch (e: Exception) {
+            val handled = this.handleBackupProblem(e, namespace)
+            if (handled) {
+                this.deleteItem(namespace, key)
+                return
+            }
+            throw e
+        }
+    }
+
+    override fun setRefreshToken(namespace: String, refreshToken: String) {
+        setItem(namespace, RefreshToken, refreshToken)
     }
 
     override fun getRefreshToken(namespace: String): String? {
-        try {
-            return getPref(namespace).getString(RefreshToken, null)
-        } catch (e: Exception) {
-            val handled = this.handleBackupProblem(e, namespace)
-            if (handled) {
-                return this.getRefreshToken(namespace)
-            }
-            throw e
-        }
+        return getItem(namespace, RefreshToken)
     }
 
     override fun deleteRefreshToken(namespace: String) {
-        try {
-            getPref(namespace).edit().remove(RefreshToken).commit()
-        } catch (e: Exception) {
-            val handled = this.handleBackupProblem(e, namespace)
-            if (handled) {
-                this.deleteRefreshToken(namespace)
-                return
-            }
-            throw e
-        }
+        deleteItem(namespace, RefreshToken)
+    }
+
+    override fun setIDToken(namespace: String, idToken: String) {
+        setItem(namespace, IDToken, idToken)
+    }
+
+    override fun getIDToken(namespace: String): String? {
+        return getItem(namespace, IDToken)
+    }
+
+    override fun deleteIDToken(namespace: String) {
+        deleteItem(namespace, IDToken)
+    }
+
+    override fun setDeviceSecret(namespace: String, deviceSecret: String) {
+        setItem(namespace, DeviceSecret, deviceSecret)
+    }
+
+    override fun getDeviceSecret(namespace: String): String? {
+        return getItem(namespace, DeviceSecret)
+    }
+
+    override fun deleteDeviceSecret(namespace: String) {
+        deleteItem(namespace, DeviceSecret)
     }
 
     private fun handleBackupProblem(e: Exception, namespace: String): Boolean {
