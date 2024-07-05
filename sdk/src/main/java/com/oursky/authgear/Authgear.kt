@@ -26,6 +26,7 @@ constructor(
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
     uiImplementation: UIImplementation = CustomTabsUIImplementation(),
     isSsoEnabled: Boolean = false,
+    isAppInitiatedSSOToWebEnabled: Boolean = false,
     name: String? = null,
     app2AppOptions: App2AppOptions = App2AppOptions(isEnabled = false)
 ) {
@@ -43,6 +44,7 @@ constructor(
             clientId,
             authgearEndpoint,
             isSsoEnabled,
+            isAppInitiatedSSOToWebEnabled,
             app2AppOptions,
             tokenStorage,
             uiImplementation,

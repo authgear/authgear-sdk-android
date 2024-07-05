@@ -248,6 +248,7 @@ public class MainViewModel extends AndroidViewModel {
                 tokenStorage,
                 uiImplementation,
                 isSsoEnabled,
+                false,
                 null,
                 app2appOptions
         );

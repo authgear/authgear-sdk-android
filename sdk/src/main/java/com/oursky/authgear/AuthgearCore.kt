@@ -56,6 +56,7 @@ internal class AuthgearCore(
     val clientId: String,
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
+    private val isAppInitiatedSSOToWebEnabled: Boolean,
     private val app2AppOptions: App2AppOptions,
     private val tokenStorage: TokenStorage,
     private val uiImplementation: UIImplementation,
@@ -277,7 +278,7 @@ internal class AuthgearCore(
         verifier: Verifier = generateCodeVerifier()
     ): AuthenticationRequest {
         requireIsInitialized()
-        val request = options.toRequest(this.isSsoEnabled)
+        val request = options.toRequest(this.isSsoEnabled, this.isAppInitiatedSSOToWebEnabled)
         val authorizeUri = authorizeEndpoint(request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }
