@@ -62,6 +62,7 @@ internal class AuthgearCore(
     private val tokenStorage: TokenStorage,
     private val uiImplementation: UIImplementation,
     private val storage: ContainerStorage,
+    private val sharedStorage: SharedStorage,
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
     private val assetLinkRepo: AssetLinkRepo,
@@ -588,7 +589,7 @@ internal class AuthgearCore(
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
 
-        val deviceSecret = this.tokenStorage.getDeviceSecret(name)
+        val deviceSecret = this.sharedStorage.getDeviceSecret(name)
 
         try {
             val tokenResponse = oauthRepo.oidcTokenRequest(
@@ -610,7 +611,7 @@ internal class AuthgearCore(
             val idToken = this.idToken
             val deviceSecret = tokenResponse.deviceSecret
             if (idToken != null) {
-                tokenStorage.setIDToken(name, idToken)
+                sharedStorage.setIDToken(name, idToken)
             }
             if (deviceSecret != null) {
                 tokenStorage.setRefreshToken(name, deviceSecret)
@@ -726,7 +727,7 @@ internal class AuthgearCore(
             clearSession(SessionStateChangeReason.NO_TOKEN)
             return
         }
-        val deviceSecret = tokenStorage.getDeviceSecret(name)
+        val deviceSecret = sharedStorage.getDeviceSecret(name)
         val tokenResponse: OidcTokenResponse?
         try {
             tokenResponse = oauthRepo.oidcTokenRequest(
@@ -772,7 +773,7 @@ internal class AuthgearCore(
             tokenStorage.setRefreshToken(name, refreshToken)
         }
         if (idToken != null) {
-            tokenStorage.setIDToken(name, idToken)
+            sharedStorage.setIDToken(name, idToken)
         }
         if (deviceSecret != null) {
             tokenStorage.setRefreshToken(name, deviceSecret)
@@ -781,8 +782,8 @@ internal class AuthgearCore(
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
         tokenStorage.deleteRefreshToken(name)
-        tokenStorage.deleteIDToken(name)
-        tokenStorage.deleteDeviceSecret(name)
+        sharedStorage.deleteIDToken(name)
+        sharedStorage.deleteDeviceSecret(name)
         storage.deleteApp2AppDeviceKeyId(name)
         synchronized(this) {
             accessToken = null
@@ -1232,9 +1233,9 @@ internal class AuthgearCore(
         if (sessionState != SessionState.AUTHENTICATED) {
             throw UnauthenticatedUserException()
         }
-        var idToken = tokenStorage.getIDToken(name)
+        var idToken = sharedStorage.getIDToken(name)
             ?: throw NotAllowedException("id_token not found. isAppInitiatedSSOToWebEnabled must be true when the user was authenticated.")
-        val deviceSecret = tokenStorage.getDeviceSecret(name)
+        val deviceSecret = sharedStorage.getDeviceSecret(name)
             ?: throw NotAllowedException("device_secret not found. isAppInitiatedSSOToWebEnabled must be true when the user was authenticated.")
         try {
             val tokenExchangeResult = oauthRepo.oidcTokenRequest(
@@ -1257,7 +1258,7 @@ internal class AuthgearCore(
                 throw RuntimeException("unexpected: access_token is not returned");
             }
             if (newDeviceSecret != null) {
-                this.tokenStorage.setDeviceSecret(
+                this.sharedStorage.setDeviceSecret(
                     this.name,
                     newDeviceSecret
                 );
@@ -1265,7 +1266,7 @@ internal class AuthgearCore(
             if (newIDToken != null) {
                 this.idToken = newIDToken
                 idToken = newIDToken
-                this.tokenStorage.setIDToken(
+                this.sharedStorage.setIDToken(
                     this.name,
                     newIDToken
                 );
