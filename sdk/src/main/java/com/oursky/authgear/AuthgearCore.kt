@@ -1168,7 +1168,10 @@ internal class AuthgearCore(
                         grantType = com.oursky.authgear.GrantType.BIOMETRIC,
                         clientId = clientId,
                         xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                        jwt = jwt
+                        jwt = jwt,
+                        scope = AuthenticateOptions.getScopes(
+                            isAppInitiatedSSOToWebEnabled = isAppInitiatedSSOToWebEnabled
+                        )
                     )
                 )
                 val userInfo = oauthRepo.oidcUserInfoRequest(

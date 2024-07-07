@@ -49,6 +49,9 @@ internal fun ReauthenticateOptions.toRequest(idTokenHint: String, isSsoEnabled: 
     return OidcAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
+        // offline_access is not needed because we don't want a new refresh token to be generated
+        // device_sso and app-initiated-sso-to-web is also not needed,
+        // because no new session should be generated so the scopes are not important.
         scope = listOf("openid", "https://authgear.com/scopes/full-access"),
         isSsoEnabled = isSsoEnabled,
         state = this.state,
