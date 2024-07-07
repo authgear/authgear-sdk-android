@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.security.keystore.KeyPermanentlyInvalidatedException
-import android.util.Base64
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -1234,9 +1233,9 @@ internal class AuthgearCore(
             throw UnauthenticatedUserException()
         }
         var idToken = sharedStorage.getIDToken(name)
-            ?: throw NotAllowedException("id_token not found. isAppInitiatedSSOToWebEnabled must be true when the user was authenticated.")
+            ?: throw AppInitiatedSSOToWebNotAllowedException.IDTokenNotFoundException()
         val deviceSecret = sharedStorage.getDeviceSecret(name)
-            ?: throw NotAllowedException("device_secret not found. isAppInitiatedSSOToWebEnabled must be true when the user was authenticated.")
+            ?: throw AppInitiatedSSOToWebNotAllowedException.DeviceSecretNotFoundException()
         try {
             val tokenExchangeResult = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
@@ -1285,7 +1284,7 @@ internal class AuthgearCore(
             )
         } catch (e: OAuthException) {
             if (e.error == "insufficient_scope") {
-                throw NotAllowedException("insufficient scope")
+                throw AppInitiatedSSOToWebNotAllowedException.InsufficientScopeException()
             }
             throw e
         }
