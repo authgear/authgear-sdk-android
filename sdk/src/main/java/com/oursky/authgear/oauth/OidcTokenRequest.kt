@@ -1,7 +1,10 @@
 package com.oursky.authgear.oauth
 
+import com.oursky.authgear.ActorTokenType
 import com.oursky.authgear.GrantType
+import com.oursky.authgear.RequestedTokenType
 import com.oursky.authgear.SettingsAction
+import com.oursky.authgear.SubjectTokenType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -33,5 +36,17 @@ internal data class OidcTokenRequest(
     @SerialName("x_settings_action")
     val settingsAction: SettingsAction? = null,
     @SerialName("device_secret")
-    val deviceSecret: String? = null
+    val deviceSecret: String? = null,
+    @SerialName("requested_token_type")
+    val requestedTokenType: RequestedTokenType? = null,
+    @SerialName("audience")
+    val audience: String? = null,
+    @SerialName("subject_token_type")
+    val subjectTokenType: SubjectTokenType? = null,
+    @SerialName("subject_token")
+    val subjectToken: String? = null,
+    @SerialName("actor_token_type")
+    val actorTokenType: ActorTokenType? = null,
+    @SerialName("actor_token")
+    val actorToken: String? = null
 )

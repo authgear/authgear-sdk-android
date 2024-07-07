@@ -33,6 +33,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import java.lang.RuntimeException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
@@ -199,6 +200,12 @@ internal class AuthgearCore(
             return Date(authTimeValue * 1000)
         }
 
+    private fun requireIsAppInitiatedSSOToWebEnabled() {
+        require(isAppInitiatedSSOToWebEnabled) {
+            "isAppInitiatedSSOToWebEnabled must be set to true"
+        }
+    }
+
     private fun requireIsInitialized() {
         require(isInitialized) {
             "Authgear is not configured. Did you forget to call configure?"
@@ -279,7 +286,7 @@ internal class AuthgearCore(
     ): AuthenticationRequest {
         requireIsInitialized()
         val request = options.toRequest(this.isSsoEnabled, this.isAppInitiatedSSOToWebEnabled)
-        val authorizeUri = authorizeEndpoint(request, verifier)
+        val authorizeUri = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }
 
@@ -320,7 +327,7 @@ internal class AuthgearCore(
         val idTokenHint = this.idToken ?: throw AuthgearException("Call refreshIDToken first")
 
         val request = options.toRequest(action = action, idTokenHint = idTokenHint, loginHint = loginHint)
-        val authorizeUri = authorizeEndpoint(request, verifier)
+        val authorizeUri = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }
 
@@ -343,7 +350,7 @@ internal class AuthgearCore(
         requireIsInitialized()
         val idTokenHint = this.idToken ?: throw AuthgearException("Call refreshIDToken first")
         val request = options.toRequest(idTokenHint, this.isSsoEnabled)
-        val authorizeUrl = authorizeEndpoint(request, verifier)
+        val authorizeUrl = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUrl, request.redirectUri, verifier)
     }
 
@@ -447,6 +454,7 @@ internal class AuthgearCore(
         }"
 
         return authorizeEndpoint(
+            this.clientId,
             OidcAuthenticationRequest(
                 redirectUri = redirectUri,
                 responseType = "none",
@@ -537,6 +545,7 @@ internal class AuthgearCore(
         val codeVerifier = this.setupVerifier()
 
         val authorizeUrl = authorizeEndpoint(
+            this.clientId,
             OidcAuthenticationRequest(
                 redirectUri = options.redirectUri,
                 responseType = "code",
@@ -634,9 +643,13 @@ internal class AuthgearCore(
         }
     }
 
-    private fun authorizeEndpoint(request: OidcAuthenticationRequest, codeVerifier: Verifier?): Uri {
+    private fun authorizeEndpoint(
+        clientID: String,
+        request: OidcAuthenticationRequest,
+        codeVerifier: Verifier?
+    ): Uri {
         val config = oauthRepo.getOidcConfiguration()
-        val query = request.toQuery(this.clientId, codeVerifier)
+        val query = request.toQuery(clientID, codeVerifier)
         return Uri.parse(config.authorizationEndpoint).buildUpon().let {
             it.encodedQuery(query.toQueryParameter())
         }.build()
@@ -1209,5 +1222,71 @@ internal class AuthgearCore(
     suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
         requireMinimumApp2AppAPILevel()
         return app2app.rejectApp2AppAuthenticationRequest(request, reason)
+    }
+
+    suspend fun makeAppInitiatedSSOToWebURL(
+        options: AppInitiatedSSOToWebOptions
+    ): Uri {
+        requireIsInitialized()
+        requireIsAppInitiatedSSOToWebEnabled()
+        if (sessionState != SessionState.AUTHENTICATED) {
+            throw UnauthenticatedUserException()
+        }
+        var idToken = tokenStorage.getIDToken(name)
+            ?: throw NotAllowedException("id_token not found. isAppInitiatedSSOToWebEnabled must be true when the user was authenticated.")
+        val deviceSecret = tokenStorage.getDeviceSecret(name)
+            ?: throw NotAllowedException("device_secret not found. isAppInitiatedSSOToWebEnabled must be true when the user was authenticated.")
+        try {
+            val tokenExchangeResult = oauthRepo.oidcTokenRequest(
+                OidcTokenRequest(
+                    grantType = GrantType.TOKEN_EXCHANGE,
+                    clientId = options.clientID,
+                    requestedTokenType = RequestedTokenType.APP_INITIATED_SSO_TO_WEB_TOKEN,
+                    audience = Uri.parse(authgearEndpoint).getOrigin()!!,
+                    subjectTokenType = SubjectTokenType.ID_TOKEN,
+                    subjectToken = idToken,
+                    actorTokenType = ActorTokenType.DEVICE_SECRET,
+                    actorToken = deviceSecret
+                )
+            )
+            // Here access_token is app-initiated-sso-to-web-token
+            val appInitiatedSSOToWebToken = tokenExchangeResult.accessToken;
+            val newDeviceSecret = tokenExchangeResult.deviceSecret;
+            val newIDToken = tokenExchangeResult.idToken;
+            if (appInitiatedSSOToWebToken == null) {
+                throw RuntimeException("unexpected: access_token is not returned");
+            }
+            if (newDeviceSecret != null) {
+                this.tokenStorage.setDeviceSecret(
+                    this.name,
+                    newDeviceSecret
+                );
+            }
+            if (newIDToken != null) {
+                this.idToken = newIDToken
+                idToken = newIDToken
+                this.tokenStorage.setIDToken(
+                    this.name,
+                    newIDToken
+                );
+            }
+            return authorizeEndpoint(
+                clientID = options.clientID,
+                request = OidcAuthenticationRequest(
+                    responseType = "urn:authgear:params:oauth:response-type:app_initiated_sso_to_web token",
+                    responseMode = "cookie",
+                    redirectUri = options.redirectURI,
+                    xAppInitiatedSSOToWebToken = appInitiatedSSOToWebToken,
+                    idTokenHint = idToken,
+                    prompt = listOf(PromptOption.NONE)
+                ),
+                codeVerifier = null
+            )
+        } catch (e: OAuthException) {
+            if (e.error == "insufficient_scope") {
+                throw NotAllowedException("insufficient scope")
+            }
+            throw e
+        }
     }
 }

@@ -67,6 +67,12 @@ internal class OAuthRepoHttp : OAuthRepo {
         request.codeChallenge?.let { body["code_challenge"] = it }
         request.codeChallengeMethod?.let { body["code_challenge_method"] = it }
         request.deviceSecret?.let { body["device_secret"] = it }
+        request.requestedTokenType?.let { body["requested_token_type"] = it.raw }
+        request.audience?.let { body["audience"] = it }
+        request.subjectTokenType?.let { body["subject_token_type"] = it.raw }
+        request.subjectToken?.let { body["subject_token"] = it }
+        request.actorTokenType?.let { body["actor_token_type"] = it.raw }
+        request.actorToken?.let { body["actor_token"] = it }
         val headers = mutableMapOf(
             "content-type" to "application/x-www-form-urlencoded"
         )

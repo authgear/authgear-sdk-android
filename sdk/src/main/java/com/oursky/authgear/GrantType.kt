@@ -18,7 +18,8 @@ enum class GrantType(val raw: String) {
     BIOMETRIC("urn:authgear:params:oauth:grant-type:biometric-request"),
     ID_TOKEN("urn:authgear:params:oauth:grant-type:id-token"),
     APP2APP("urn:authgear:params:oauth:grant-type:app2app-request"),
-    SETTINGS_ACTION("urn:authgear:params:oauth:grant-type:settings-action")
+    SETTINGS_ACTION("urn:authgear:params:oauth:grant-type:settings-action"),
+    TOKEN_EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange")
 }
 
 @Serializer(forClass = GrantType::class)

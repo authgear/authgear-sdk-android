@@ -810,4 +810,32 @@ constructor(
             }
         }
     }
+
+    /**
+     * Share the current authenticated session to a web browser.
+     * `isAppInitiatedSSOToWebEnabled` must be set to true to use this method.
+     * @param options The options.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    fun makeAppInitiatedSSOToWebURL(
+        options: AppInitiatedSSOToWebOptions,
+        listener: OnMakeAppInitiatedSSOToWebURLListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val url = core.makeAppInitiatedSSOToWebURL(options)
+                handler.post {
+                    listener.onSuccess(url)
+                }
+            } catch (e: Throwable) {
+                handler.post {
+                    listener.onFailed(e)
+                }
+            }
+        }
+    }
 }

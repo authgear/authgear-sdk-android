@@ -150,6 +150,13 @@ suspend fun Authgear.rejectApp2AppAuthenticationRequest(request: App2AppAuthenti
 }
 
 /**
+ * @see [Authgear.makeAppInitiatedSSOToWebURL]
+ */
+suspend fun Authgear.makeAppInitiatedSSOToWebURL(options: AppInitiatedSSOToWebOptions): Uri {
+    return core.makeAppInitiatedSSOToWebURL(options)
+}
+
+/**
  * @see [Authgear.generateUrl].
  */
 @ExperimentalAuthgearApi
