@@ -61,7 +61,7 @@ internal class AuthgearCore(
     private val tokenStorage: TokenStorage,
     private val uiImplementation: UIImplementation,
     private val storage: ContainerStorage,
-    private val sharedStorage: SharedStorage,
+    private val sharedStorage: InterAppSharedStorage,
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
     private val assetLinkRepo: AssetLinkRepo,

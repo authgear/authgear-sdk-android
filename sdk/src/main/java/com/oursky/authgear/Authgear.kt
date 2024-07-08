@@ -49,7 +49,7 @@ constructor(
             tokenStorage,
             uiImplementation,
             PersistentContainerStorage(application),
-            PersistentSharedStorage(application),
+            PersistentInterAppSharedStorage(application),
             OAuthRepoHttp(),
             KeyRepoKeystore(),
             AssetLinkRepoHttp(),
