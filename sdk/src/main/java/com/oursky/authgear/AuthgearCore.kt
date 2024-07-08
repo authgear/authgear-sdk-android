@@ -483,7 +483,11 @@ internal class AuthgearCore(
                     }
                 }
             }
-            application.registerReceiver(br, intentFilter)
+            if (Build.VERSION.SDK_INT >= 33) {
+                application.registerReceiver(br, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                application.registerReceiver(br, intentFilter)
+            }
             application.startActivity(
                 WebViewActivity.createIntent(application, action, authorizeUrl)
             )

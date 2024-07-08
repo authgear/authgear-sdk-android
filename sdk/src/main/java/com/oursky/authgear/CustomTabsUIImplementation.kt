@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -54,7 +55,11 @@ class CustomTabsUIImplementation : UIImplementation {
                         }
                     }
                 }
-            context.registerReceiver(br, intentFilter)
+            if (Build.VERSION.SDK_INT >= 33) {
+                context.registerReceiver(br, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                context.registerReceiver(br, intentFilter)
+            }
             context.startActivity(
                 OAuthActivity.createAuthorizationIntent(
                     context,
