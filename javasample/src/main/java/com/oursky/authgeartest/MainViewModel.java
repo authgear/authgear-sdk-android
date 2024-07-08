@@ -18,6 +18,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.oursky.authgear.AppInitiatedSSOToWebOptions;
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthenticateOptions;
@@ -34,12 +35,15 @@ import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnHandleApp2AppAuthenticationRequestListener;
 import com.oursky.authgear.OnLogoutListener;
+import com.oursky.authgear.OnMakeAppInitiatedSSOToWebURLListener;
+import com.oursky.authgear.OnOpenAuthorizationURLListener;
 import com.oursky.authgear.OnOpenSettingsActionListener;
 import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.OnReauthenticateListener;
 import com.oursky.authgear.OnRefreshIDTokenListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
+import com.oursky.authgear.OpenAuthorizationURLOptions;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.PromoteOptions;
@@ -74,12 +78,15 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mAuthenticationiFlowGroup = new MutableLiveData<>("");
+    final private MutableLiveData<String> mAppInitiatedSSOToWebClientID = new MutableLiveData<>("");
+    final private MutableLiveData<String> mAppInitiatedSSOToWebRedirectURI = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
 
     final private MutableLiveData<Boolean> mUseWebKitWebView = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsSsoEnabled = new MutableLiveData<>(false);
+    final private MutableLiveData<Boolean> mIsAppInitiatedSSOToWebEnabled = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
@@ -101,7 +108,10 @@ public class MainViewModel extends AndroidViewModel {
             String storedAuthenticationFlowGroup = preferences.getString("authenticationFlowGroup", "");
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
+            String storedAppInitiatedSSOToWebClientID = preferences.getString("appInitiatedSSOToWebClientID", "");
+            String storedAppInitiatedSSOToWebRedirectURI = preferences.getString("appInitiatedSSOToWebRedirectURI", "");
             Boolean storedIsSsoEnabled = preferences.getBoolean("isSsoEnabled", false);
+            Boolean storedIsAppInitiatedSSOToWebEnabled= preferences.getBoolean("isAppInitiatedSSOToWebEnabled", false);
             Boolean storedUseWebKitWebView = preferences.getBoolean("useWebKitWebView", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
@@ -110,6 +120,9 @@ public class MainViewModel extends AndroidViewModel {
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
             mIsSsoEnabled.setValue(storedIsSsoEnabled);
+            mIsAppInitiatedSSOToWebEnabled.setValue(storedIsAppInitiatedSSOToWebEnabled);
+            mAppInitiatedSSOToWebClientID.setValue(storedAppInitiatedSSOToWebClientID);
+            mAppInitiatedSSOToWebRedirectURI.setValue(storedAppInitiatedSSOToWebRedirectURI);
             mUseWebKitWebView.setValue(storedUseWebKitWebView);
         }
     }
@@ -178,6 +191,17 @@ public class MainViewModel extends AndroidViewModel {
         return mApp2AppEndpoint;
     }
 
+    public LiveData<String> appInitiatedSSOToWebRedirectURI() {
+        return mAppInitiatedSSOToWebRedirectURI;
+    }
+    public LiveData<String> appInitiatedSSOToWebClientID() {
+        return mAppInitiatedSSOToWebClientID;
+    }
+    public LiveData<Boolean> isAppInitiatedSSOToWebEnabled() {
+        return mIsAppInitiatedSSOToWebEnabled;
+    }
+
+
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
     public LiveData<Boolean> useWebKitWebView() { return mUseWebKitWebView; }
@@ -207,7 +231,15 @@ public class MainViewModel extends AndroidViewModel {
     }
     public LiveData<ConfirmationViewModel> app2appConfirmation() { return mApp2AppConfirmation; }
 
-    public void configure(String clientID, String endpoint, Boolean isSsoEnabled, Boolean useWebKitWebView, String app2appEndpoint) {
+    public void configure(
+            String clientID,
+            String endpoint,
+            Boolean isSsoEnabled,
+            Boolean useWebKitWebView,
+            String app2appEndpoint,
+            Boolean isAppInitiatedSSOToWebEnabled,
+            String appInitiatedSSOToWebClientID,
+            String appInitiatedSSOToWebRedirectURI) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
@@ -222,6 +254,9 @@ public class MainViewModel extends AndroidViewModel {
                 .putString("endpoint", endpoint)
                 .putString("app2appendpoint", app2appEndpoint)
                 .putBoolean("isSsoEnabled", isSsoEnabled)
+                .putBoolean("isAppInitiatedSSOToWebEnabled", isAppInitiatedSSOToWebEnabled)
+                .putString("appInitiatedSSOToWebClientID", appInitiatedSSOToWebClientID)
+                .putString("appInitiatedSSOToWebRedirectURI", appInitiatedSSOToWebRedirectURI)
                 .putBoolean("useWebKitWebView", useWebKitWebView)
                 .apply();
         Boolean isApp2AppEnabled = !app2appEndpoint.isEmpty();
@@ -248,7 +283,7 @@ public class MainViewModel extends AndroidViewModel {
                 tokenStorage,
                 uiImplementation,
                 isSsoEnabled,
-                false,
+                isAppInitiatedSSOToWebEnabled,
                 null,
                 app2appOptions
         );
@@ -763,5 +798,110 @@ public class MainViewModel extends AndroidViewModel {
             });
             builder.create().show();
         }
+    }
+
+    public void appInitiatedSSOToWeb(FragmentActivity activity) {
+        boolean shouldUseAnotherBrowser = !mAppInitiatedSSOToWebRedirectURI.getValue().isEmpty();
+        String targetRedirectURI = MainApplication.AUTHGEAR_REDIRECT_URI;
+        String targetClientID = mClientID.getValue();
+        if (!mAppInitiatedSSOToWebRedirectURI.getValue().isEmpty()) {
+            targetRedirectURI = mAppInitiatedSSOToWebRedirectURI.getValue();
+        }
+        if (!mAppInitiatedSSOToWebClientID.getValue().isEmpty()) {
+            targetClientID = mAppInitiatedSSOToWebClientID.getValue();
+        }
+        mIsLoading.setValue(true);
+        AppInitiatedSSOToWebOptions options = new AppInitiatedSSOToWebOptions(
+                targetClientID,
+                targetRedirectURI,
+                null
+        );
+        String finalTargetClientID = targetClientID;
+        mAuthgear.makeAppInitiatedSSOToWebURL(options, new OnMakeAppInitiatedSSOToWebURLListener() {
+            @Override
+            public void onSuccess(@NonNull Uri uri) {
+                mIsLoading.setValue(false);
+                UIImplementation uiImpl = new CustomTabsUIImplementation();
+                if (!shouldUseAnotherBrowser) {
+                    uiImpl.openAuthorizationURL(
+                            activity,
+                            new OpenAuthorizationURLOptions(
+                                    uri,
+                                    Uri.parse(MainApplication.AUTHGEAR_REDIRECT_URI)
+                            ),
+                            new OnOpenAuthorizationURLListener() {
+                                @Override
+                                public void onSuccess(@NonNull Uri url) {
+                                    Authgear newContainer = new Authgear(
+                                            getApplication(),
+                                            finalTargetClientID,
+                                            mEndpoint.getValue(),
+                                            new TransientTokenStorage(),
+                                            uiImpl,
+                                            true,
+                                            false,
+                                            "appInitiatedSSOToWeb"
+                                    );
+                                    newContainer.configure(new OnConfigureListener() {
+                                        @Override
+                                        public void onConfigured() {
+                                            newContainer.authenticate(new AuthenticateOptions(
+                                                    MainApplication.AUTHGEAR_REDIRECT_URI
+                                            ), new OnAuthenticateListener() {
+                                                @Override
+                                                public void onAuthenticated(@NonNull UserInfo userInfo) {
+                                                    promptAppInitiatedSSOToWebSuccessAlert(activity, userInfo);
+                                                }
+
+                                                @Override
+                                                public void onAuthenticationFailed(@NonNull Throwable throwable) {
+                                                    // Ignore
+                                                }
+                                            });
+                                        }
+
+                                        @Override
+                                        public void onConfigurationFailed(@NonNull Throwable throwable) {}
+                                    });
+                                }
+
+                                @Override
+                                public void onFailed(@NonNull Throwable e) {
+                                    setError(e);
+                                }
+                            }
+                    );
+                } else {
+                    uiImpl.openAuthorizationURL(
+                            activity,
+                            new OpenAuthorizationURLOptions(
+                                    uri,
+                                    Uri.parse(MainApplication.AUTHGEAR_REDIRECT_URI)
+                            ),
+                            new OnOpenAuthorizationURLListener() {
+                                @Override
+                                public void onSuccess(@NonNull Uri url) {}
+                                @Override
+                                public void onFailed(@NonNull Throwable throwable) {}
+                            }
+                    );
+                }
+            }
+
+            @Override
+            public void onFailed(@NonNull Throwable e) {
+                setError(e);
+                mIsLoading.setValue(false);
+            }
+        });
+    }
+
+    private void promptAppInitiatedSSOToWebSuccessAlert(Context context, UserInfo userInfo) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("AppInitiatedSSOToWeb");
+        builder.setMessage("Successfully logged in");
+        builder.setPositiveButton("OK", (dialogInterface, i) -> {
+        });
+        builder.create().show();
     }
 }
