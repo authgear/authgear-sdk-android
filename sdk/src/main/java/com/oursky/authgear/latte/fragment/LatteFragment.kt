@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -306,7 +307,11 @@ internal class LatteFragment() : Fragment() {
         constructWebViewIfNeeded(ctx, webViewStateBundle)
         removeWebViewFromParent(webView)
         val intentFilter = IntentFilter(Latte.BroadcastType.RESET_PASSWORD_COMPLETED.action)
-        ctx.registerReceiver(broadcastReceiver, intentFilter)
+        if (Build.VERSION.SDK_INT >= 33) {
+            ctx.registerReceiver(broadcastReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            ctx.registerReceiver(broadcastReceiver, intentFilter)
+        }
 
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
             addView(webView)
@@ -375,7 +380,11 @@ internal class LatteFragment() : Fragment() {
             }
         }
         handle = ListenHandle(ctx, br)
-        ctx.registerReceiver(br, intentFilter)
+        if (Build.VERSION.SDK_INT >= 33) {
+            ctx.registerReceiver(br, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            ctx.registerReceiver(br, intentFilter)
+        }
         return handle
     }
 
