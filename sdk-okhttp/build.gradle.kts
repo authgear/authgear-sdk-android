@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.oursky.authgear.okhttp"
-    compileSdk = 32
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 21
