@@ -1281,7 +1281,8 @@ internal class AuthgearCore(
                     redirectUri = options.redirectURI,
                     xAppInitiatedSSOToWebToken = appInitiatedSSOToWebToken,
                     idTokenHint = idToken,
-                    prompt = listOf(PromptOption.NONE)
+                    prompt = listOf(PromptOption.NONE),
+                    state = options.state
                 ),
                 codeVerifier = null
             )
