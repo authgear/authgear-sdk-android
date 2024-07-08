@@ -12,31 +12,23 @@ on:
 
 jobs:
   test:
-    runs-on: macos-12
+    runs-on: macos-13
     steps:
-    # The default Java on macos-12 is 8, we need 17
-    # https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md#java
-    - name: Set java version
-      run: |
-        echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+    # The default Java on macos-13 is 17.
     - uses: actions/checkout@v3
     - name: Build sdk
       run: ./gradlew sdk:assembleRelease
     - name: Build sdk-okhttp
       run: ./gradlew sdk-okhttp:assembleRelease
   app:
-    runs-on: macos-12
+    runs-on: macos-13
     needs: ["test"]
     if: github.ref == 'refs/heads/2023C01'
     env:
       # The version depends on the Android Gradle Plugin version in /build.gradle.kts
-      BUILD_TOOLS_VERSION: "33.0.1"
+      BUILD_TOOLS_VERSION: "34.0.0"
     steps:
-    # The default Java on macos-12 is 8, we need 17
-    # https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md#java
-    - name: Set java version
-      run: |
-        echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+    # The default Java on macos-13 is 17.
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
       with:
