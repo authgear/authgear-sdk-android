@@ -1,7 +1,7 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application") version "8.1.2"
+    id("com.android.application")
 }
 
 val localProperties = Properties()
@@ -22,6 +22,7 @@ android {
     }
 
     defaultConfig {
+        multiDexEnabled = true
         applicationId = "com.authgear.exampleapp.android"
         // minSdk is set to 23 so that we do not need version check to use biometric and app2app.
         minSdk = 23
@@ -46,12 +47,14 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
     implementation(project(mapOf("path" to ":sdk")))
     implementation("androidx.appcompat:appcompat:1.2.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel:2.2.0")
