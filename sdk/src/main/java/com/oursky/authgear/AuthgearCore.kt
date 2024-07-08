@@ -775,7 +775,7 @@ internal class AuthgearCore(
             sharedStorage.setIDToken(name, idToken)
         }
         if (deviceSecret != null) {
-            tokenStorage.setRefreshToken(name, deviceSecret)
+            sharedStorage.setDeviceSecret(name, deviceSecret)
         }
     }
 
