@@ -2,6 +2,7 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization")
+    id("maven-publish")
 }
 
 android {
@@ -59,4 +60,18 @@ dependencies {
     testImplementation("junit:junit:4.12")
     androidTestImplementation("androidx.test.ext:junit:1.1.2")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = findProperty("group") as String
+            artifactId = "authgear-sdk-android"
+            version = findProperty("version") as String
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
