@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -194,6 +195,7 @@ internal class LatteFragment() : Fragment() {
     private fun broadcastOnOpenEmailClientIntent() {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
+        broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_EMAIL_CLIENT.toString())
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
@@ -201,6 +203,7 @@ internal class LatteFragment() : Fragment() {
     private fun broadcastOnOpenSMSClientIntent() {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
+        broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_SMS_CLIENT.toString())
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
@@ -208,6 +211,7 @@ internal class LatteFragment() : Fragment() {
     private fun broadcastOnReauthWithBiometricIntent() {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
+        broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.REAUTH_WITH_BIOMETRIC.toString())
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
@@ -215,6 +219,7 @@ internal class LatteFragment() : Fragment() {
     private fun broadcastOnResetPasswordCompletedIntent() {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
+        broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.RESET_PASSWORD_COMPLETED.toString())
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
@@ -222,6 +227,7 @@ internal class LatteFragment() : Fragment() {
     private fun broadcastTrackingIntent(event: LatteTrackingEvent) {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
+        broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.TRACKING.toString())
         broadcastIntent.putExtra(INTENT_KEY_EVENT, Json.encodeToString(event))
         ctx.sendOrderedBroadcast(broadcastIntent, null)
@@ -230,6 +236,7 @@ internal class LatteFragment() : Fragment() {
     private fun broadcastCompleteIntent(result: Result<WebViewResult>) {
         val ctx = context ?: return
         val broadcastIntent = Intent(latteID)
+        broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.COMPLETE.toString())
         val latteResult: LatteResult = try {
             val webViewResult = result.getOrThrow()
@@ -306,7 +313,11 @@ internal class LatteFragment() : Fragment() {
         constructWebViewIfNeeded(ctx, webViewStateBundle)
         removeWebViewFromParent(webView)
         val intentFilter = IntentFilter(Latte.BroadcastType.RESET_PASSWORD_COMPLETED.action)
-        ctx.registerReceiver(broadcastReceiver, intentFilter)
+        if (Build.VERSION.SDK_INT >= 33) {
+            ctx.registerReceiver(broadcastReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            ctx.registerReceiver(broadcastReceiver, intentFilter)
+        }
 
         return FrameLayout(requireContext(), null, 0, R.style.LatteFragmentTheme).apply {
             addView(webView)
@@ -375,7 +386,11 @@ internal class LatteFragment() : Fragment() {
             }
         }
         handle = ListenHandle(ctx, br)
-        ctx.registerReceiver(br, intentFilter)
+        if (Build.VERSION.SDK_INT >= 33) {
+            ctx.registerReceiver(br, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            ctx.registerReceiver(br, intentFilter)
+        }
         return handle
     }
 

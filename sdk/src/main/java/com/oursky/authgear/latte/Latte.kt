@@ -240,6 +240,7 @@ class Latte(
         val listener = object : LatteFragmentListener<Uri> {
             override fun onResetPasswordCompleted(resumeWith: (Result<Uri>) -> Unit) {
                 val broadcastIntent = Intent(BroadcastType.RESET_PASSWORD_COMPLETED.action)
+                broadcastIntent.setPackage(authgear.core.application.applicationContext.packageName)
                 authgear.core.application.sendOrderedBroadcast(broadcastIntent, null)
             }
         }
