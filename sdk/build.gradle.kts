@@ -2,14 +2,18 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization")
+    id("maven-publish")
 }
 
 android {
     namespace = "com.oursky.authgear"
-    compileSdk = 32
+    compileSdk = 34
 
     defaultConfig {
-        minSdk = 21
+        multiDexEnabled = true
+        aarMetadata {
+            minCompileSdk = 21
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,4 +60,18 @@ dependencies {
     testImplementation("junit:junit:4.12")
     androidTestImplementation("androidx.test.ext:junit:1.1.2")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = findProperty("group") as String
+            artifactId = "authgear-sdk-android"
+            version = findProperty("version") as String
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }

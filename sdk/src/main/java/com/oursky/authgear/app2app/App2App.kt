@@ -117,7 +117,11 @@ internal class App2App(
                     k.resume(Uri.parse(resultUri))
                 }
             }
-            application.registerReceiver(br, intentFilter)
+            if (Build.VERSION.SDK_INT >= 33) {
+                application.registerReceiver(br, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                application.registerReceiver(br, intentFilter)
+            }
             application.startActivity(intent)
         }
     }

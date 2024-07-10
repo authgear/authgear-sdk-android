@@ -115,6 +115,7 @@ internal class WebViewActivity : AppCompatActivity() {
     private fun sendEndBroadcast() {
         this.intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.setPackage(this.applicationContext.packageName)
             broadcastIntent.putExtra(KEY_BROADCAST_TYPE, BroadcastType.END.name)
             this.sendBroadcast(broadcastIntent)
         }

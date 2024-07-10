@@ -309,6 +309,7 @@ class WebKitWebViewActivity: AppCompatActivity() {
 
         this.intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
             val broadcastIntent = Intent(broadcastAction)
+            broadcastIntent.setPackage(this.applicationContext.packageName)
             broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBroadcastType.REDIRECT_URL.name)
             if (this.result != null) {
                 broadcastIntent.putExtra(AuthgearCore.KEY_REDIRECT_URL, this.result.toString())
