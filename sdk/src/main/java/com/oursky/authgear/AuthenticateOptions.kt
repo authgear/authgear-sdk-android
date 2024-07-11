@@ -67,7 +67,7 @@ data class AuthenticateOptions @JvmOverloads constructor(
             val scopes = mutableListOf("openid", "offline_access", "https://authgear.com/scopes/full-access")
             if (isAppInitiatedSSOToWebEnabled) {
                 scopes.add("device_sso")
-                scopes.add("https://authgear.com/scopes/app-initiated-sso-to-web")
+                scopes.add("https://authgear.com/scopes/pre-authenticated-url")
             }
             return scopes
         }
