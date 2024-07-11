@@ -1243,7 +1243,7 @@ internal class AuthgearCore(
             val tokenExchangeResult = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
                     grantType = GrantType.TOKEN_EXCHANGE,
-                    clientId = options.clientID,
+                    clientId = options.webApplicationClientID,
                     requestedTokenType = RequestedTokenType.PRE_AUTHENTICATED_URL_TOKEN,
                     audience = Uri.parse(authgearEndpoint).getOrigin()!!,
                     subjectTokenType = SubjectTokenType.ID_TOKEN,
@@ -1274,11 +1274,11 @@ internal class AuthgearCore(
                 );
             }
             return authorizeEndpoint(
-                clientID = options.clientID,
+                clientID = options.webApplicationClientID,
                 request = OidcAuthenticationRequest(
                     responseType = "urn:authgear:params:oauth:response-type:pre-authenticated-url token",
                     responseMode = "cookie",
-                    redirectUri = options.redirectURI,
+                    redirectUri = options.webApplicationURI,
                     xPreAuthenticatedURLToken = preAuthenticatedURLToken,
                     idTokenHint = idToken,
                     prompt = listOf(PromptOption.NONE),

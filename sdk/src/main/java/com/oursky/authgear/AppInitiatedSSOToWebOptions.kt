@@ -2,13 +2,13 @@ package com.oursky.authgear
 
 data class PreAuthenticatedURLOptions @JvmOverloads constructor(
     /**
-     * The client ID of the new authenticated session in web.
+     * The client ID of the web application.
      */
-    var clientID: String,
+    var webApplicationClientID: String,
     /**
      * The URI the browser should go to after successfully obtained a authenticated session.
      */
-    var redirectURI: String,
+    var webApplicationURI: String,
     /**
      * Any string that will be passed to redirectURI by the `state` query parameter.
      */
