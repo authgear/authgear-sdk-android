@@ -150,10 +150,10 @@ suspend fun Authgear.rejectApp2AppAuthenticationRequest(request: App2AppAuthenti
 }
 
 /**
- * @see [Authgear.makeAppInitiatedSSOToWebURL]
+ * @see [Authgear.makePreAuthenticatedURL]
  */
-suspend fun Authgear.makeAppInitiatedSSOToWebURL(options: AppInitiatedSSOToWebOptions): Uri {
-    return core.makeAppInitiatedSSOToWebURL(options)
+suspend fun Authgear.makePreAuthenticatedURL(options: AppInitiatedSSOToWebOptions): Uri {
+    return core.makePreAuthenticatedURL(options)
 }
 
 /**

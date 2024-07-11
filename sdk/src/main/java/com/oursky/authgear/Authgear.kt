@@ -821,14 +821,14 @@ constructor(
      */
     @MainThread
     @JvmOverloads
-    fun makeAppInitiatedSSOToWebURL(
+    fun makePreAuthenticatedURL(
         options: AppInitiatedSSOToWebOptions,
         listener: OnMakeAppInitiatedSSOToWebURLListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {
             try {
-                val url = core.makeAppInitiatedSSOToWebURL(options)
+                val url = core.makePreAuthenticatedURL(options)
                 handler.post {
                     listener.onSuccess(url)
                 }

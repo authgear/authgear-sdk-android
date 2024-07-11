@@ -1227,7 +1227,7 @@ internal class AuthgearCore(
         return app2app.rejectApp2AppAuthenticationRequest(request, reason)
     }
 
-    suspend fun makeAppInitiatedSSOToWebURL(
+    suspend fun makePreAuthenticatedURL(
         options: AppInitiatedSSOToWebOptions
     ): Uri {
         requireIsInitialized()
