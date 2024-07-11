@@ -320,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
         boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
         boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
         boolean canReauthenticate = viewModel.canReauthenticate().getValue();
-        boolean isAppInititatedSSOToWebEnabled = viewModel.isPreAuthenticatedURLEnabled().getValue();
+        boolean isPreAuthenticatedURLEnabled = viewModel.isPreAuthenticatedURLEnabled().getValue();
         String app2appEndpoint = viewModel.app2appEndpoint().getValue();
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mConfigure.setEnabled(!isLoading);
@@ -333,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
         mEnableBiometric.setEnabled(!isLoading && isConfigured && isLoggedIn && !isBiometricEnabled);
         mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
-        mPreAuthenticatedURL.setEnabled(!isLoading && isConfigured && isLoggedIn && isAppInititatedSSOToWebEnabled);
+        mPreAuthenticatedURL.setEnabled(!isLoading && isConfigured && isLoggedIn && isPreAuthenticatedURLEnabled);
         mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mShowAuthTime.setEnabled(!isLoading && isConfigured && isLoggedIn);

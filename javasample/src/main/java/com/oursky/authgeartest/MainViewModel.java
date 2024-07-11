@@ -247,6 +247,7 @@ public class MainViewModel extends AndroidViewModel {
         mEndpoint.setValue(endpoint);
         mApp2AppEndpoint.setValue(app2appEndpoint);
         mIsSsoEnabled.setValue(isSsoEnabled);
+        mIsPreAuthenticatedURLEnabled.setValue(isPreAuthenticatedURLEnabled);
         mUseWebKitWebView.setValue(useWebKitWebView);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
