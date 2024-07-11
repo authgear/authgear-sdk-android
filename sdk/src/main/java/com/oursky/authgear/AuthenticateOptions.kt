@@ -63,9 +63,9 @@ data class AuthenticateOptions @JvmOverloads constructor(
     var authenticationFlowGroup: String? = null
 ) {
     companion object {
-        internal fun getScopes(isAppInitiatedSSOToWebEnabled: Boolean): List<String> {
+        internal fun getScopes(preAuthenticatedURLEnabled: Boolean): List<String> {
             val scopes = mutableListOf("openid", "offline_access", "https://authgear.com/scopes/full-access")
-            if (isAppInitiatedSSOToWebEnabled) {
+            if (preAuthenticatedURLEnabled) {
                 scopes.add("device_sso")
                 scopes.add("https://authgear.com/scopes/pre-authenticated-url")
             }
@@ -76,12 +76,12 @@ data class AuthenticateOptions @JvmOverloads constructor(
 
 internal fun AuthenticateOptions.toRequest(
     isSsoEnabled: Boolean,
-    isAppInitiatedSSOToWebEnabled: Boolean
+    preAuthenticatedURLEnabled: Boolean
 ): OidcAuthenticationRequest {
     return OidcAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
-        scope = AuthenticateOptions.getScopes(isAppInitiatedSSOToWebEnabled),
+        scope = AuthenticateOptions.getScopes(preAuthenticatedURLEnabled),
         isSsoEnabled = isSsoEnabled,
         state = this.state,
         xState = this.xState,

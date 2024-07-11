@@ -56,7 +56,7 @@ internal class AuthgearCore(
     val clientId: String,
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
-    private val isAppInitiatedSSOToWebEnabled: Boolean,
+    private val preAuthenticatedURLEnabled: Boolean,
     private val app2AppOptions: App2AppOptions,
     private val tokenStorage: TokenStorage,
     private val uiImplementation: UIImplementation,
@@ -201,8 +201,8 @@ internal class AuthgearCore(
         }
 
     private fun requireIsAppInitiatedSSOToWebEnabled() {
-        require(isAppInitiatedSSOToWebEnabled) {
-            "isAppInitiatedSSOToWebEnabled must be set to true"
+        require(preAuthenticatedURLEnabled) {
+            "preAuthenticatedURLEnabled must be set to true"
         }
     }
 
@@ -285,7 +285,7 @@ internal class AuthgearCore(
         verifier: Verifier = generateCodeVerifier()
     ): AuthenticationRequest {
         requireIsInitialized()
-        val request = options.toRequest(this.isSsoEnabled, this.isAppInitiatedSSOToWebEnabled)
+        val request = options.toRequest(this.isSsoEnabled, this.preAuthenticatedURLEnabled)
         val authorizeUri = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }
@@ -1170,7 +1170,7 @@ internal class AuthgearCore(
                         xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                         jwt = jwt,
                         scope = AuthenticateOptions.getScopes(
-                            isAppInitiatedSSOToWebEnabled = isAppInitiatedSSOToWebEnabled
+                            preAuthenticatedURLEnabled = preAuthenticatedURLEnabled
                         )
                     )
                 )

@@ -26,7 +26,7 @@ constructor(
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
     uiImplementation: UIImplementation = CustomTabsUIImplementation(),
     isSsoEnabled: Boolean = false,
-    isAppInitiatedSSOToWebEnabled: Boolean = false,
+    preAuthenticatedURLEnabled: Boolean = false,
     name: String? = null,
     app2AppOptions: App2AppOptions = App2AppOptions(isEnabled = false)
 ) {
@@ -44,7 +44,7 @@ constructor(
             clientId,
             authgearEndpoint,
             isSsoEnabled,
-            isAppInitiatedSSOToWebEnabled,
+            preAuthenticatedURLEnabled,
             app2AppOptions,
             tokenStorage,
             uiImplementation,
@@ -814,7 +814,7 @@ constructor(
 
     /**
      * Share the current authenticated session to a web browser.
-     * `isAppInitiatedSSOToWebEnabled` must be set to true to use this method.
+     * `preAuthenticatedURLEnabled` must be set to true to use this method.
      * @param options The options.
      * @param listener The listener.
      * @param handler The handler of the thread on which the listener is called.
