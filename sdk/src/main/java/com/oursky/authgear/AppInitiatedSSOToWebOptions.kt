@@ -1,6 +1,6 @@
 package com.oursky.authgear
 
-data class AppInitiatedSSOToWebOptions @JvmOverloads constructor(
+data class PreAuthenticatedURLOptions @JvmOverloads constructor(
     /**
      * The client ID of the new authenticated session in web.
      */

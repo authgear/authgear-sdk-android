@@ -822,8 +822,8 @@ constructor(
     @MainThread
     @JvmOverloads
     fun makePreAuthenticatedURL(
-        options: AppInitiatedSSOToWebOptions,
-        listener: OnMakeAppInitiatedSSOToWebURLListener,
+        options: PreAuthenticatedURLOptions,
+        listener: OnMakePreAuthenticatedURLListener,
         handler: Handler = Handler(Looper.getMainLooper())
     ) {
         scope.launch {

@@ -2,7 +2,7 @@ package com.oursky.authgear
 
 import android.net.Uri
 
-interface OnMakeAppInitiatedSSOToWebURLListener {
+interface OnMakePreAuthenticatedURLListener {
     fun onSuccess(uri: Uri)
     fun onFailed(throwable: Throwable)
 }

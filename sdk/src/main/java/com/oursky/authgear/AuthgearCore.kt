@@ -200,7 +200,7 @@ internal class AuthgearCore(
             return Date(authTimeValue * 1000)
         }
 
-    private fun requireIsAppInitiatedSSOToWebEnabled() {
+    private fun requireIsPreAuthenticatedURLEnabled() {
         require(preAuthenticatedURLEnabled) {
             "preAuthenticatedURLEnabled must be set to true"
         }
@@ -1228,23 +1228,23 @@ internal class AuthgearCore(
     }
 
     suspend fun makePreAuthenticatedURL(
-        options: AppInitiatedSSOToWebOptions
+        options: PreAuthenticatedURLOptions
     ): Uri {
         requireIsInitialized()
-        requireIsAppInitiatedSSOToWebEnabled()
+        requireIsPreAuthenticatedURLEnabled()
         if (sessionState != SessionState.AUTHENTICATED) {
             throw UnauthenticatedUserException()
         }
         var idToken = sharedStorage.getIDToken(name)
-            ?: throw AppInitiatedSSOToWebNotAllowedException.IDTokenNotFoundException()
+            ?: throw PreAuthenticatedURLNotAllowedException.IDTokenNotFoundException()
         val deviceSecret = sharedStorage.getDeviceSecret(name)
-            ?: throw AppInitiatedSSOToWebNotAllowedException.DeviceSecretNotFoundException()
+            ?: throw PreAuthenticatedURLNotAllowedException.DeviceSecretNotFoundException()
         try {
             val tokenExchangeResult = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
                     grantType = GrantType.TOKEN_EXCHANGE,
                     clientId = options.clientID,
-                    requestedTokenType = RequestedTokenType.APP_INITIATED_SSO_TO_WEB_TOKEN,
+                    requestedTokenType = RequestedTokenType.PRE_AUTHENTICATED_URL_TOKEN,
                     audience = Uri.parse(authgearEndpoint).getOrigin()!!,
                     subjectTokenType = SubjectTokenType.ID_TOKEN,
                     subjectToken = idToken,
@@ -1252,7 +1252,7 @@ internal class AuthgearCore(
                     actorToken = deviceSecret
                 )
             )
-            // Here access_token is app-initiated-sso-to-web-token
+            // Here access_token is pre-authenticated-url-token
             val preAuthenticatedURLToken = tokenExchangeResult.accessToken;
             val newDeviceSecret = tokenExchangeResult.deviceSecret;
             val newIDToken = tokenExchangeResult.idToken;
@@ -1276,7 +1276,7 @@ internal class AuthgearCore(
             return authorizeEndpoint(
                 clientID = options.clientID,
                 request = OidcAuthenticationRequest(
-                    responseType = "urn:authgear:params:oauth:response-type:app_initiated_sso_to_web token",
+                    responseType = "urn:authgear:params:oauth:response-type:pre-authenticated-url token",
                     responseMode = "cookie",
                     redirectUri = options.redirectURI,
                     xPreAuthenticatedURLToken = preAuthenticatedURLToken,
@@ -1288,7 +1288,7 @@ internal class AuthgearCore(
             )
         } catch (e: OAuthException) {
             if (e.error == "insufficient_scope") {
-                throw AppInitiatedSSOToWebNotAllowedException.InsufficientScopeException()
+                throw PreAuthenticatedURLNotAllowedException.InsufficientScopeException()
             }
             throw e
         }
