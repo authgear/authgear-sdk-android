@@ -1253,10 +1253,10 @@ internal class AuthgearCore(
                 )
             )
             // Here access_token is app-initiated-sso-to-web-token
-            val appInitiatedSSOToWebToken = tokenExchangeResult.accessToken;
+            val preAuthenticatedURLToken = tokenExchangeResult.accessToken;
             val newDeviceSecret = tokenExchangeResult.deviceSecret;
             val newIDToken = tokenExchangeResult.idToken;
-            if (appInitiatedSSOToWebToken == null) {
+            if (preAuthenticatedURLToken == null) {
                 throw RuntimeException("unexpected: access_token is not returned");
             }
             if (newDeviceSecret != null) {
@@ -1279,7 +1279,7 @@ internal class AuthgearCore(
                     responseType = "urn:authgear:params:oauth:response-type:app_initiated_sso_to_web token",
                     responseMode = "cookie",
                     redirectUri = options.redirectURI,
-                    xAppInitiatedSSOToWebToken = appInitiatedSSOToWebToken,
+                    xPreAuthenticatedURLToken = preAuthenticatedURLToken,
                     idTokenHint = idToken,
                     prompt = listOf(PromptOption.NONE),
                     state = options.state

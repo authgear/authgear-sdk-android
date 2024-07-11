@@ -23,7 +23,7 @@ internal data class OidcAuthenticationRequest constructor(
     var settingsAction: String? = null,
     var authenticationFlowGroup: String? = null,
     var responseMode: String? = null,
-    var xAppInitiatedSSOToWebToken: String? = null
+    var xPreAuthenticatedURLToken: String? = null
 )
 
 internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -91,8 +91,8 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
         query["response_mode"] = it
     }
 
-    this.xAppInitiatedSSOToWebToken?.let {
-        query["x_app_initiated_sso_to_web_token"] = it
+    this.xPreAuthenticatedURLToken?.let {
+        query["x_pre_authenticated_url_token"] = it
     }
 
     val isSsoEnabled = this.isSsoEnabled ?: false
