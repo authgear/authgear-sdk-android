@@ -62,10 +62,23 @@ internal fun JWTPayload.toJsonObject(): JsonObject {
     val m = mutableMapOf<String, JsonElement>()
     m["iat"] = JsonPrimitive(iat)
     m["exp"] = JsonPrimitive(exp)
-    m["challenge"] = JsonPrimitive(challenge)
-    m["action"] = JsonPrimitive(action)
-    if (deviceInfo != null) {
+    challenge?.let {
+        m["challenge"] = JsonPrimitive(challenge)
+    }
+    action?.let {
+        m["action"] = JsonPrimitive(action)
+    }
+    deviceInfo?.let {
         m["device_info"] = deviceInfo.toJsonObject()
+    }
+    jti?.let {
+        m["jti"] = JsonPrimitive(jti)
+    }
+    htu?.let {
+        m["htu"] = JsonPrimitive(htu)
+    }
+    htm?.let {
+        m["htm"] = JsonPrimitive(htm)
     }
     return JsonObject(m)
 }
