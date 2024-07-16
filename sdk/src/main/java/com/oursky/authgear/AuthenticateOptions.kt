@@ -76,7 +76,8 @@ data class AuthenticateOptions @JvmOverloads constructor(
 
 internal fun AuthenticateOptions.toRequest(
     isSsoEnabled: Boolean,
-    preAuthenticatedURLEnabled: Boolean
+    preAuthenticatedURLEnabled: Boolean,
+    dpopJKT: String?
 ): OidcAuthenticationRequest {
     return OidcAuthenticationRequest(
         redirectUri = this.redirectUri,
@@ -93,6 +94,7 @@ internal fun AuthenticateOptions.toRequest(
         colorScheme = this.colorScheme,
         wechatRedirectURI = this.wechatRedirectURI,
         page = this.page,
-        authenticationFlowGroup = this.authenticationFlowGroup
+        authenticationFlowGroup = this.authenticationFlowGroup,
+        dpopJKT = dpopJKT
     )
 }

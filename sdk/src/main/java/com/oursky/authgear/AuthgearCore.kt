@@ -286,7 +286,10 @@ internal class AuthgearCore(
         verifier: Verifier = generateCodeVerifier()
     ): AuthenticationRequest {
         requireIsInitialized()
-        val request = options.toRequest(this.isSsoEnabled, this.preAuthenticatedURLEnabled)
+        val request = options.toRequest(
+            this.isSsoEnabled,
+            this.preAuthenticatedURLEnabled,
+            dpopJKT = dPoPProvider.computeJKT())
         val authorizeUri = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }
