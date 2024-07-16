@@ -781,8 +781,6 @@ internal class AuthgearCore(
 
     private fun clearSession(changeReason: SessionStateChangeReason) {
         tokenStorage.deleteRefreshToken(name)
-        sharedStorage.deleteIDToken(name)
-        sharedStorage.deleteDeviceSecret(name)
         storage.deleteApp2AppDeviceKeyId(name)
         synchronized(this) {
             accessToken = null
