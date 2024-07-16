@@ -9,7 +9,8 @@ import java.time.Instant
 internal enum class JWTHeaderType(val value: String) {
     ANONYMOUS("vnd.authgear.anonymous-request"),
     BIOMETRIC("vnd.authgear.biometric-request"),
-    APP2APP("vnd.authgear.app2app-request")
+    APP2APP("vnd.authgear.app2app-request"),
+    DPOPJWT("dpop+jwt")
 }
 
 internal data class JWTHeader(
@@ -33,9 +34,12 @@ internal fun JWTHeader.toJsonObject(): JsonObject {
 internal data class JWTPayload(
     val iat: Long,
     val exp: Long,
-    val challenge: String,
-    val action: String,
-    val deviceInfo: DeviceInfoRoot?
+    val jti: String? = null,
+    val htm: String? = null,
+    val htu: String? = null,
+    val challenge: String? = null,
+    val action: String? = null,
+    val deviceInfo: DeviceInfoRoot? = null
 ) {
     constructor(now: Instant, challenge: String, action: String, deviceInfo: DeviceInfoRoot? = null) : this(
         iat = now.epochSecond,
@@ -43,6 +47,14 @@ internal data class JWTPayload(
         challenge = challenge,
         action = action,
         deviceInfo = deviceInfo
+    )
+
+    constructor(now: Instant, jti: String, htu: String, htm: String) : this(
+        iat = now.epochSecond,
+        exp = now.epochSecond + 60,
+        jti = jti,
+        htu = htu,
+        htm = htm
     )
 }
 

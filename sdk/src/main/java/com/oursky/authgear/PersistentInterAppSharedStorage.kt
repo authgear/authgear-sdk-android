@@ -16,6 +16,7 @@ internal class PersistentInterAppSharedStorage(val context: Context) : InterAppS
         private const val LOGTAG = "Authgear"
         private const val IDToken = "idToken"
         private const val DeviceSecret = "deviceSecret"
+        private const val DPoPKeyID = "dpopKeyId"
     }
 
     private val masterKey = MasterKey.Builder(context)
@@ -82,6 +83,18 @@ internal class PersistentInterAppSharedStorage(val context: Context) : InterAppS
 
     override fun deleteDeviceSecret(namespace: String) {
         deleteItem(namespace, DeviceSecret)
+    }
+
+    override fun setDPoPKeyId(namespace: String, keyId: String) {
+        setItem(namespace, DPoPKeyID, keyId)
+    }
+
+    override fun getDPoPKeyId(namespace: String): String? {
+        return getItem(namespace, DPoPKeyID)
+    }
+
+    override fun deleteDPoPKeyId(namespace: String) {
+        deleteItem(namespace, DPoPKeyID)
     }
 
     override fun onLogout(namespace: String) {
