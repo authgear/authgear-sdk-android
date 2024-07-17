@@ -465,6 +465,15 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
+                    android:id="@+id/deleteAccount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:text="Delete account"
+                    tools:ignore="HardcodedText" />
+
+                <Button
                     android:id="@+id/fetchUserInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

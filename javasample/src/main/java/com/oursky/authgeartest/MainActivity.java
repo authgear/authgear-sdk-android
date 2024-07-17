@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private View mAuthenticateBiometric;
     private View mOpenSettings;
     private View mChangePassword;
+    private View mDeleteAccount;
     private View mFetchUserInfo;
     private View mShowAuthTime;
     private View mLogout;
@@ -92,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
         mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
         mOpenSettings = findViewById(R.id.openSettings);
         mChangePassword = findViewById(R.id.changePassword);
+        mDeleteAccount = findViewById(R.id.deleteAccount);
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
@@ -149,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
         mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
         mChangePassword.setOnClickListener(view -> viewModel.openChangePassword());
+        mDeleteAccount.setOnClickListener(view -> viewModel.openDeleteAccount());
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
@@ -318,6 +321,8 @@ public class MainActivity extends AppCompatActivity {
         mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
         mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);
+        mChangePassword.setEnabled(!isLoading && isConfigured && isLoggedIn);
+        mDeleteAccount.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mShowAuthTime.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mLogout.setEnabled(!isLoading && isConfigured && isLoggedIn);
