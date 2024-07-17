@@ -715,6 +715,43 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
+    public void openDeleteAccount() {
+        mIsLoading.setValue(true);
+
+        mAuthgear.refreshIDToken(new OnRefreshIDTokenListener() {
+            @Override
+            public void onFinished() {
+                SettingsActionOptions options = new SettingsActionOptions(
+                        MainApplication.AUTHGEAR_REDIRECT_URI
+                );
+                options.setColorScheme(getColorScheme());
+                options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
+                mAuthgear.deleteAccount(options, new OnOpenSettingsActionListener() {
+                    @Override
+                    public void onFinished() {
+                        mIsLoading.setValue(false);
+                        Log.d(TAG, "deleteAccount finished");
+                    }
+
+                    @Override
+                    public void onFailed(Throwable throwable) {
+                        Log.d(TAG, throwable.toString());
+                        mIsLoading.setValue(false);
+                        setError(throwable);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailed(Throwable throwable) {
+                Log.d(TAG, throwable.toString());
+                mIsLoading.setValue(false);
+                setError(throwable);
+            }
+        });
+    }
+
+
     public void promoteAnonymousUser() {
         mIsLoading.setValue(true);
         PromoteOptions options = new PromoteOptions(MainApplication.AUTHGEAR_REDIRECT_URI);
