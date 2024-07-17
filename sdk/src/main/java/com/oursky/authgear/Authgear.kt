@@ -528,7 +528,7 @@ constructor(
                     SettingsAction.DELETE_ACCOUNT,
                     options
                 )
-                core.clearSessionState()
+                core.clearSession(SessionStateChangeReason.INVALID)
                 handler.post {
                     listener?.onFinished()
                 }
