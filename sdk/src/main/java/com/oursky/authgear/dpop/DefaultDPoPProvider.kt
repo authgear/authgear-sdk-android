@@ -6,12 +6,12 @@ import com.oursky.authgear.InterAppSharedStorage
 import com.oursky.authgear.JWTHeader
 import com.oursky.authgear.JWTHeaderType
 import com.oursky.authgear.JWTPayload
-import com.oursky.authgear.app2app.App2App
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.publicKeyToJWK
 import com.oursky.authgear.signJWT
 import com.oursky.authgear.toSHA256Thumbprint
 import java.security.KeyPair
+import java.security.Signature
 import java.time.Instant
 import java.util.UUID
 
@@ -39,7 +39,8 @@ internal class DefaultDPoPProvider(
             htm = htm,
             htu = htu
         )
-        val signature = App2App.makeSignature(keypair.private)
+        val signature = Signature.getInstance("SHA256withRSA")
+        signature.initSign(keypair.private)
         return signJWT(signature, header, payload)
     }
 
