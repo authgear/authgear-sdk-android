@@ -311,7 +311,6 @@ internal class LatteFragment() : Fragment() {
         val webViewStateBundle = savedInstanceState?.getBundle(KEY_WEBVIEW_STATE)
         val ctx = requireContext()
         constructWebViewIfNeeded(ctx, webViewStateBundle)
-        removeWebViewFromParent(webView)
         val intentFilter = IntentFilter(Latte.BroadcastType.RESET_PASSWORD_COMPLETED.action)
         if (Build.VERSION.SDK_INT >= 33) {
             ctx.registerReceiver(broadcastReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
