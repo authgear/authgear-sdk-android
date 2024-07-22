@@ -100,6 +100,7 @@ internal class PersistentInterAppSharedStorage(val context: Context) : InterAppS
     override fun onLogout(namespace: String) {
         deleteDeviceSecret(namespace)
         deleteIDToken(namespace)
+        deleteDPoPKeyId(namespace)
     }
 
     private fun handleBackupProblem(e: Exception, namespace: String): Boolean {
