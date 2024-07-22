@@ -18,6 +18,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.oursky.authgear.PreAuthenticatedURLNotAllowedException;
 import com.oursky.authgear.PreAuthenticatedURLOptions;
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
@@ -891,6 +892,9 @@ public class MainViewModel extends AndroidViewModel {
 
             @Override
             public void onFailed(@NonNull Throwable e) {
+                if (e instanceof PreAuthenticatedURLNotAllowedException) {
+                    Log.w(TAG, "pre authenticated url not allowed");
+                }
                 setError(e);
                 mIsLoading.setValue(false);
             }
