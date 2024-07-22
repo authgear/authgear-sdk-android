@@ -84,6 +84,11 @@ internal class PersistentInterAppSharedStorage(val context: Context) : InterAppS
         deleteItem(namespace, DeviceSecret)
     }
 
+    override fun onLogout(namespace: String) {
+        deleteDeviceSecret(namespace)
+        deleteIDToken(namespace)
+    }
+
     private fun handleBackupProblem(e: Exception, namespace: String): Boolean {
         // NOTE(backup): Explanation on the backup problem.
         // EncryptedSharedPreferences depends on a master key stored in AndroidKeyStore.

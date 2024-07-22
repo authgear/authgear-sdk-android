@@ -8,4 +8,6 @@ internal interface InterAppSharedStorage {
     fun setDeviceSecret(namespace: String, deviceSecret: String)
     fun getDeviceSecret(namespace: String): String?
     fun deleteDeviceSecret(namespace: String)
+
+    fun onLogout(namespace: String)
 }
