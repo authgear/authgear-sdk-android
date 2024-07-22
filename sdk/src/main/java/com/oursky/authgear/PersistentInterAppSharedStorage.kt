@@ -11,7 +11,7 @@ import java.io.File
 import java.io.IOException
 import java.security.GeneralSecurityException
 
-class PersistentInterAppSharedStorage(val context: Context) : InterAppSharedStorage {
+internal class PersistentInterAppSharedStorage(val context: Context) : InterAppSharedStorage {
     companion object {
         private const val LOGTAG = "Authgear"
         private const val IDToken = "idToken"

@@ -1,6 +1,6 @@
 package com.oursky.authgear
 
-interface InterAppSharedStorage {
+internal interface InterAppSharedStorage {
     fun setIDToken(namespace: String, idToken: String)
     fun getIDToken(namespace: String): String?
     fun deleteIDToken(namespace: String)
