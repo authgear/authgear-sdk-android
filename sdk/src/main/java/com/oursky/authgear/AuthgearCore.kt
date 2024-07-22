@@ -1235,9 +1235,9 @@ internal class AuthgearCore(
             throw UnauthenticatedUserException()
         }
         var idToken = sharedStorage.getIDToken(name)
-            ?: throw PreAuthenticatedURLNotAllowedException.IDTokenNotFoundException()
+            ?: throw PreAuthenticatedURLNotAllowedIDTokenNotFoundException()
         val deviceSecret = sharedStorage.getDeviceSecret(name)
-            ?: throw PreAuthenticatedURLNotAllowedException.DeviceSecretNotFoundException()
+            ?: throw PreAuthenticatedURLNotAllowedDeviceSecretNotFoundException()
         try {
             val tokenExchangeResult = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
@@ -1287,7 +1287,7 @@ internal class AuthgearCore(
             )
         } catch (e: OAuthException) {
             if (e.error == "insufficient_scope") {
-                throw PreAuthenticatedURLNotAllowedException.InsufficientScopeException()
+                throw PreAuthenticatedURLNotAllowedInsufficientScopeException()
             }
             throw e
         }
