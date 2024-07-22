@@ -11,10 +11,11 @@ import java.io.File
 import java.io.IOException
 import java.security.GeneralSecurityException
 
-class PersistentTokenStorage(val context: Context) : TokenStorage {
+internal class PersistentInterAppSharedStorage(val context: Context) : InterAppSharedStorage {
     companion object {
         private const val LOGTAG = "Authgear"
-        private const val RefreshToken = "refreshToken"
+        private const val IDToken = "idToken"
+        private const val DeviceSecret = "deviceSecret"
     }
 
     private val masterKey = MasterKey.Builder(context)
@@ -59,17 +60,35 @@ class PersistentTokenStorage(val context: Context) : TokenStorage {
         }
     }
 
-    override fun setRefreshToken(namespace: String, refreshToken: String) {
-        setItem(namespace, RefreshToken, refreshToken)
+    override fun setIDToken(namespace: String, idToken: String) {
+        setItem(namespace, IDToken, idToken)
     }
 
-    override fun getRefreshToken(namespace: String): String? {
-        return getItem(namespace, RefreshToken)
+    override fun getIDToken(namespace: String): String? {
+        return getItem(namespace, IDToken)
     }
 
-    override fun deleteRefreshToken(namespace: String) {
-        deleteItem(namespace, RefreshToken)
+    override fun deleteIDToken(namespace: String) {
+        deleteItem(namespace, IDToken)
     }
+
+    override fun setDeviceSecret(namespace: String, deviceSecret: String) {
+        setItem(namespace, DeviceSecret, deviceSecret)
+    }
+
+    override fun getDeviceSecret(namespace: String): String? {
+        return getItem(namespace, DeviceSecret)
+    }
+
+    override fun deleteDeviceSecret(namespace: String) {
+        deleteItem(namespace, DeviceSecret)
+    }
+
+    override fun onLogout(namespace: String) {
+        deleteDeviceSecret(namespace)
+        deleteIDToken(namespace)
+    }
+
     private fun handleBackupProblem(e: Exception, namespace: String): Boolean {
         // NOTE(backup): Explanation on the backup problem.
         // EncryptedSharedPreferences depends on a master key stored in AndroidKeyStore.

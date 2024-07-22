@@ -20,6 +20,9 @@ internal fun SettingsActionOptions.toRequest(action: SettingsAction, idTokenHint
     return OidcAuthenticationRequest(
         redirectUri = this.redirectURI,
         responseType = "urn:authgear:params:oauth:response-type:settings-action",
+        // offline_access is not needed because we don't want a new refresh token to be generated
+        // device_sso and pre-authenticated-url is also not needed,
+        // because session for settings should not be used to perform SSO.
         scope = listOf("openid", "https://authgear.com/scopes/full-access"),
         isSsoEnabled = false,
         prompt = listOf(PromptOption.NONE),

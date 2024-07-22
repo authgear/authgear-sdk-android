@@ -26,6 +26,7 @@ constructor(
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
     uiImplementation: UIImplementation = CustomTabsUIImplementation(),
     isSsoEnabled: Boolean = false,
+    preAuthenticatedURLEnabled: Boolean = false,
     name: String? = null,
     app2AppOptions: App2AppOptions = App2AppOptions(isEnabled = false)
 ) {
@@ -43,10 +44,12 @@ constructor(
             clientId,
             authgearEndpoint,
             isSsoEnabled,
+            preAuthenticatedURLEnabled,
             app2AppOptions,
             tokenStorage,
             uiImplementation,
             PersistentContainerStorage(application),
+            PersistentInterAppSharedStorage(application),
             OAuthRepoHttp(),
             KeyRepoKeystore(),
             AssetLinkRepoHttp(),
@@ -835,6 +838,34 @@ constructor(
                 core.rejectApp2AppAuthenticationRequest(request, reason)
                 handler.post {
                     listener.onFinished()
+                }
+            } catch (e: Throwable) {
+                handler.post {
+                    listener.onFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Share the current authenticated session to a web browser.
+     * `preAuthenticatedURLEnabled` must be set to true to use this method.
+     * @param options The options.
+     * @param listener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    fun makePreAuthenticatedURL(
+        options: PreAuthenticatedURLOptions,
+        listener: OnMakePreAuthenticatedURLListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val url = core.makePreAuthenticatedURL(options)
+                handler.post {
+                    listener.onSuccess(url)
                 }
             } catch (e: Throwable) {
                 handler.post {

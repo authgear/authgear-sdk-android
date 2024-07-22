@@ -150,6 +150,13 @@ suspend fun Authgear.rejectApp2AppAuthenticationRequest(request: App2AppAuthenti
 }
 
 /**
+ * @see [Authgear.makePreAuthenticatedURL]
+ */
+suspend fun Authgear.makePreAuthenticatedURL(options: PreAuthenticatedURLOptions): Uri {
+    return core.makePreAuthenticatedURL(options)
+}
+
+/**
  * @see [Authgear.generateUrl].
  */
 @ExperimentalAuthgearApi

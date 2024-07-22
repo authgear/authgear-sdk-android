@@ -18,6 +18,8 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.oursky.authgear.PreAuthenticatedURLNotAllowedException;
+import com.oursky.authgear.PreAuthenticatedURLOptions;
 import com.oursky.authgear.Authgear;
 import com.oursky.authgear.AuthgearDelegate;
 import com.oursky.authgear.AuthenticateOptions;
@@ -34,12 +36,15 @@ import com.oursky.authgear.OnEnableBiometricListener;
 import com.oursky.authgear.OnFetchUserInfoListener;
 import com.oursky.authgear.OnHandleApp2AppAuthenticationRequestListener;
 import com.oursky.authgear.OnLogoutListener;
+import com.oursky.authgear.OnMakePreAuthenticatedURLListener;
+import com.oursky.authgear.OnOpenAuthorizationURLListener;
 import com.oursky.authgear.OnOpenSettingsActionListener;
 import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.OnReauthenticateListener;
 import com.oursky.authgear.OnRefreshIDTokenListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
+import com.oursky.authgear.OpenAuthorizationURLOptions;
 import com.oursky.authgear.Page;
 import com.oursky.authgear.PersistentTokenStorage;
 import com.oursky.authgear.PromoteOptions;
@@ -74,12 +79,15 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mAuthenticationiFlowGroup = new MutableLiveData<>("");
+    final private MutableLiveData<String> mPreAuthenticatedURLClientID = new MutableLiveData<>("");
+    final private MutableLiveData<String> mPreAuthenticatedURLRedirectURI = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
     final private MutableLiveData<String> mTokenStorage = new MutableLiveData<>("");
     final private MutableLiveData<ColorScheme> mColorScheme = new MutableLiveData<>(null);
 
     final private MutableLiveData<Boolean> mUseWebKitWebView = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsSsoEnabled = new MutableLiveData<>(false);
+    final private MutableLiveData<Boolean> mIsPreAuthenticatedURLEnabled = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mIsLoading = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mBiometricEnable = new MutableLiveData<>(false);
     final private MutableLiveData<Boolean> mCanReauthenticate = new MutableLiveData<>(false);
@@ -101,7 +109,10 @@ public class MainViewModel extends AndroidViewModel {
             String storedAuthenticationFlowGroup = preferences.getString("authenticationFlowGroup", "");
             String storedPage = preferences.getString("page", "");
             String storedTokenStorage = preferences.getString("tokenStorage", PersistentTokenStorage.class.getSimpleName());
+            String storedPreAuthenticatedURLClientID = preferences.getString("preAuthenticatedURLClientID", "");
+            String storedPreAuthenticatedURLRedirectURI = preferences.getString("preAuthenticatedURLRedirectURI", "");
             Boolean storedIsSsoEnabled = preferences.getBoolean("isSsoEnabled", false);
+            Boolean storedIsPreAuthenticatedURLEnabled= preferences.getBoolean("isPreAuthenticatedURLEnabled", false);
             Boolean storedUseWebKitWebView = preferences.getBoolean("useWebKitWebView", false);
             mClientID.setValue(storedClientID);
             mEndpoint.setValue(storedEndpoint);
@@ -110,6 +121,9 @@ public class MainViewModel extends AndroidViewModel {
             mPage.setValue(storedPage);
             mTokenStorage.setValue(storedTokenStorage);
             mIsSsoEnabled.setValue(storedIsSsoEnabled);
+            mIsPreAuthenticatedURLEnabled.setValue(storedIsPreAuthenticatedURLEnabled);
+            mPreAuthenticatedURLClientID.setValue(storedPreAuthenticatedURLClientID);
+            mPreAuthenticatedURLRedirectURI.setValue(storedPreAuthenticatedURLRedirectURI);
             mUseWebKitWebView.setValue(storedUseWebKitWebView);
         }
     }
@@ -178,6 +192,17 @@ public class MainViewModel extends AndroidViewModel {
         return mApp2AppEndpoint;
     }
 
+    public LiveData<String> preAuthenticatedURLRedirectURI() {
+        return mPreAuthenticatedURLRedirectURI;
+    }
+    public LiveData<String> preAuthenticatedURLClientID() {
+        return mPreAuthenticatedURLClientID;
+    }
+    public LiveData<Boolean> isPreAuthenticatedURLEnabled() {
+        return mIsPreAuthenticatedURLEnabled;
+    }
+
+
     public LiveData<String> tokenStorage() { return mTokenStorage; }
 
     public LiveData<Boolean> useWebKitWebView() { return mUseWebKitWebView; }
@@ -207,7 +232,15 @@ public class MainViewModel extends AndroidViewModel {
     }
     public LiveData<ConfirmationViewModel> app2appConfirmation() { return mApp2AppConfirmation; }
 
-    public void configure(String clientID, String endpoint, Boolean isSsoEnabled, Boolean useWebKitWebView, String app2appEndpoint) {
+    public void configure(
+            String clientID,
+            String endpoint,
+            Boolean isSsoEnabled,
+            Boolean useWebKitWebView,
+            String app2appEndpoint,
+            Boolean isPreAuthenticatedURLEnabled,
+            String preAuthenticatedURLClientID,
+            String preAuthenticatedURLRedirectURI) {
         if (mIsLoading.getValue()) return;
         mIsLoading.setValue(true);
         MainApplication app = getApplication();
@@ -215,6 +248,7 @@ public class MainViewModel extends AndroidViewModel {
         mEndpoint.setValue(endpoint);
         mApp2AppEndpoint.setValue(app2appEndpoint);
         mIsSsoEnabled.setValue(isSsoEnabled);
+        mIsPreAuthenticatedURLEnabled.setValue(isPreAuthenticatedURLEnabled);
         mUseWebKitWebView.setValue(useWebKitWebView);
         app.getSharedPreferences("authgear.demo", Context.MODE_PRIVATE)
                 .edit()
@@ -222,6 +256,9 @@ public class MainViewModel extends AndroidViewModel {
                 .putString("endpoint", endpoint)
                 .putString("app2appendpoint", app2appEndpoint)
                 .putBoolean("isSsoEnabled", isSsoEnabled)
+                .putBoolean("isPreAuthenticatedURLEnabled", isPreAuthenticatedURLEnabled)
+                .putString("preAuthenticatedURLClientID", preAuthenticatedURLClientID)
+                .putString("preAuthenticatedURLRedirectURI", preAuthenticatedURLRedirectURI)
                 .putBoolean("useWebKitWebView", useWebKitWebView)
                 .apply();
         Boolean isApp2AppEnabled = !app2appEndpoint.isEmpty();
@@ -248,6 +285,7 @@ public class MainViewModel extends AndroidViewModel {
                 tokenStorage,
                 uiImplementation,
                 isSsoEnabled,
+                isPreAuthenticatedURLEnabled,
                 null,
                 app2appOptions
         );
@@ -799,5 +837,113 @@ public class MainViewModel extends AndroidViewModel {
             });
             builder.create().show();
         }
+    }
+
+    public void preAuthenticatedURL(FragmentActivity activity) {
+        boolean shouldUseAnotherBrowser = !mPreAuthenticatedURLRedirectURI.getValue().isEmpty();
+        String targetRedirectURI = MainApplication.AUTHGEAR_REDIRECT_URI;
+        String targetClientID = mClientID.getValue();
+        if (!mPreAuthenticatedURLRedirectURI.getValue().isEmpty()) {
+            targetRedirectURI = mPreAuthenticatedURLRedirectURI.getValue();
+        }
+        if (!mPreAuthenticatedURLClientID.getValue().isEmpty()) {
+            targetClientID = mPreAuthenticatedURLClientID.getValue();
+        }
+        mIsLoading.setValue(true);
+        PreAuthenticatedURLOptions options = new PreAuthenticatedURLOptions(
+                targetClientID,
+                targetRedirectURI,
+                null
+        );
+        String finalTargetClientID = targetClientID;
+        mAuthgear.makePreAuthenticatedURL(options, new OnMakePreAuthenticatedURLListener() {
+            @Override
+            public void onSuccess(@NonNull Uri uri) {
+                mIsLoading.setValue(false);
+                UIImplementation uiImpl = new CustomTabsUIImplementation();
+                if (!shouldUseAnotherBrowser) {
+                    uiImpl.openAuthorizationURL(
+                            activity,
+                            new OpenAuthorizationURLOptions(
+                                    uri,
+                                    Uri.parse(MainApplication.AUTHGEAR_REDIRECT_URI)
+                            ),
+                            new OnOpenAuthorizationURLListener() {
+                                @Override
+                                public void onSuccess(@NonNull Uri url) {
+                                    Authgear newContainer = new Authgear(
+                                            getApplication(),
+                                            finalTargetClientID,
+                                            mEndpoint.getValue(),
+                                            new TransientTokenStorage(),
+                                            uiImpl,
+                                            true,
+                                            false,
+                                            "preAuthenticatedURL"
+                                    );
+                                    newContainer.configure(new OnConfigureListener() {
+                                        @Override
+                                        public void onConfigured() {
+                                            newContainer.authenticate(new AuthenticateOptions(
+                                                    MainApplication.AUTHGEAR_REDIRECT_URI
+                                            ), new OnAuthenticateListener() {
+                                                @Override
+                                                public void onAuthenticated(@NonNull UserInfo userInfo) {
+                                                    promptPreAuthenticatedURLSuccessAlert(activity, userInfo);
+                                                }
+
+                                                @Override
+                                                public void onAuthenticationFailed(@NonNull Throwable throwable) {
+                                                    // Ignore
+                                                }
+                                            });
+                                        }
+
+                                        @Override
+                                        public void onConfigurationFailed(@NonNull Throwable throwable) {}
+                                    });
+                                }
+
+                                @Override
+                                public void onFailed(@NonNull Throwable e) {
+                                    setError(e);
+                                }
+                            }
+                    );
+                } else {
+                    uiImpl.openAuthorizationURL(
+                            activity,
+                            new OpenAuthorizationURLOptions(
+                                    uri,
+                                    Uri.parse(MainApplication.AUTHGEAR_REDIRECT_URI)
+                            ),
+                            new OnOpenAuthorizationURLListener() {
+                                @Override
+                                public void onSuccess(@NonNull Uri url) {}
+                                @Override
+                                public void onFailed(@NonNull Throwable throwable) {}
+                            }
+                    );
+                }
+            }
+
+            @Override
+            public void onFailed(@NonNull Throwable e) {
+                if (e instanceof PreAuthenticatedURLNotAllowedException) {
+                    Log.w(TAG, "pre authenticated url not allowed");
+                }
+                setError(e);
+                mIsLoading.setValue(false);
+            }
+        });
+    }
+
+    private void promptPreAuthenticatedURLSuccessAlert(Context context, UserInfo userInfo) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("PreAuthenticatedURL");
+        builder.setMessage("Successfully logged in");
+        builder.setPositiveButton("OK", (dialogInterface, i) -> {
+        });
+        builder.create().show();
     }
 }

@@ -37,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText mEndpoint;
     private EditText mApp2AppEndpoint;
     private EditText mApp2AppState;
+    private EditText mPreAuthenticatedURLClientID;
+    private EditText mPreAuthenticatedURLRedirectURI;
     private View mApp2AppstateField;
     private EditText mAuthenticationFlowGroup;
     private Spinner mPage;
@@ -44,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner mColorScheme;
     private CheckBox mUseWebKitWebView;
     private CheckBox mIsSsoEnabled;
+    private CheckBox mIsPreAuthenticatedURLEnabled;
     private TextView mSessionState;
     private TextView mLoading;
     private View mConfigure;
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private View mEnableBiometric;
     private View mDisableBiometric;
     private View mAuthenticateBiometric;
+    private View mPreAuthenticatedURL;
     private View mOpenSettings;
     private View mChangePassword;
     private View mDeleteAccount;
@@ -80,6 +84,8 @@ public class MainActivity extends AppCompatActivity {
         mApp2AppState = findViewById(R.id.app2appstateInput);
         mApp2AppstateField = findViewById(R.id.app2appstateField);
         mAuthenticationFlowGroup = findViewById(R.id.authenticationFlowGroupInput);
+        mPreAuthenticatedURLClientID = findViewById(R.id.preAuthenticatedURLClientIDInput);
+        mPreAuthenticatedURLRedirectURI = findViewById(R.id.preAuthenticatedURLRedirectURIInput);
         mLoading = findViewById(R.id.loading);
         mConfigure = findViewById(R.id.configure);
         mAuthenticate = findViewById(R.id.authenticate);
@@ -91,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
         mEnableBiometric = findViewById(R.id.enableBiometric);
         mDisableBiometric = findViewById(R.id.disableBiometric);
         mAuthenticateBiometric = findViewById(R.id.authenticateBiometric);
+        mPreAuthenticatedURL = findViewById(R.id.preAuthenticatedURL);
         mOpenSettings = findViewById(R.id.openSettings);
         mChangePassword = findViewById(R.id.changePassword);
         mDeleteAccount = findViewById(R.id.deleteAccount);
@@ -99,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         mLogout = findViewById(R.id.logout);
         mUseWebKitWebView = findViewById(R.id.useWebKitWebView);
         mIsSsoEnabled = findViewById(R.id.isSsoEnabled);
+        mIsPreAuthenticatedURLEnabled = findViewById(R.id.isPreAuthenticatedURLEnabled);
         mSessionState = findViewById(R.id.sessionStateInput);
 
         String[] pages = {
@@ -137,7 +145,10 @@ public class MainActivity extends AppCompatActivity {
                         mEndpoint.getText().toString(),
                         mIsSsoEnabled.isChecked(),
                         mUseWebKitWebView.isChecked(),
-                        mApp2AppEndpoint.getText().toString()
+                        mApp2AppEndpoint.getText().toString(),
+                        mIsPreAuthenticatedURLEnabled.isChecked(),
+                        mPreAuthenticatedURLClientID.getText().toString(),
+                        mPreAuthenticatedURLRedirectURI.getText().toString()
                 )
         );
         mAuthenticate.setOnClickListener(view -> viewModel.authenticate());
@@ -149,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
         mEnableBiometric.setOnClickListener(view -> viewModel.enableBiometric(this));
         mDisableBiometric.setOnClickListener(view -> viewModel.disableBiometric());
         mAuthenticateBiometric.setOnClickListener(view -> viewModel.authenticateBiometric(this));
+        mPreAuthenticatedURL.setOnClickListener(view -> viewModel.preAuthenticatedURL(this));
         mOpenSettings.setOnClickListener(view -> viewModel.openSettings());
         mChangePassword.setOnClickListener(view -> viewModel.openChangePassword());
         mDeleteAccount.setOnClickListener(view -> viewModel.openDeleteAccount());
@@ -224,6 +236,9 @@ public class MainActivity extends AppCompatActivity {
         mIsSsoEnabled.setChecked(viewModel.isSsoEnabled().getValue());
         mUseWebKitWebView.setChecked(viewModel.useWebKitWebView().getValue());
         mSessionState.setText(viewModel.sessionState().getValue().toString());
+        mIsPreAuthenticatedURLEnabled.setChecked(viewModel.isPreAuthenticatedURLEnabled().getValue());
+        mPreAuthenticatedURLClientID.setText(viewModel.preAuthenticatedURLClientID().getValue());
+        mPreAuthenticatedURLRedirectURI.setText(viewModel.preAuthenticatedURLRedirectURI().getValue());
 
         viewModel.isConfigured().observe(this, isConfigured -> {
             updateButtonDisabledState(viewModel);
@@ -308,6 +323,7 @@ public class MainActivity extends AppCompatActivity {
         boolean isBiometricEnabled = viewModel.isBiometricEnabled().getValue();
         boolean isLoggedIn = viewModel.sessionState().getValue() == SessionState.AUTHENTICATED;
         boolean canReauthenticate = viewModel.canReauthenticate().getValue();
+        boolean isPreAuthenticatedURLEnabled = viewModel.isPreAuthenticatedURLEnabled().getValue();
         String app2appEndpoint = viewModel.app2appEndpoint().getValue();
         mLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         mConfigure.setEnabled(!isLoading);
@@ -320,6 +336,7 @@ public class MainActivity extends AppCompatActivity {
         mEnableBiometric.setEnabled(!isLoading && isConfigured && isLoggedIn && !isBiometricEnabled);
         mDisableBiometric.setEnabled(!isLoading && isConfigured && isBiometricEnabled);
         mAuthenticateBiometric.setEnabled(!isLoading && isConfigured && !isLoggedIn && isBiometricEnabled);
+        mPreAuthenticatedURL.setEnabled(!isLoading && isConfigured && isLoggedIn && isPreAuthenticatedURLEnabled);
         mOpenSettings.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mChangePassword.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mDeleteAccount.setEnabled(!isLoading && isConfigured && isLoggedIn);

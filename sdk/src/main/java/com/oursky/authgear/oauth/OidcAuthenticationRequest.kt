@@ -8,8 +8,8 @@ import com.oursky.authgear.UILocales
 internal data class OidcAuthenticationRequest constructor(
     var redirectUri: String,
     var responseType: String,
-    var scope: List<String>,
-    var isSsoEnabled: Boolean,
+    var scope: List<String>? = null,
+    var isSsoEnabled: Boolean? = null,
     var state: String? = null,
     var xState: String? = null,
     var prompt: List<PromptOption>? = null,
@@ -21,7 +21,9 @@ internal data class OidcAuthenticationRequest constructor(
     var wechatRedirectURI: String? = null,
     var page: String? = null,
     var settingsAction: String? = null,
-    var authenticationFlowGroup: String? = null
+    var authenticationFlowGroup: String? = null,
+    var responseMode: String? = null,
+    var xPreAuthenticatedURLToken: String? = null
 )
 
 internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -29,13 +31,16 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
         "client_id" to clientID,
         "response_type" to this.responseType,
         "redirect_uri" to this.redirectUri,
-        "scope" to this.scope.joinToString(separator = " "),
         "x_platform" to "android"
     )
 
     codeVerifier?.let {
         query["code_challenge_method"] = AuthgearCore.CODE_CHALLENGE_METHOD
         query["code_challenge"] = it.challenge
+    }
+
+    this.scope?.let {
+        query["scope"] = it.joinToString(separator = " ")
     }
 
     this.prompt?.let {
@@ -82,13 +87,23 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
         query["x_settings_action"] = it
     }
 
-    if (!this.isSsoEnabled) {
+    this.responseMode?.let {
+        query["response_mode"] = it
+    }
+
+    this.xPreAuthenticatedURLToken?.let {
+        query["x_pre_authenticated_url_token"] = it
+    }
+
+    val isSsoEnabled = this.isSsoEnabled ?: false
+
+    if (!isSsoEnabled) {
         // For backward compatibility
         // If the developer updates the SDK but not the server
         query["x_suppress_idp_session_cookie"] = "true"
     }
 
-    query["x_sso_enabled"] = if (this.isSsoEnabled) "true" else "false"
+    query["x_sso_enabled"] = if (isSsoEnabled) "true" else "false"
 
     this.authenticationFlowGroup?.let {
         query["x_authentication_flow_group"] = it

@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.security.keystore.KeyPermanentlyInvalidatedException
-import android.util.Base64
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -33,6 +32,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import java.lang.RuntimeException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
@@ -56,10 +56,12 @@ internal class AuthgearCore(
     val clientId: String,
     private val authgearEndpoint: String,
     private val isSsoEnabled: Boolean,
+    private val preAuthenticatedURLEnabled: Boolean,
     private val app2AppOptions: App2AppOptions,
     private val tokenStorage: TokenStorage,
     private val uiImplementation: UIImplementation,
     private val storage: ContainerStorage,
+    private val sharedStorage: InterAppSharedStorage,
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
     private val assetLinkRepo: AssetLinkRepo,
@@ -198,6 +200,12 @@ internal class AuthgearCore(
             return Date(authTimeValue * 1000)
         }
 
+    private fun requireIsPreAuthenticatedURLEnabled() {
+        require(preAuthenticatedURLEnabled) {
+            "preAuthenticatedURLEnabled must be set to true"
+        }
+    }
+
     private fun requireIsInitialized() {
         require(isInitialized) {
             "Authgear is not configured. Did you forget to call configure?"
@@ -277,8 +285,8 @@ internal class AuthgearCore(
         verifier: Verifier = generateCodeVerifier()
     ): AuthenticationRequest {
         requireIsInitialized()
-        val request = options.toRequest(this.isSsoEnabled)
-        val authorizeUri = authorizeEndpoint(request, verifier)
+        val request = options.toRequest(this.isSsoEnabled, this.preAuthenticatedURLEnabled)
+        val authorizeUri = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }
 
@@ -319,7 +327,7 @@ internal class AuthgearCore(
         val idTokenHint = this.idToken ?: throw AuthgearException("Call refreshIDToken first")
 
         val request = options.toRequest(action = action, idTokenHint = idTokenHint, loginHint = loginHint)
-        val authorizeUri = authorizeEndpoint(request, verifier)
+        val authorizeUri = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }
 
@@ -342,7 +350,7 @@ internal class AuthgearCore(
         requireIsInitialized()
         val idTokenHint = this.idToken ?: throw AuthgearException("Call refreshIDToken first")
         val request = options.toRequest(idTokenHint, this.isSsoEnabled)
-        val authorizeUrl = authorizeEndpoint(request, verifier)
+        val authorizeUrl = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUrl, request.redirectUri, verifier)
     }
 
@@ -446,6 +454,7 @@ internal class AuthgearCore(
         }"
 
         return authorizeEndpoint(
+            this.clientId,
             OidcAuthenticationRequest(
                 redirectUri = redirectUri,
                 responseType = "none",
@@ -540,6 +549,7 @@ internal class AuthgearCore(
         val codeVerifier = this.setupVerifier()
 
         val authorizeUrl = authorizeEndpoint(
+            this.clientId,
             OidcAuthenticationRequest(
                 redirectUri = options.redirectUri,
                 responseType = "code",
@@ -582,18 +592,32 @@ internal class AuthgearCore(
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
 
+        val deviceSecret = this.sharedStorage.getDeviceSecret(name)
+
         try {
             val tokenResponse = oauthRepo.oidcTokenRequest(
                 OidcTokenRequest(
                     grantType = com.oursky.authgear.GrantType.ID_TOKEN,
                     clientId = clientId,
                     xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                    accessToken = accessToken
+                    accessToken = accessToken,
+                    deviceSecret = deviceSecret
                 )
             )
 
-            if (tokenResponse.idToken != null) {
-                this.idToken = tokenResponse.idToken
+            synchronized(this) {
+                if (tokenResponse.idToken != null) {
+                    this.idToken = tokenResponse.idToken
+                }
+            }
+
+            val idToken = this.idToken
+            val deviceSecret = tokenResponse.deviceSecret
+            if (idToken != null) {
+                sharedStorage.setIDToken(name, idToken)
+            }
+            if (deviceSecret != null) {
+                tokenStorage.setRefreshToken(name, deviceSecret)
             }
         } catch (e: Exception) {
             handleInvalidGrantError(e)
@@ -623,9 +647,13 @@ internal class AuthgearCore(
         }
     }
 
-    private fun authorizeEndpoint(request: OidcAuthenticationRequest, codeVerifier: Verifier?): Uri {
+    private fun authorizeEndpoint(
+        clientID: String,
+        request: OidcAuthenticationRequest,
+        codeVerifier: Verifier?
+    ): Uri {
         val config = oauthRepo.getOidcConfiguration()
-        val query = request.toQuery(this.clientId, codeVerifier)
+        val query = request.toQuery(clientID, codeVerifier)
         return Uri.parse(config.authorizationEndpoint).buildUpon().let {
             it.encodedQuery(query.toQueryParameter())
         }.build()
@@ -702,6 +730,7 @@ internal class AuthgearCore(
             clearSession(SessionStateChangeReason.NO_TOKEN)
             return
         }
+        val deviceSecret = sharedStorage.getDeviceSecret(name)
         val tokenResponse: OidcTokenResponse?
         try {
             tokenResponse = oauthRepo.oidcTokenRequest(
@@ -709,7 +738,8 @@ internal class AuthgearCore(
                     grantType = GrantType.REFRESH_TOKEN,
                     clientId = clientId,
                     xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                    refreshToken = refreshToken
+                    refreshToken = refreshToken,
+                    deviceSecret = deviceSecret
                 )
             )
         } catch (e: Exception) {
@@ -740,13 +770,22 @@ internal class AuthgearCore(
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
         val refreshToken = this.refreshToken
+        val idToken = this.idToken
+        val deviceSecret = tokenResponse.deviceSecret
         if (refreshToken != null) {
             tokenStorage.setRefreshToken(name, refreshToken)
+        }
+        if (idToken != null) {
+            sharedStorage.setIDToken(name, idToken)
+        }
+        if (deviceSecret != null) {
+            sharedStorage.setDeviceSecret(name, deviceSecret)
         }
     }
 
     internal fun clearSession(changeReason: SessionStateChangeReason) {
         tokenStorage.deleteRefreshToken(name)
+        sharedStorage.onLogout(name)
         storage.deleteApp2AppDeviceKeyId(name)
         synchronized(this) {
             accessToken = null
@@ -1132,7 +1171,10 @@ internal class AuthgearCore(
                         grantType = com.oursky.authgear.GrantType.BIOMETRIC,
                         clientId = clientId,
                         xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                        jwt = jwt
+                        jwt = jwt,
+                        scope = AuthenticateOptions.getScopes(
+                            preAuthenticatedURLEnabled = preAuthenticatedURLEnabled
+                        )
                     )
                 )
                 val userInfo = oauthRepo.oidcUserInfoRequest(
@@ -1186,5 +1228,72 @@ internal class AuthgearCore(
     suspend fun rejectApp2AppAuthenticationRequest(request: App2AppAuthenticateRequest, reason: Throwable) {
         requireMinimumApp2AppAPILevel()
         return app2app.rejectApp2AppAuthenticationRequest(request, reason)
+    }
+
+    suspend fun makePreAuthenticatedURL(
+        options: PreAuthenticatedURLOptions
+    ): Uri {
+        requireIsInitialized()
+        requireIsPreAuthenticatedURLEnabled()
+        if (sessionState != SessionState.AUTHENTICATED) {
+            throw UnauthenticatedUserException()
+        }
+        var idToken = sharedStorage.getIDToken(name)
+            ?: throw PreAuthenticatedURLNotAllowedIDTokenNotFoundException()
+        val deviceSecret = sharedStorage.getDeviceSecret(name)
+            ?: throw PreAuthenticatedURLNotAllowedDeviceSecretNotFoundException()
+        try {
+            val tokenExchangeResult = oauthRepo.oidcTokenRequest(
+                OidcTokenRequest(
+                    grantType = GrantType.TOKEN_EXCHANGE,
+                    clientId = options.webApplicationClientID,
+                    requestedTokenType = RequestedTokenType.PRE_AUTHENTICATED_URL_TOKEN,
+                    audience = Uri.parse(authgearEndpoint).getOrigin()!!,
+                    subjectTokenType = SubjectTokenType.ID_TOKEN,
+                    subjectToken = idToken,
+                    actorTokenType = ActorTokenType.DEVICE_SECRET,
+                    actorToken = deviceSecret
+                )
+            )
+            // Here access_token is pre-authenticated-url-token
+            val preAuthenticatedURLToken = tokenExchangeResult.accessToken;
+            val newDeviceSecret = tokenExchangeResult.deviceSecret;
+            val newIDToken = tokenExchangeResult.idToken;
+            if (preAuthenticatedURLToken == null) {
+                throw RuntimeException("unexpected: access_token is not returned");
+            }
+            if (newDeviceSecret != null) {
+                this.sharedStorage.setDeviceSecret(
+                    this.name,
+                    newDeviceSecret
+                );
+            }
+            if (newIDToken != null) {
+                this.idToken = newIDToken
+                idToken = newIDToken
+                this.sharedStorage.setIDToken(
+                    this.name,
+                    newIDToken
+                );
+            }
+            return authorizeEndpoint(
+                clientID = options.webApplicationClientID,
+                request = OidcAuthenticationRequest(
+                    responseType = "urn:authgear:params:oauth:response-type:pre-authenticated-url token",
+                    responseMode = "cookie",
+                    redirectUri = options.webApplicationURI,
+                    xPreAuthenticatedURLToken = preAuthenticatedURLToken,
+                    idTokenHint = idToken,
+                    prompt = listOf(PromptOption.NONE),
+                    state = options.state
+                ),
+                codeVerifier = null
+            )
+        } catch (e: OAuthException) {
+            if (e.error == "insufficient_scope") {
+                throw PreAuthenticatedURLNotAllowedInsufficientScopeException()
+            }
+            throw e
+        }
     }
 }
