@@ -1,6 +1,6 @@
 package com.oursky.authgear.dpop
 
-interface DPoPProvider {
+internal interface DPoPProvider {
     fun generateDPoPProof(htm: String, htu: String): String?
     fun computeJKT(): String?
 }
