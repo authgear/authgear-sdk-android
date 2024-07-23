@@ -9,7 +9,8 @@ import java.time.Instant
 internal enum class JWTHeaderType(val value: String) {
     ANONYMOUS("vnd.authgear.anonymous-request"),
     BIOMETRIC("vnd.authgear.biometric-request"),
-    APP2APP("vnd.authgear.app2app-request")
+    APP2APP("vnd.authgear.app2app-request"),
+    DPOPJWT("dpop+jwt")
 }
 
 internal data class JWTHeader(
@@ -33,9 +34,12 @@ internal fun JWTHeader.toJsonObject(): JsonObject {
 internal data class JWTPayload(
     val iat: Long,
     val exp: Long,
-    val challenge: String,
-    val action: String,
-    val deviceInfo: DeviceInfoRoot?
+    val jti: String? = null,
+    val htm: String? = null,
+    val htu: String? = null,
+    val challenge: String? = null,
+    val action: String? = null,
+    val deviceInfo: DeviceInfoRoot? = null
 ) {
     constructor(now: Instant, challenge: String, action: String, deviceInfo: DeviceInfoRoot? = null) : this(
         iat = now.epochSecond,
@@ -44,16 +48,37 @@ internal data class JWTPayload(
         action = action,
         deviceInfo = deviceInfo
     )
+
+    constructor(now: Instant, jti: String, htu: String, htm: String) : this(
+        iat = now.epochSecond,
+        exp = now.epochSecond + 60,
+        jti = jti,
+        htu = htu,
+        htm = htm
+    )
 }
 
 internal fun JWTPayload.toJsonObject(): JsonObject {
     val m = mutableMapOf<String, JsonElement>()
     m["iat"] = JsonPrimitive(iat)
     m["exp"] = JsonPrimitive(exp)
-    m["challenge"] = JsonPrimitive(challenge)
-    m["action"] = JsonPrimitive(action)
-    if (deviceInfo != null) {
+    challenge?.let {
+        m["challenge"] = JsonPrimitive(challenge)
+    }
+    action?.let {
+        m["action"] = JsonPrimitive(action)
+    }
+    deviceInfo?.let {
         m["device_info"] = deviceInfo.toJsonObject()
+    }
+    jti?.let {
+        m["jti"] = JsonPrimitive(jti)
+    }
+    htu?.let {
+        m["htu"] = JsonPrimitive(htu)
+    }
+    htm?.let {
+        m["htm"] = JsonPrimitive(htm)
     }
     return JsonObject(m)
 }

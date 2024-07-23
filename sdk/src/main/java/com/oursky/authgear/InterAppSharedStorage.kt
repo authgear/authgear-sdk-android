@@ -9,5 +9,9 @@ internal interface InterAppSharedStorage {
     fun getDeviceSecret(namespace: String): String?
     fun deleteDeviceSecret(namespace: String)
 
+    fun setDPoPKeyId(namespace: String, keyId: String)
+    fun getDPoPKeyId(namespace: String): String?
+    fun deleteDPoPKeyId(namespace: String)
+
     fun onLogout(namespace: String)
 }

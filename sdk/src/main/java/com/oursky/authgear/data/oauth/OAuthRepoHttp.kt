@@ -5,15 +5,18 @@ import com.oursky.authgear.AuthgearException
 import com.oursky.authgear.GrantType
 import com.oursky.authgear.UserInfo
 import com.oursky.authgear.data.HttpClient
+import com.oursky.authgear.dpop.DPoPProvider
 import com.oursky.authgear.getOrigin
 import com.oursky.authgear.net.toFormData
 import com.oursky.authgear.oauth.*
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
-internal class OAuthRepoHttp : OAuthRepo {
+internal class OAuthRepoHttp(
+    private val dPoPProvider: DPoPProvider
+) : OAuthRepo {
     companion object {
         @Suppress("unused")
         private val TAG = OAuthRepoHttp::class.java.simpleName
@@ -36,7 +39,7 @@ internal class OAuthRepoHttp : OAuthRepo {
             val configAfterAcquire = this.config
             if (configAfterAcquire != null) return configAfterAcquire
             val url = URL(URL(endpoint), "/.well-known/openid-configuration")
-            val newConfig: OidcConfiguration = HttpClient.fetch(url = url, method = "GET", headers = emptyMap()) { conn ->
+            val newConfig: OidcConfiguration = fetchWithDPoP(url = url, method = "GET", headers = emptyMap()) { conn ->
                 conn.errorStream?.use {
                     val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
                     HttpClient.throwErrorIfNeeded(conn, responseString)
@@ -80,9 +83,18 @@ internal class OAuthRepoHttp : OAuthRepo {
         request.accessToken?.let {
             headers["authorization"] = "Bearer $it"
         }
-        return HttpClient.fetch(
-            url = URL(config.tokenEndpoint),
-            method = "POST",
+        val url = URL(config.tokenEndpoint)
+        val method = "POST"
+        val dpopProof = dPoPProvider.generateDPoPProof(
+            htm = method,
+            htu = url.toString()
+        )
+        dpopProof?.let {
+            headers["DPoP"] = dpopProof
+        }
+        return fetchWithDPoP(
+            url = url,
+            method = method,
             headers = headers
         ) { conn ->
             conn.outputStream.use {
@@ -106,7 +118,7 @@ internal class OAuthRepoHttp : OAuthRepo {
         body["client_id"] = clientId
         body["grant_type"] = GrantType.BIOMETRIC.raw
         body["jwt"] = jwt
-        return HttpClient.fetch(
+        return fetchWithDPoP(
             url = URL(config.tokenEndpoint),
             method = "POST",
             headers = mutableMapOf(
@@ -132,7 +144,7 @@ internal class OAuthRepoHttp : OAuthRepo {
         val config = getOidcConfiguration()
         val body = mutableMapOf<String, String>()
         body["token"] = refreshToken
-        HttpClient.fetch(
+        fetchWithDPoP(
             url = URL(config.revocationEndpoint),
             method = "POST",
             headers = mutableMapOf(
@@ -155,7 +167,7 @@ internal class OAuthRepoHttp : OAuthRepo {
 
     override fun oidcUserInfoRequest(accessToken: String): UserInfo {
         val config = getOidcConfiguration()
-        return HttpClient.fetch(
+        return fetchWithDPoP(
             url = URL(config.userInfoEndpoint),
             method = "GET",
             headers = mutableMapOf(
@@ -177,7 +189,7 @@ internal class OAuthRepoHttp : OAuthRepo {
     override fun oauthChallenge(purpose: String): ChallengeResponse {
         val body = mutableMapOf<String, String>()
         body["purpose"] = purpose
-        val response: ChallengeResponseResult = HttpClient.fetch(
+        val response: ChallengeResponseResult = fetchWithDPoP(
             url = buildApiUrl("/oauth2/challenge"),
             method = "POST",
             headers = mutableMapOf(
@@ -203,7 +215,7 @@ internal class OAuthRepoHttp : OAuthRepo {
     override fun oauthAppSessionToken(refreshToken: String): AppSessionTokenResponse {
         val body = mutableMapOf<String, String>()
         body["refresh_token"] = refreshToken
-        val response: AppSessionTokenResponseResult = HttpClient.fetch(
+        val response: AppSessionTokenResponseResult = fetchWithDPoP(
             url = buildApiUrl("/oauth2/app_session_token"),
             method = "POST",
             headers = mutableMapOf(
@@ -231,7 +243,7 @@ internal class OAuthRepoHttp : OAuthRepo {
         body["code"] = code
         body["state"] = state
         body["x_platform"] = "android"
-        HttpClient.fetch(
+        fetchWithDPoP(
             url = buildApiUrl("/sso/wechat/callback"),
             method = "POST",
             headers = mutableMapOf(
@@ -250,6 +262,30 @@ internal class OAuthRepoHttp : OAuthRepo {
                 HttpClient.throwErrorIfNeeded(conn, responseString)
             }
         }
+    }
+
+    private fun <T>fetchWithDPoP(
+        url: URL,
+        method: String,
+        headers: Map<String, String>,
+        followRedirect: Boolean = true,
+        callback: (conn: HttpURLConnection) -> T
+    ): T {
+        val h = headers.toMutableMap()
+        val dpopProof = dPoPProvider.generateDPoPProof(
+            htm = method,
+            htu = url.toString()
+        )
+        dpopProof?.let {
+            h["DPoP"] = dpopProof
+        }
+        return HttpClient.fetch(
+            url = url,
+            method = method,
+            headers = h,
+            followRedirect = followRedirect,
+            callback = callback
+        )
     }
 
     private fun buildApiUrl(path: String): URL {

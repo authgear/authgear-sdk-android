@@ -20,6 +20,7 @@ import com.oursky.authgear.app2app.App2AppOptions
 import com.oursky.authgear.data.assetlink.AssetLinkRepo
 import com.oursky.authgear.data.key.KeyRepo
 import com.oursky.authgear.data.oauth.OAuthRepo
+import com.oursky.authgear.dpop.DPoPProvider
 import com.oursky.authgear.net.toQueryParameter
 import com.oursky.authgear.oauth.OidcAuthenticationRequest
 import com.oursky.authgear.oauth.OidcTokenRequest
@@ -58,6 +59,7 @@ internal class AuthgearCore(
     private val isSsoEnabled: Boolean,
     private val preAuthenticatedURLEnabled: Boolean,
     private val app2AppOptions: App2AppOptions,
+    private val dPoPProvider: DPoPProvider,
     private val tokenStorage: TokenStorage,
     private val uiImplementation: UIImplementation,
     private val storage: ContainerStorage,
@@ -65,7 +67,7 @@ internal class AuthgearCore(
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
     private val assetLinkRepo: AssetLinkRepo,
-    name: String? = null
+    private val name: String
 ) {
     companion object {
         @Suppress("unused")
@@ -145,7 +147,6 @@ internal class AuthgearCore(
         val challenge: String
     )
 
-    private val name = name ?: "default"
     private var isInitialized = false
     private var refreshToken: String? = null
     var accessToken: String? = null
@@ -285,7 +286,10 @@ internal class AuthgearCore(
         verifier: Verifier = generateCodeVerifier()
     ): AuthenticationRequest {
         requireIsInitialized()
-        val request = options.toRequest(this.isSsoEnabled, this.preAuthenticatedURLEnabled)
+        val request = options.toRequest(
+            this.isSsoEnabled,
+            this.preAuthenticatedURLEnabled,
+            dpopJKT = dPoPProvider.computeJKT())
         val authorizeUri = authorizeEndpoint(this.clientId, request, verifier)
         return AuthenticationRequest(authorizeUri, request.redirectUri, verifier)
     }

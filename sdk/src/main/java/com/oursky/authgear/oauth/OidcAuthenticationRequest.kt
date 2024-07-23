@@ -23,7 +23,8 @@ internal data class OidcAuthenticationRequest constructor(
     var settingsAction: String? = null,
     var authenticationFlowGroup: String? = null,
     var responseMode: String? = null,
-    var xPreAuthenticatedURLToken: String? = null
+    var xPreAuthenticatedURLToken: String? = null,
+    var dpopJKT: String? = null
 )
 
 internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -93,6 +94,10 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
 
     this.xPreAuthenticatedURLToken?.let {
         query["x_pre_authenticated_url_token"] = it
+    }
+
+    this.dpopJKT?.let {
+        query["dpop_jkt"] = it
     }
 
     val isSsoEnabled = this.isSsoEnabled ?: false

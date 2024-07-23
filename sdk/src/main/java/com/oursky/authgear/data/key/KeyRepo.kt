@@ -8,4 +8,7 @@ internal interface KeyRepo {
 
     fun generateApp2AppDeviceKey(kid: String): KeyPair
     fun getApp2AppDeviceKey(kid: String): KeyPair?
+
+    fun generateDPoPKey(kid: String): KeyPair
+    fun getDPoPKey(kid: String): KeyPair?
 }
