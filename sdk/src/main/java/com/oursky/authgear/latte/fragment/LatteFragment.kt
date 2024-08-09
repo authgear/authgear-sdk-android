@@ -87,6 +87,14 @@ internal class LatteFragment() : Fragment() {
         get() = mutWebView!!
         set(value) { mutWebView = value }
 
+    // This flag is used to work around an issue of fragment re-creation.
+    // When this fragment is used with androidx.navigation,
+    // this fragment may be onDestroyView(), and then onCreateView() again.
+    // If that happens, the webView may never has its load() called.
+    // However, even with this fix, savedInstanceState was never called, so
+    // the webView will show the initial screen.
+    private var waitWebViewToLoadIsCalledInThisLifecycle: Boolean = false
+
     private var webViewOnReady: (() -> Unit)? = null
     private var webViewOnComplete: ((result: Result<WebViewResult>) -> Unit)? = null
 
@@ -188,6 +196,7 @@ internal class LatteFragment() : Fragment() {
             }
             this@LatteFragment.webViewOnReady = webViewOnReady
             this@LatteFragment.webViewOnComplete = webViewOnComplete
+            this@LatteFragment.waitWebViewToLoadIsCalledInThisLifecycle = true
             webView.load()
         }
     }
@@ -311,6 +320,15 @@ internal class LatteFragment() : Fragment() {
         val webViewStateBundle = savedInstanceState?.getBundle(KEY_WEBVIEW_STATE)
         val ctx = requireContext()
         constructWebViewIfNeeded(ctx, webViewStateBundle)
+
+        // This lifecycle started.
+        // If waitWebViewToLoad is called, then waitWebViewToLoadIsCalledInThisLifecycle is true.
+        // if waitWebViewToLoadIsCalledInThisLifecycle is true, then webView.load() was called there.
+        // Otherwise, we have to call webView.load() here.
+        if (!waitWebViewToLoadIsCalledInThisLifecycle) {
+            webView.load()
+        }
+
         val intentFilter = IntentFilter(Latte.BroadcastType.RESET_PASSWORD_COMPLETED.action)
         if (Build.VERSION.SDK_INT >= 33) {
             ctx.registerReceiver(broadcastReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
@@ -325,6 +343,11 @@ internal class LatteFragment() : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        // This lifecycle ended.
+        // Reset waitWebViewToLoadIsCalledInThisLifecycle to false.
+        waitWebViewToLoadIsCalledInThisLifecycle = false
+
         removeWebViewFromParent(webView)
         mutWebView = null
         val ctx = requireContext()
