@@ -561,7 +561,7 @@ internal class AuthgearCore(
                 isSsoEnabled = this.isSsoEnabled,
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
-                state = options.state,
+                state = null,
                 xState = options.xState,
                 uiLocales = options.uiLocales,
                 colorScheme = options.colorScheme,

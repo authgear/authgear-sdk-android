@@ -6,11 +6,7 @@ data class PromoteOptions @JvmOverloads constructor(
      */
     var redirectUri: String,
     /**
-     * OAuth 2.0 state value.
-     */
-    var state: String? = null,
-    /**
-     * Custom state.
+     * Use this parameter to provide parameters from the client application to Custom UI. The string in xState can be accessed by the Custom UI. Ignore this parameter if default AuthUI is used
      */
     var xState: String? = null,
     /**

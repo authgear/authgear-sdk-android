@@ -11,17 +11,9 @@ data class AuthenticateOptions @JvmOverloads constructor(
      */
     var redirectUri: String,
     /**
-     * OAuth 2.0 state value.
-     */
-    var state: String? = null,
-    /**
-     * Custom state.
+     * Use this parameter to provide parameters from the client application to Custom UI. The string in xState can be accessed by the Custom UI. Ignore this parameter if default AuthUI is used
      */
     var xState: String? = null,
-    /**
-     * OIDC response type parameter.
-     */
-    var responseType: String? = "code",
     /**
      * OIDC prompt parameter.
      *
@@ -34,10 +26,6 @@ data class AuthenticateOptions @JvmOverloads constructor(
      * e.g. Azure Active Directory.
      */
     var prompt: List<PromptOption>? = null,
-    /**
-     * OIDC login hint parameter
-     */
-    var loginHint: String? = null,
     /**
      * UI locale tags
      */
@@ -84,10 +72,10 @@ internal fun AuthenticateOptions.toRequest(
         responseType = "code",
         scope = AuthenticateOptions.getScopes(preAuthenticatedURLEnabled),
         isSsoEnabled = isSsoEnabled,
-        state = this.state,
+        state = null,
         xState = this.xState,
         prompt = this.prompt,
-        loginHint = this.loginHint,
+        loginHint = null,
         idTokenHint = null,
         maxAge = null,
         uiLocales = this.uiLocales,
