@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +31,7 @@ import kotlin.coroutines.suspendCoroutine
 
 internal class LatteFragment() : Fragment() {
     companion object {
+        private const val TAG = "LatteFragment"
         private const val KEY_ID = "id"
         private const val KEY_URL = "url"
         private const val KEY_REDIRECT_URI = "redirect_uri"
@@ -306,6 +308,7 @@ internal class LatteFragment() : Fragment() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d(TAG, "onCreate $this")
         super.onCreate(savedInstanceState)
 
         val backDispatcher = requireActivity().onBackPressedDispatcher
@@ -317,6 +320,7 @@ internal class LatteFragment() : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        Log.d(TAG, "onCreateView $this")
         val webViewStateBundle = savedInstanceState?.getBundle(KEY_WEBVIEW_STATE)
         val ctx = requireContext()
         constructWebViewIfNeeded(ctx, webViewStateBundle)
@@ -342,6 +346,7 @@ internal class LatteFragment() : Fragment() {
     }
 
     override fun onDestroyView() {
+        Log.d(TAG, "onDestroyView $this")
         super.onDestroyView()
 
         // This lifecycle ended.
@@ -355,6 +360,7 @@ internal class LatteFragment() : Fragment() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        Log.d(TAG, "onSaveInstanceState $this")
         super.onSaveInstanceState(outState)
         val webView = mutWebView ?: return
         val webViewState = Bundle()
