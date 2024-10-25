@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +31,7 @@ import kotlin.coroutines.suspendCoroutine
 
 internal class LatteFragment() : Fragment() {
     companion object {
+        private const val TAG = "LatteFragment"
         private const val KEY_ID = "id"
         private const val KEY_URL = "url"
         private const val KEY_REDIRECT_URI = "redirect_uri"
@@ -87,13 +89,16 @@ internal class LatteFragment() : Fragment() {
         get() = mutWebView!!
         set(value) { mutWebView = value }
 
-    // This flag is used to work around an issue of fragment re-creation.
+    // This is a workaround for the an issue of fragment re-creation observed with androidx.navigation.
     // When this fragment is used with androidx.navigation,
-    // this fragment may be onDestroyView(), and then onCreateView() again.
-    // If that happens, the webView may never has its load() called.
-    // However, even with this fix, savedInstanceState was never called, so
-    // the webView will show the initial screen.
-    private var waitWebViewToLoadIsCalledInThisLifecycle: Boolean = false
+    // this fragment may be onDestroyView(), and then onCreateView() again, without
+    // onSaveInstanceState() being called at all.
+    // It is also observed that the same instance of fragment is used when this happens.
+    // Therefore, here are the preconditions of this workaround.
+    // 1. onDestroyView() is called, and onSaveInstanceState() IS NOT called.
+    // 2. The fragment itself is NOT discarded and re-instantiated again, so storing things
+    //    in class properties work well in case of this workaround.
+    private var androidxNavigationWorkaroundBundle: Bundle? = null
 
     private var webViewOnReady: (() -> Unit)? = null
     private var webViewOnComplete: ((result: Result<WebViewResult>) -> Unit)? = null
@@ -196,7 +201,6 @@ internal class LatteFragment() : Fragment() {
             }
             this@LatteFragment.webViewOnReady = webViewOnReady
             this@LatteFragment.webViewOnComplete = webViewOnComplete
-            this@LatteFragment.waitWebViewToLoadIsCalledInThisLifecycle = true
             webView.load()
         }
     }
@@ -306,6 +310,7 @@ internal class LatteFragment() : Fragment() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d(TAG, "onCreate $this")
         super.onCreate(savedInstanceState)
 
         val backDispatcher = requireActivity().onBackPressedDispatcher
@@ -317,16 +322,17 @@ internal class LatteFragment() : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val webViewStateBundle = savedInstanceState?.getBundle(KEY_WEBVIEW_STATE)
+        Log.d(TAG, "onCreateView $this")
         val ctx = requireContext()
-        constructWebViewIfNeeded(ctx, webViewStateBundle)
 
-        // This lifecycle started.
-        // If waitWebViewToLoad is called, then waitWebViewToLoadIsCalledInThisLifecycle is true.
-        // if waitWebViewToLoadIsCalledInThisLifecycle is true, then webView.load() was called there.
-        // Otherwise, we have to call webView.load() here.
-        if (!waitWebViewToLoadIsCalledInThisLifecycle) {
-            webView.load()
+        val webViewStateBundle = savedInstanceState?.getBundle(KEY_WEBVIEW_STATE)
+        if (webViewStateBundle != null) {
+            Log.d(TAG, "onCreateView restore state from standard bundle $this")
+            constructWebViewIfNeeded(ctx, webViewStateBundle)
+        } else if (this.androidxNavigationWorkaroundBundle != null) {
+            Log.d(TAG, "onCreateView restore state from workaround bundle $this")
+            constructWebViewIfNeeded(ctx, this.androidxNavigationWorkaroundBundle)
+            this.androidxNavigationWorkaroundBundle = null
         }
 
         val intentFilter = IntentFilter(Latte.BroadcastType.RESET_PASSWORD_COMPLETED.action)
@@ -342,11 +348,13 @@ internal class LatteFragment() : Fragment() {
     }
 
     override fun onDestroyView() {
+        Log.d(TAG, "onDestroyView $this")
         super.onDestroyView()
 
-        // This lifecycle ended.
-        // Reset waitWebViewToLoadIsCalledInThisLifecycle to false.
-        waitWebViewToLoadIsCalledInThisLifecycle = false
+        Log.d(TAG, "onDestroyView save state to workaround bundle $this")
+        val webViewState = Bundle()
+        webView.saveState(webViewState)
+        this.androidxNavigationWorkaroundBundle = webViewState
 
         removeWebViewFromParent(webView)
         mutWebView = null
@@ -355,8 +363,10 @@ internal class LatteFragment() : Fragment() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        Log.d(TAG, "onSaveInstanceState $this")
         super.onSaveInstanceState(outState)
         val webView = mutWebView ?: return
+        Log.d(TAG, "onDestroyView save state to standard bundle $this")
         val webViewState = Bundle()
         webView.saveState(webViewState)
         outState.putBundle(KEY_WEBVIEW_STATE, webViewState)
