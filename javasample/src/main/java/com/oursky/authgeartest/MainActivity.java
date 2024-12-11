@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mPreAuthenticatedURLClientID;
     private EditText mPreAuthenticatedURLRedirectURI;
     private View mApp2AppstateField;
+    private EditText mOAuthProviderAlias;
     private EditText mAuthenticationFlowGroup;
     private Spinner mPage;
     private Spinner mTokenStorage;
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         mApp2AppEndpoint = findViewById(R.id.app2appendpointInput);
         mApp2AppState = findViewById(R.id.app2appstateInput);
         mApp2AppstateField = findViewById(R.id.app2appstateField);
+        mOAuthProviderAlias = findViewById(R.id.oauthProviderAliasInput);
         mAuthenticationFlowGroup = findViewById(R.id.authenticationFlowGroupInput);
         mPreAuthenticatedURLClientID = findViewById(R.id.preAuthenticatedURLClientIDInput);
         mPreAuthenticatedURLRedirectURI = findViewById(R.id.preAuthenticatedURLRedirectURIInput);
@@ -168,6 +170,21 @@ public class MainActivity extends AppCompatActivity {
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
 
+
+        mOAuthProviderAlias.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                viewModel.setOAuthProviderAlias(editable.toString());
+            }
+        });
         mAuthenticationFlowGroup.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
