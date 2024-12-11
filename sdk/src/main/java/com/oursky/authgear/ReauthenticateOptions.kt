@@ -38,7 +38,12 @@ data class ReauthenticateOptions @JvmOverloads constructor(
     /**
      * Authentication flow group
      */
-    var authenticationFlowGroup: String? = null
+    var authenticationFlowGroup: String? = null,
+
+    /**
+     * OAuth provider alias
+     */
+    var oauthProviderAlias: String? = null
 )
 
 internal fun ReauthenticateOptions.toRequest(idTokenHint: String, isSsoEnabled: Boolean): OidcAuthenticationRequest {
@@ -60,6 +65,7 @@ internal fun ReauthenticateOptions.toRequest(idTokenHint: String, isSsoEnabled: 
         colorScheme = this.colorScheme,
         wechatRedirectURI = this.wechatRedirectURI,
         page = null,
-        authenticationFlowGroup = this.authenticationFlowGroup
+        authenticationFlowGroup = this.authenticationFlowGroup,
+        oauthProviderAlias = this.oauthProviderAlias
     )
 }

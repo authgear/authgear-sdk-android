@@ -48,7 +48,12 @@ data class AuthenticateOptions @JvmOverloads constructor(
     /**
      * Authentication flow group
      */
-    var authenticationFlowGroup: String? = null
+    var authenticationFlowGroup: String? = null,
+
+    /**
+     * OAuth provider alias
+     */
+    var oauthProviderAlias: String? = null
 ) {
     companion object {
         internal fun getScopes(preAuthenticatedURLEnabled: Boolean): List<String> {
@@ -83,6 +88,7 @@ internal fun AuthenticateOptions.toRequest(
         wechatRedirectURI = this.wechatRedirectURI,
         page = this.page,
         authenticationFlowGroup = this.authenticationFlowGroup,
-        dpopJKT = dpopJKT
+        dpopJKT = dpopJKT,
+        oauthProviderAlias = this.oauthProviderAlias
     )
 }
