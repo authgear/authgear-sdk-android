@@ -78,6 +78,7 @@ public class MainViewModel extends AndroidViewModel {
     final private MutableLiveData<String> mClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
+    final private MutableLiveData<String> mOAuthProviderAlias = new MutableLiveData<>("");
     final private MutableLiveData<String> mAuthenticationiFlowGroup = new MutableLiveData<>("");
     final private MutableLiveData<String> mPreAuthenticatedURLClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mPreAuthenticatedURLRedirectURI = new MutableLiveData<>("");
@@ -163,6 +164,10 @@ public class MainViewModel extends AndroidViewModel {
         } else {
             mError.setValue(e);
         }
+    }
+
+    public void setOAuthProviderAlias(String s) {
+        mOAuthProviderAlias.setValue(s);
     }
 
     public void setAuthenticationiFlowGroup(String flowGroup) {
@@ -359,6 +364,9 @@ public class MainViewModel extends AndroidViewModel {
         options.setPage(mPage.getValue());
         options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
         options.setAuthenticationFlowGroup(mAuthenticationiFlowGroup.getValue());
+        if (!mOAuthProviderAlias.getValue().isEmpty()) {
+            options.setOauthProviderAlias(mOAuthProviderAlias.getValue());
+        }
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
             public void onAuthenticated(@Nullable UserInfo userInfo) {
@@ -505,6 +513,9 @@ public class MainViewModel extends AndroidViewModel {
                     options.setWechatRedirectURI(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI);
                     options.setColorScheme(getColorScheme());
                     options.setAuthenticationFlowGroup(mAuthenticationiFlowGroup.getValue());
+                    if (!mOAuthProviderAlias.getValue().isEmpty()) {
+                        options.setOauthProviderAlias(mOAuthProviderAlias.getValue());
+                    }
                     mAuthgear.reauthenticate(options, makeBiometricOptions(activity), new OnReauthenticateListener() {
                         @Override
                         public void onFinished(@Nullable UserInfo userInfo) {

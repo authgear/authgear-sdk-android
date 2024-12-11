@@ -140,6 +140,36 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/oauthProviderAliasField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    >
+
+                    <TextView
+                        android:id="@+id/oauthProviderAliasLabel"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:text="Pre-select OAuth provider"
+                        tools:ignore="HardcodedText" />
+
+                    <EditText
+                        android:id="@+id/oauthProviderAliasInput"
+                        android:layout_height="wrap_content"
+                        android:layout_width="0dp"
+                        android:hint="Enter OAuth provider alias"
+                        app:layout_constraintStart_toEndOf="@+id/oauthProviderAliasLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        android:inputType="text"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/authenticationFlowGroupField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
