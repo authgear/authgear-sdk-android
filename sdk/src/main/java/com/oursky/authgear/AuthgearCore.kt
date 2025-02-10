@@ -270,6 +270,27 @@ internal class AuthgearCore(
         return userInfo
     }
 
+    @Suppress("RedundantSuspendModifier")
+    suspend fun authenticateWithMigratedSession(
+        accessToken: String,
+        refreshToken: String,
+        expiresIn: Long,
+        tokenType: String,
+    ): UserInfo {
+        requireIsInitialized()
+        val tokenResponse = OidcTokenResponse(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            expiresIn = expiresIn,
+            tokenType = tokenType,
+        )
+        val userInfo = oauthRepo.oidcUserInfoRequest(
+            accessToken
+        )
+        saveToken(tokenResponse, SessionStateChangeReason.AUTHENTICATED)
+        return userInfo
+    }
+
     @ExperimentalAuthgearApi
     @Suppress("RedundantSuspendModifier")
     suspend fun createAuthenticateRequest(

@@ -17,6 +17,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -404,6 +406,58 @@ class Latte(
                     return@fetch responseString
                 }
             }
+        }
+    }
+
+    suspend fun migrateSession(
+        accessToken: String,
+        migrationEndpoint: String,
+    ): UserInfo {
+        return withContext(Dispatchers.IO) {
+            val url = URL(migrationEndpoint)
+            val request = SessionMigrationRequest(
+                clientId = authgear.clientId,
+                accessToken = accessToken,
+            )
+            val encoded = Json.encodeToString(request)
+
+            val response: SessionMigrationResponse = HttpClient.fetch(url, "POST", emptyMap()) { conn ->
+                conn.outputStream.use {
+                    it.write(encoded.toByteArray(StandardCharsets.UTF_8))
+                }
+                conn.errorStream?.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                }
+                conn.inputStream.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                    HttpClient.json.decodeFromString(responseString)
+                }
+            }
+
+            val migrationResult = CompletableDeferred<UserInfo>()
+
+            val listener = object : OnAuthenticateWithMigratedSessionListener {
+                override fun onAuthenticated(userInfo: UserInfo) {
+                    migrationResult.complete(userInfo)
+                }
+
+                override fun onAuthenticationFailed(throwable: Throwable) {
+                    migrationResult.completeExceptionally(throwable)
+                }
+            }
+
+            authgear.authenticateWithMigratedSession(
+                accessToken = response.accessToken,
+                refreshToken = response.refreshToken,
+                expiresIn = response.expiresIn,
+                tokenType = response.tokenType,
+                onAuthenticateWithMigratedSessionListener = listener,
+                handler = Handler(Looper.getMainLooper()),
+            )
+
+            return@withContext migrationResult.await()
         }
     }
 

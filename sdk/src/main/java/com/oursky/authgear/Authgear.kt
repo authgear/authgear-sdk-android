@@ -138,6 +138,41 @@ constructor(
     }
 
     /**
+     * Authenticate with session created through admin API
+     * @param onAuthenticateWithMigratedSessionListener The listener.
+     * @param handler The handler of the thread on which the listener is called.
+     */
+    @MainThread
+    @JvmOverloads
+    fun authenticateWithMigratedSession(
+        accessToken: String,
+        refreshToken: String,
+        expiresIn: Long,
+        tokenType: String,
+        onAuthenticateWithMigratedSessionListener: OnAuthenticateWithMigratedSessionListener,
+        handler: Handler = Handler(Looper.getMainLooper())
+    ) {
+        scope.launch {
+            try {
+                val userInfo = core.authenticateWithMigratedSession(
+                    accessToken = accessToken,
+                    refreshToken = refreshToken,
+                    expiresIn = expiresIn,
+                    tokenType = tokenType,
+                )
+                handler.post {
+                    onAuthenticateWithMigratedSessionListener.onAuthenticated(userInfo)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                handler.post {
+                    onAuthenticateWithMigratedSessionListener.onAuthenticationFailed(e)
+                }
+            }
+        }
+    }
+
+    /**
      * Authenticate a user by directing the user to an external browser to authenticate.
      * @param options Authenticate options.
      * @param onAuthenticateListener The listener.
