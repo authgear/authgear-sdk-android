@@ -1241,4 +1241,8 @@ internal class AuthgearCore(
             throw e
         }
     }
+
+    fun getDeviceInfo(): DeviceInfoRoot {
+        return getDeviceInfo(this.application)
+    }
 }

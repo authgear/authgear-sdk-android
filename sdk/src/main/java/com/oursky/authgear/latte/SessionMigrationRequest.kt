@@ -9,4 +9,6 @@ data class SessionMigrationRequest(
     val clientId: String,
     @SerialName("access_token")
     val accessToken: String,
+    @SerialName("device_info")
+    val deviceInfo: String,
 )
