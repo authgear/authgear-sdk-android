@@ -872,6 +872,11 @@ constructor(
             }
         }
     }
+
+    @MainThread
+    fun getDeviceInfoBase64(): String {
+        return core.getDeviceInfo().toBase64URLEncodedString()
+    }
 }
 
 
