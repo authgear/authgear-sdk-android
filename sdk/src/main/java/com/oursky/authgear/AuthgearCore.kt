@@ -1208,4 +1208,8 @@ internal class AuthgearCore(
         requireMinimumApp2AppAPILevel()
         return app2app.rejectApp2AppAuthenticationRequest(request, reason)
     }
+
+    fun getDeviceInfo(): DeviceInfoRoot {
+        return getDeviceInfo(this.application)
+    }
 }

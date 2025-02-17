@@ -418,6 +418,7 @@ class Latte(
             val request = SessionMigrationRequest(
                 clientId = authgear.clientId,
                 accessToken = accessToken,
+                deviceInfo = authgear.getDeviceInfoBase64(),
             )
             val encoded = Json.encodeToString(request)
 
