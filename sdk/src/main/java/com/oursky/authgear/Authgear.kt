@@ -144,6 +144,7 @@ constructor(
      */
     @MainThread
     @JvmOverloads
+    @ExperimentalAuthgearApi
     fun authenticateWithMigratedSession(
         accessToken: String,
         refreshToken: String,
