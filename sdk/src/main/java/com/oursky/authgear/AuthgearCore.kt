@@ -232,6 +232,7 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
+    @ExperimentalAuthgearApi
     suspend fun authenticateWithMigratedSession(
         accessToken: String,
         refreshToken: String,

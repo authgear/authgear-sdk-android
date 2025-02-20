@@ -28,7 +28,7 @@ import java.security.SecureRandom
 class Latte(
     internal val authgear: Authgear,
     internal val customUIEndpoint: String,
-    internal val tokenizeEndpoint: String,
+    internal val middlewareEndpoint: String,
     private val appLinkOrigin: Uri,
     private val shortLinkOrigin: Uri,
     private val rewriteAppLinkOrigin: Uri? = null,
@@ -391,7 +391,7 @@ class Latte(
 
     private suspend fun createXSecretsToken(data: ByteArray): String {
         return withContext(Dispatchers.IO) {
-            val url = URL(this@Latte.tokenizeEndpoint)
+            val url = URL(this@Latte.middlewareEndpoint + "/token")
             return@withContext HttpClient.fetch(url, "POST", emptyMap()) { conn ->
                 conn.outputStream.use {
                     it.write(data)
@@ -410,11 +410,10 @@ class Latte(
     }
 
     suspend fun migrateSession(
-        accessToken: String,
-        migrationEndpoint: String,
+        accessToken: String
     ): UserInfo {
         return withContext(Dispatchers.IO) {
-            val url = URL(migrationEndpoint)
+            val url = URL(this@Latte.middlewareEndpoint + "/session_migration")
             val request = SessionMigrationRequest(
                 clientId = authgear.clientId,
                 accessToken = accessToken,
