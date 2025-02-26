@@ -461,6 +461,33 @@ class Latte(
         }
     }
 
+    suspend fun getProofOfPhoneNumberVerification(): String {
+        return withContext(Dispatchers.IO) {
+            val url = URL(this@Latte.middlewareEndpoint + "/proof_of_phone_number_verification")
+            val request = ProofOfPhoneNumberVerificationRequest(
+                accessToken = authgear.accessToken!!,
+            )
+            val encoded = Json.encodeToString(request)
+
+            val response: ProofOfPhoneNumberVerificationResponse = HttpClient.fetch(url, "POST", emptyMap()) { conn ->
+                conn.outputStream.use {
+                    it.write(encoded.toByteArray(StandardCharsets.UTF_8))
+                }
+                conn.errorStream?.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                }
+                conn.inputStream.use {
+                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                    HttpClient.throwErrorIfNeeded(conn, responseString)
+                    HttpClient.json.decodeFromString(responseString)
+                }
+            }
+
+            return@withContext response.proofOfPhoneNumberVerification
+        }
+    }
+
     private suspend fun makeXStateWithSecrets(
         xState: Map<String, String>,
         xSecrets: Map<String, String>
