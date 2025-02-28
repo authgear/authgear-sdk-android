@@ -461,6 +461,56 @@ class Latte(
         }
     }
 
+    suspend fun getProofOfPhoneNumberVerification(): String {
+        return withContext(Dispatchers.IO) {
+            val proofResult = CompletableDeferred<String>()
+
+            authgear.refreshAccessTokenIfNeeded(
+                object : OnRefreshAccessTokenIfNeededListener {
+                    override fun onFinished() {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                val accessToken: String = authgear.accessToken
+                                    ?: throw UnauthenticatedUserException()
+
+                                val url = URL(this@Latte.middlewareEndpoint + "/proof_of_phone_number_verification")
+                                val request = ProofOfPhoneNumberVerificationRequest(
+                                    accessToken = accessToken,
+                                )
+                                val encoded = Json.encodeToString(request)
+
+                                val response: ProofOfPhoneNumberVerificationResponse = HttpClient.fetch(url, "POST", emptyMap()) { conn ->
+                                    conn.outputStream.use {
+                                        it.write(encoded.toByteArray(StandardCharsets.UTF_8))
+                                    }
+                                    conn.errorStream?.use {
+                                        val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                                        HttpClient.throwErrorIfNeeded(conn, responseString)
+                                    }
+                                    conn.inputStream.use {
+                                        val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
+                                        HttpClient.throwErrorIfNeeded(conn, responseString)
+                                        HttpClient.json.decodeFromString(responseString)
+                                    }
+                                }
+
+                                proofResult.complete(response.proofOfPhoneNumberVerification)
+                            } catch (e: Throwable) {
+                                proofResult.completeExceptionally(e)
+                            }
+                        }
+                    }
+
+                    override fun onFailed(throwable: Throwable) {
+                        proofResult.completeExceptionally(throwable)
+                    }
+                }
+            )
+
+            proofResult.await()
+        }
+    }
+
     private suspend fun makeXStateWithSecrets(
         xState: Map<String, String>,
         xSecrets: Map<String, String>
