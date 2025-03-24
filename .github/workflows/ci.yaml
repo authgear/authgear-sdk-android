@@ -52,6 +52,7 @@ jobs:
         echo -n "$STORE_BASE64" | base64 --decode -o "$STORE_FILE"
         make build-aab
     - name: Upload aab
+      if: ${{ github.ref == 'refs/heads/main' }}
       env:
         GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}
       run: |
