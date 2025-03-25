@@ -12,70 +12,50 @@ on:
 
 jobs:
   gh-pages:
-    runs-on: macos-13
+    runs-on: macos-14
     needs: ["app"]
     steps:
-    # The default Java on macos-13 is 17. So we no longer need to set it.
-    # https://github.com/actions/runner-images/blob/main/images/macos/macos-13-Readme.md#java
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: make docs
     - name: Deploy docs to gh-pages
       uses: peaceiris/actions-gh-pages@v3
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: ${{ github.repository == 'authgear/authgear-sdk-android' && github.ref == 'refs/heads/main' }}
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./build/dokka/htmlMultiModule
+
   test:
-    runs-on: macos-13
+    runs-on: macos-14
     steps:
-    # The default Java on macos-13 is 17. So we no longer need to set it.
-    # https://github.com/actions/runner-images/blob/main/images/macos/macos-13-Readme.md#java
-    - uses: actions/checkout@v3
-    - name: Build sdk
-      run: ./gradlew sdk:assembleRelease
-    - name: Build sdk-okhttp
-      run: ./gradlew sdk-okhttp:assembleRelease
+    - uses: actions/checkout@v4
+    - run: make sdk
+    - run: make sdk-okhttp
+
   app:
-    runs-on: macos-13
+    if: ${{ github.repository == 'authgear/authgear-sdk-android' }}
+    runs-on: macos-14
     needs: ["test"]
-    if: github.ref == 'refs/heads/main'
     steps:
-    # The default Java on macos-13 is 17. So we no longer need to set it.
-    # https://github.com/actions/runner-images/blob/main/images/macos/macos-13-Readme.md#java
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - uses: actions/checkout@v4
+    - uses: ruby/setup-ruby@v1
       with:
-        node-version: "18.x"
-    - run: npm install -g appcenter-cli
-    - name: Set versionCode
-      run: |
-        VERSION_CODE=$(date +%s)
-        sed -I "" "s/versionCode = 1/versionCode = $VERSION_CODE/" ./javasample/build.gradle.kts
-    - name: Build unsigned APK
-      run: ./gradlew javasample:assembleRelease
-    - name: Install keystore
+        # runs 'bundle install' and caches installed gems automatically
+        bundler-cache: true
+    - name: Build aab
       env:
-        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        STORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       run: |
-        KEYSTORE_PATH=$RUNNER_TEMP/keystore.jks
-        echo -n "$ANDROID_KEYSTORE_BASE64" | base64 --decode -o $KEYSTORE_PATH
-    - name: Run zipalign
-      run: |
-        "$ANDROID_HOME/build-tools/34.0.0/zipalign" -c -v 4 ./javasample/build/outputs/apk/release/javasample-release-unsigned.apk
-    - name: Run apksigner
+        export STORE_FILE="$RUNNER_TEMP/upload_key.jks"
+        echo -n "$STORE_BASE64" | base64 --decode -o "$STORE_FILE"
+        make build-aab
+    - name: Upload aab
+      if: ${{ github.ref == 'refs/heads/main' }}
       env:
-        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}
       run: |
-        "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign \
-          --ks $RUNNER_TEMP/keystore.jks \
-          --ks-key-alias "$ANDROID_KEY_ALIAS" \
-          --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
-          --key-pass "pass:$ANDROID_KEY_PASSWORD" \
-          --out ./javasample/build/outputs/apk/release/javasample-release-signed.apk \
-          ./javasample/build/outputs/apk/release/javasample-release-unsigned.apk
-    - name: Distribute to App Center
-      env:
-        APPCENTER_ACCESS_TOKEN: ${{ secrets.ANDROID_APPCENTER_ACCESS_TOKEN }}
-      run: appcenter distribute release --debug --silent --file ./javasample/build/outputs/apk/release/javasample-release-signed.apk --group "Collaborators" --app "Oursky/Authgear-demo-Android" --release-notes "no release notes"
+        export GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE="$RUNNER_TEMP/google_service_account_key.json"
+        echo -n "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64" | base64 --decode -o "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE"
+        make upload-aab

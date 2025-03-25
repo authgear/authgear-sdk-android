@@ -1,0 +1,25 @@
+default_platform(:android)
+
+platform :android do
+  lane :build_aab do |options|
+    gradle(
+      tasks: [":javasample:bundleRelease"],
+      properties: {
+        "VERSION_CODE" => options[:VERSION_CODE],
+        "STORE_FILE" => options[:STORE_FILE],
+        "STORE_PASSWORD" => options[:STORE_PASSWORD],
+        "KEY_ALIAS" => options[:KEY_ALIAS],
+        "KEY_PASSWORD" => options[:KEY_PASSWORD],
+      },
+    )
+  end
+
+  lane :upload_aab do |options|
+    upload_to_play_store(
+      json_key: options[:json_key],
+      package_name: "com.authgear.sdk.exampleapp.android",
+      track: "internal",
+      aab: "./javasample/build/outputs/bundle/release/javasample-release.aab",
+    )
+  end
+end

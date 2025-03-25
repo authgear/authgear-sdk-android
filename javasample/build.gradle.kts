@@ -23,17 +23,32 @@ android {
 
     defaultConfig {
         multiDexEnabled = true
-        applicationId = "com.authgear.exampleapp.android"
+        applicationId = "com.authgear.sdk.exampleapp.android"
         // minSdk is set to 23 so that we do not need version check to use biometric and app2app.
         minSdk = 23
         targetSdk = 34
-        versionCode = 1
+        if (project.hasProperty("VERSION_CODE")) {
+            versionCode = Integer.parseInt(project.findProperty("VERSION_CODE") as String)
+        } else {
+            versionCode = 1
+        }
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "LOCAL_AUTHGEAR_CLIENT_ID", "\"${localProperties.getProperty("local.authgear.clientId")}\"")
         buildConfigField("String", "LOCAL_AUTHGEAR_ENDPOINT", "\"${localProperties.getProperty("local.authgear.endpoint")}\"")
+    }
+
+    if (project.hasProperty("STORE_FILE")) {
+        signingConfigs {
+            create("release") {
+                storeFile = File(project.findProperty("STORE_FILE") as String)
+                storePassword = project.findProperty("STORE_PASSWORD") as String
+                keyAlias = project.findProperty("KEY_ALIAS") as String
+                keyPassword = project.findProperty("KEY_PASSWORD") as String
+            }
+        }
     }
 
     buildTypes {
@@ -43,6 +58,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (project.hasProperty("STORE_FILE")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
