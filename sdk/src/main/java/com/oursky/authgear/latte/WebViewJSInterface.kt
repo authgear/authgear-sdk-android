@@ -1,5 +1,7 @@
 package com.oursky.authgear.latte
 
+import android.content.Intent
+import android.net.Uri
 import android.webkit.JavascriptInterface
 import kotlinx.serialization.json.*
 
@@ -13,6 +15,19 @@ internal class WebViewJSInterface(private val webView: WebView) {
                         window.latte.handleEvent(JSON.stringify(e.detail));
                     }
                 )
+                document.addEventListener('click',
+                    function (e) {
+                        if (e.target.tagName === 'A' && e.target.getAttribute('target') === '_blank') {
+                            e.preventDefault();
+                            window.latte.handleEvent(JSON.stringify({
+                                type: 'openExternalLink',
+                                url: e.target.href
+                            }));
+                            return false;
+                        }
+                    },
+                    true
+                )
                 window.__latteInitialized = true
             }
         """
@@ -21,6 +36,7 @@ internal class WebViewJSInterface(private val webView: WebView) {
     enum class BuiltInEvent(val eventName: String) {
         OPEN_EMAIL_CLIENT("openEmailClient"),
         OPEN_SMS_CLIENT("openSMSClient"),
+        OPEN_EXTERNAL_LINK("openExternalLink"),
         TRACKING("tracking"),
         READY("ready"),
         REAUTH_WITH_BIOMETRIC("reauthWithBiometric"),
@@ -39,6 +55,16 @@ internal class WebViewJSInterface(private val webView: WebView) {
         when (type) {
             BuiltInEvent.OPEN_EMAIL_CLIENT -> this.webView.listener?.onEvent(WebViewEvent.OpenEmailClient)
             BuiltInEvent.OPEN_SMS_CLIENT -> this.webView.listener?.onEvent(WebViewEvent.OpenSMSClient)
+            BuiltInEvent.OPEN_EXTERNAL_LINK -> {
+                val url = try {
+                    event.jsonObject["url"]?.jsonPrimitive?.contentOrNull
+                } catch (e: Exception) { null } ?: return
+                val uri = try {
+                    Uri.parse(url)
+                } catch (e: Exception) { null } ?: return
+                val browserIntent = Intent(Intent.ACTION_VIEW, uri)
+                this.webView.context.startActivity(browserIntent)
+            }
             BuiltInEvent.TRACKING -> {
                 val event_name = try {
                     event.jsonObject["event_name"]?.jsonPrimitive?.contentOrNull
