@@ -18,6 +18,8 @@ internal class WebView(context: Context, val request: WebViewRequest, webContent
 
     init {
         addJavascriptInterface(WebViewJSInterface(this), WebViewJSInterface.jsBridgeName)
+        // https://developer.android.com/reference/android/webkit/WebSettings#setSupportMultipleWindows(boolean)
+        settings.setSupportMultipleWindows(true)
         settings.javaScriptEnabled = true
 
         if (webContentsDebuggingEnabled) {
@@ -25,7 +27,8 @@ internal class WebView(context: Context, val request: WebViewRequest, webContent
         }
 
         webViewClient = WebViewClient(this)
-        // TODO: copy WebChromeClient from OAuthWebViewBaseActivity?
+        // https://developer.android.com/reference/android/webkit/WebSettings#setSupportMultipleWindows(boolean)
+        webChromeClient = WebViewChromeClient(this)
     }
 
     fun load() {
