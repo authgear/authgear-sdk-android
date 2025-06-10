@@ -256,7 +256,7 @@ internal class LatteFragment() : Fragment() {
         val broadcastIntent = Intent(latteID)
         broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_EXTERNAL_URL.toString())
-        broadcastIntent.putExtra(INTENT_KEY_URL, Json.encodeToString(uri.toString()))
+        broadcastIntent.putExtra(INTENT_KEY_URL, uri.toString())
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
 
