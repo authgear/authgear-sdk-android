@@ -1,6 +1,5 @@
 package com.oursky.authgear.latte
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Message
 import android.webkit.WebView.HitTestResult.SRC_ANCHOR_TYPE
@@ -23,14 +22,12 @@ internal class WebViewChromeClient(private val webView: WebView) : android.webki
                 val message = handler.obtainMessage()
                 view.requestFocusNodeHref(message)
                 val url = message.data.getString("url") ?: return false
-                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                view.context.startActivity(browserIntent)
+                webView.listener?.onEvent(WebViewEvent.OpenExternalURL(Uri.parse(url)))
                 return false
             }
             SRC_ANCHOR_TYPE -> {
                 val data = result.extra ?: return false
-                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(data))
-                view.context.startActivity(browserIntent)
+                webView.listener?.onEvent(WebViewEvent.OpenExternalURL(Uri.parse(data)))
                 return false
             }
             else -> false
