@@ -41,6 +41,7 @@ internal class LatteFragment() : Fragment() {
         internal const val INTENT_KEY_TYPE = "type"
         internal const val INTENT_KEY_EVENT = "event"
         internal const val INTENT_KEY_RESULT = "result"
+        internal const val INTENT_KEY_URL = "url"
 
         internal const val INTENT_RESULT_OK = "ok"
 
@@ -69,7 +70,8 @@ internal class LatteFragment() : Fragment() {
         OPEN_SMS_CLIENT,
         TRACKING,
         REAUTH_WITH_BIOMETRIC,
-        RESET_PASSWORD_COMPLETED
+        RESET_PASSWORD_COMPLETED,
+        OPEN_EXTERNAL_URL,
     }
 
     val latteID: String
@@ -136,6 +138,9 @@ internal class LatteFragment() : Fragment() {
                 }
                 is WebViewEvent.ResetPasswordCompleted -> {
                     fragment.broadcastOnResetPasswordCompletedIntent()
+                }
+                is WebViewEvent.OpenExternalURL -> {
+                    fragment.broadcastOnOpenExternalURL(event.uri)
                 }
             }
         }
@@ -243,6 +248,15 @@ internal class LatteFragment() : Fragment() {
         broadcastIntent.setPackage(ctx.applicationContext.packageName)
         broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.TRACKING.toString())
         broadcastIntent.putExtra(INTENT_KEY_EVENT, Json.encodeToString(event))
+        ctx.sendOrderedBroadcast(broadcastIntent, null)
+    }
+
+    private fun broadcastOnOpenExternalURL(uri: Uri) {
+        val ctx = context ?: return
+        val broadcastIntent = Intent(latteID)
+        broadcastIntent.setPackage(ctx.applicationContext.packageName)
+        broadcastIntent.putExtra(INTENT_KEY_TYPE, BroadcastType.OPEN_EXTERNAL_URL.toString())
+        broadcastIntent.putExtra(INTENT_KEY_URL, Json.encodeToString(uri.toString()))
         ctx.sendOrderedBroadcast(broadcastIntent, null)
     }
 
@@ -397,6 +411,11 @@ internal class LatteFragment() : Fragment() {
                     }
                     BroadcastType.OPEN_SMS_CLIENT.name -> {
                         latte.delegate?.onOpenSMSClient(context)
+                    }
+                    BroadcastType.OPEN_EXTERNAL_URL.name -> {
+                        val uriStr = intent.getStringExtra(INTENT_KEY_URL) ?: return
+                        val uri = Uri.parse(uriStr)
+                        latte.delegate?.onOpenExternalURL(context, uri)
                     }
                     BroadcastType.TRACKING.name -> {
                         val eventStr = intent.getStringExtra(INTENT_KEY_EVENT) ?: return

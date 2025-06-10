@@ -2,6 +2,7 @@ package com.oursky.authgear.latte
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 
 interface LatteDelegate {
     fun onTrackingEvent(event: LatteTrackingEvent) {}
@@ -23,4 +24,6 @@ interface LatteDelegate {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
+
+    fun onOpenExternalURL(context: Context?, uri: Uri)
 }
