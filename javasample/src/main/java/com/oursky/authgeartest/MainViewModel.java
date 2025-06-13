@@ -69,7 +69,7 @@ import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 import java.util.Date;
 
 @SuppressWarnings("ConstantConditions")
-public class MainViewModel extends AndroidViewModel {
+public class MainViewModel extends AndroidViewModel implements AuthgearDelegate {
     private static final int ALLOWED = BiometricManager.Authenticators.BIOMETRIC_STRONG;
     private static final String TAG = MainViewModel.class.getSimpleName();
     private Authgear mAuthgear = null;
@@ -278,7 +278,10 @@ public class MainViewModel extends AndroidViewModel {
 
         UIImplementation uiImplementation;
         if (mUseWebKitWebView.getValue()) {
-            uiImplementation = new WebKitWebViewUIImplementation();
+            WebKitWebViewUIImplementation impl = new WebKitWebViewUIImplementation();
+            impl.setWechatRedirectURI(Uri.parse(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI));
+            impl.setAuthgearDelegate(this);
+            uiImplementation = impl;
         } else {
             uiImplementation = new CustomTabsUIImplementation();
         }
@@ -311,30 +314,7 @@ public class MainViewModel extends AndroidViewModel {
             }
         });
 
-        mAuthgear.setDelegate(new AuthgearDelegate() {
-            @Override
-            public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason) {
-                Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason);
-                mSessionState.setValue(container.getSessionState());
-            }
-
-            @Override
-            public void sendWechatAuthRequest(String state) {
-                Log.d(TAG, "Open wechat sdk state=" + state);
-                if (!wechatAPI.isWXAppInstalled()) {
-                    setError(new RuntimeException("You have not installed the WeChat client app"));
-                    return;
-                }
-                if (wechatAPI == null) {
-                    setError(new RuntimeException("WeChat app id is not configured"));
-                    return;
-                }
-                SendAuth.Req req = new SendAuth.Req();
-                req.scope = "snsapi_userinfo";
-                req.state = state;
-                wechatAPI.sendReq(req);
-            }
-        });
+        mAuthgear.setDelegate(this);
 
         resetState();
 
@@ -355,6 +335,25 @@ public class MainViewModel extends AndroidViewModel {
                 }
             });
         });
+    }
+
+    @Override
+    public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason) {
+        Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason);
+        this.mSessionState.setValue(container.getSessionState());
+    }
+
+    @Override
+    public void sendWechatAuthRequest(String state) {
+        Log.d(TAG, "Open wechat sdk state=" + state);
+        if (!this.wechatAPI.isWXAppInstalled()) {
+            setError(new RuntimeException("You have not installed the WeChat client app"));
+            return;
+        }
+        SendAuth.Req req = new SendAuth.Req();
+        req.scope = "snsapi_userinfo";
+        req.state = state;
+        this.wechatAPI.sendReq(req);
     }
 
     public void authenticate() {

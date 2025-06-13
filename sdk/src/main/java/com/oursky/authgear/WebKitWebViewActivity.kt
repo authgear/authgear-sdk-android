@@ -47,6 +47,7 @@ class WebKitWebViewActivity: AppCompatActivity() {
         var redirectURI: Uri
         var actionBarBackgroundColor: Int? = null
         var actionBarButtonTintColor: Int? = null
+        var wechatRedirectURI: Uri? = null
 
         constructor(url: Uri, redirectURI: Uri) {
             this.url = url
@@ -62,6 +63,9 @@ class WebKitWebViewActivity: AppCompatActivity() {
             if (bundle.containsKey("actionBarButtonTintColor")) {
                 this.actionBarButtonTintColor = bundle.getInt("actionBarButtonTintColor")
             }
+            if (bundle.containsKey("wechatRedirectURI")) {
+                this.wechatRedirectURI = bundle.getParcelable("wechatRedirectURI")
+            }
         }
 
         fun toBundle(): Bundle {
@@ -73,6 +77,9 @@ class WebKitWebViewActivity: AppCompatActivity() {
             }
             this.actionBarButtonTintColor?.let {
                 bundle.putInt("actionBarButtonTintColor", it)
+            }
+            this.wechatRedirectURI?.let {
+                bundle.putParcelable("wechatRedirectURI", it)
             }
             return bundle
         }
@@ -118,21 +125,32 @@ class WebKitWebViewActivity: AppCompatActivity() {
         }
 
         private fun shouldOverrideUrlLoading(uri: Uri): Boolean {
-            if (this.checkRedirectURI(uri)) {
-                return true;
-            }
-            return false;
-        }
-
-        private fun checkRedirectURI(uri: Uri): Boolean {
-            val redirectURI = this.activity.getOptions().redirectURI
             val withoutQuery = this.removeQueryAndFragment(uri)
-            if (withoutQuery.toString() ==  redirectURI.toString()) {
+
+            // Check redirect_uri
+            val redirectURI = this.activity.getOptions().redirectURI
+            if (withoutQuery.toString() == redirectURI.toString()) {
                 this.activity.result = uri
                 this.activity.callSetResult()
                 this.activity.finish()
                 return true
             }
+
+            // Check wechat_redirect_uri
+            val wechatRedirectURI = this.activity.getOptions().wechatRedirectURI
+            if (wechatRedirectURI != null) {
+                if (withoutQuery.toString() == wechatRedirectURI.toString()) {
+                    this.activity.intent.getStringExtra(KEY_BROADCAST_ACTION)?.let { broadcastAction ->
+                        val broadcastIntent = Intent(broadcastAction)
+                        broadcastIntent.setPackage(this.activity.applicationContext.packageName)
+                        broadcastIntent.putExtra(AuthgearCore.KEY_OAUTH_BOARDCAST_TYPE, OAuthBroadcastType.OPEN_WECHAT_REDIRECT_URI.name)
+                        broadcastIntent.putExtra(AuthgearCore.KEY_WECHAT_REDIRECT_URI, uri.toString())
+                        this.activity.sendBroadcast(broadcastIntent)
+                        return true
+                    }
+                }
+            }
+
             return false;
         }
 

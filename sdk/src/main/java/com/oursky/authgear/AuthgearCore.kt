@@ -86,9 +86,10 @@ internal class AuthgearCore(
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
 
-        const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
-        const val KEY_REDIRECT_URL = "redirectUrl"
-        const val CODE_CHALLENGE_METHOD = "S256"
+        internal const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
+        internal const val KEY_REDIRECT_URL = "redirectUrl"
+        internal const val KEY_WECHAT_REDIRECT_URI = "wechat_redirect_uri"
+        internal const val CODE_CHALLENGE_METHOD = "S256"
     }
 
     data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)
