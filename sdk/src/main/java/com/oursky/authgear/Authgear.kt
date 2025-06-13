@@ -165,15 +165,6 @@ constructor(
     ) {
         scope.launch {
             try {
-                AuthgearCore.registerWechatRedirectURI(
-                    options.wechatRedirectURI,
-                    object : AuthgearCore.WechatRedirectHandler {
-                        override fun sendWechatAuthRequest(state: String) {
-                            handler.post {
-                                delegate?.sendWechatAuthRequest(state)
-                            }
-                    }
-                })
                 val userInfo = core.authenticate(options)
                 handler.post {
                     onAuthenticateListener.onAuthenticated(userInfo)
@@ -183,8 +174,6 @@ constructor(
                 handler.post {
                     onAuthenticateListener.onAuthenticationFailed(e)
                 }
-            } finally {
-                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -208,8 +197,6 @@ constructor(
                 handler.post {
                     listener.onFailed(e)
                 }
-            } finally {
-                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -234,8 +221,6 @@ constructor(
                 handler.post {
                     listener.onAuthenticationFailed(e)
                 }
-            } finally {
-                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -253,15 +238,6 @@ constructor(
     ) {
         scope.launch {
             try {
-                AuthgearCore.registerWechatRedirectURI(
-                    options.wechatRedirectURI,
-                    object : AuthgearCore.WechatRedirectHandler {
-                        override fun sendWechatAuthRequest(state: String) {
-                            handler.post {
-                                delegate?.sendWechatAuthRequest(state)
-                            }
-                        }
-                    })
                 val userInfo = core.reauthenticate(options, biometricOptions)
                 handler.post {
                     listener.onFinished(userInfo)
@@ -271,8 +247,6 @@ constructor(
                 handler.post {
                     listener.onFailed(e)
                 }
-            } finally {
-                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -464,16 +438,6 @@ constructor(
     ) {
         scope.launch {
             try {
-                AuthgearCore.registerWechatRedirectURI(
-                    options?.wechatRedirectURI,
-                    object : AuthgearCore.WechatRedirectHandler {
-                        override fun sendWechatAuthRequest(state: String) {
-                            handler.post {
-                                delegate?.sendWechatAuthRequest(state)
-                            }
-                        }
-                    }
-                )
                 core.open(page, options)
                 handler.post {
                     listener?.onClosed()
@@ -515,8 +479,6 @@ constructor(
                 handler.post {
                     listener?.onFailed(e)
                 }
-            } finally {
-                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -550,8 +512,6 @@ constructor(
                 handler.post {
                     listener?.onFailed(e)
                 }
-            } finally {
-                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
@@ -577,16 +537,6 @@ constructor(
     ) {
         scope.launch {
             try {
-                AuthgearCore.registerWechatRedirectURI(
-                    options.wechatRedirectURI,
-                    object : AuthgearCore.WechatRedirectHandler {
-                        override fun sendWechatAuthRequest(state: String) {
-                            handler.post {
-                                delegate?.sendWechatAuthRequest(state)
-                            }
-                        }
-                    }
-                )
                 val userInfo = core.promoteAnonymousUser(options)
                 handler.post {
                     onPromoteAnonymousUserListener.onPromoted(userInfo)
@@ -596,8 +546,6 @@ constructor(
                 handler.post {
                     onPromoteAnonymousUserListener.onPromotionFailed(e)
                 }
-            } finally {
-                AuthgearCore.unregisteredWechatRedirectURI()
             }
         }
     }
