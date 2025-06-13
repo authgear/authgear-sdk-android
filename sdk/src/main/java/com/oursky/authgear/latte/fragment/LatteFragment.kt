@@ -402,20 +402,20 @@ internal class LatteFragment() : Fragment() {
         val intentFilter = IntentFilter(latteID)
         var handle: ListenHandle? = null
         val br = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
+            override fun onReceive(_context: Context?, intent: Intent?) {
                 val type = intent?.getStringExtra(INTENT_KEY_TYPE) ?: return
                 resultData = INTENT_RESULT_OK
                 when (type) {
                     BroadcastType.OPEN_EMAIL_CLIENT.name -> {
-                        latte.delegate?.onOpenEmailClient(context)
+                        latte.delegate?.onOpenEmailClient(this@LatteFragment.context)
                     }
                     BroadcastType.OPEN_SMS_CLIENT.name -> {
-                        latte.delegate?.onOpenSMSClient(context)
+                        latte.delegate?.onOpenSMSClient(this@LatteFragment.context)
                     }
                     BroadcastType.OPEN_EXTERNAL_URL.name -> {
                         val uriStr = intent.getStringExtra(INTENT_KEY_URL) ?: return
                         val uri = Uri.parse(uriStr)
-                        latte.delegate?.onOpenExternalURL(context, uri)
+                        latte.delegate?.onOpenExternalURL(this@LatteFragment.context, uri)
                     }
                     BroadcastType.TRACKING.name -> {
                         val eventStr = intent.getStringExtra(INTENT_KEY_EVENT) ?: return
