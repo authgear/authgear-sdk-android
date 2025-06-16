@@ -15,6 +15,10 @@ sdk:
 sdk-okhttp:
 	./gradlew :sdk-okhttp:assembleRelease
 
+.PHONY: app
+app:
+	./gradlew :javasample:assembleRelease
+
 .PHONY: build-aab
 build-aab:
 	bundle exec fastlane build_aab \

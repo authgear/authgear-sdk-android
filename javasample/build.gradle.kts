@@ -80,7 +80,7 @@ dependencies {
     implementation("androidx.activity:activity:1.1.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.1")
     implementation("com.google.android.material:material:1.2.1")
-    implementation("com.tencent.mm.opensdk:wechat-sdk-android-without-mta:6.6.5")
+    implementation("com.tencent.mm.opensdk:wechat-sdk-android:6.8.34")
     implementation("androidx.biometric:biometric:1.2.0-alpha03")
     testImplementation("junit:junit:4.12")
     androidTestImplementation("androidx.test.ext:junit:1.1.2")

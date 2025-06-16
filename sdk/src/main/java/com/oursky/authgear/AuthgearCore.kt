@@ -86,58 +86,10 @@ internal class AuthgearCore(
          */
         private const val EXPIRE_IN_PERCENTAGE = 0.9
 
-        const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
-        const val KEY_REDIRECT_URL = "redirectUrl"
-        const val CODE_CHALLENGE_METHOD = "S256"
-
-        /**
-         * Check and handle wehchat redirect uri and trigger delegate function if needed
-         */
-        private var wechatRedirectURI: String? = null
-        private var wechatRedirectHandler: WechatRedirectHandler? = null
-        fun registerWechatRedirectURI(uri: String?, handler: WechatRedirectHandler) {
-            if (uri != null) {
-                wechatRedirectURI = uri
-                wechatRedirectHandler = handler
-            } else {
-                unregisteredWechatRedirectURI()
-            }
-        }
-
-        fun unregisteredWechatRedirectURI() {
-            wechatRedirectURI = null
-            wechatRedirectHandler = null
-        }
-
-        /**
-         * handleWeChatRedirectDeepLink return true if it is handled
-         */
-        fun handleWechatRedirectDeepLink(deepLink: String): Boolean {
-            if (wechatRedirectURI == null) {
-                return false
-            }
-            val deepLinkWithoutQuery = getURLWithoutQuery(deepLink)
-            if (deepLinkWithoutQuery != wechatRedirectURI) {
-                return false
-            }
-            val uri = Uri.parse(deepLink)
-            val state = uri.getQueryParameter("state")
-            if (state != null) {
-                wechatRedirectHandler?.sendWechatAuthRequest(state)
-            }
-            return true
-        }
-
-        private fun getURLWithoutQuery(input: String): String {
-            val uri = Uri.parse(input)
-            var builder = uri.buildUpon().clearQuery()
-            builder = builder.fragment("")
-            return builder.build().toString()
-        }
-    }
-
-    interface WechatRedirectHandler {
-        fun sendWechatAuthRequest(state: String)
+        internal const val KEY_OAUTH_BOARDCAST_TYPE = "boardcastType"
+        internal const val KEY_REDIRECT_URL = "redirectUrl"
+        internal const val KEY_WECHAT_REDIRECT_URI = "wechat_redirect_uri"
+        internal const val CODE_CHALLENGE_METHOD = "S256"
     }
 
     data class SuspendHolder<T>(val name: String, val continuation: Continuation<T>)

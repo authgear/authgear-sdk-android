@@ -78,5 +78,6 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" android:host="*" />
         </intent>
+        <package android:name="com.tencent.mm" />
     </queries>
 </manifest>

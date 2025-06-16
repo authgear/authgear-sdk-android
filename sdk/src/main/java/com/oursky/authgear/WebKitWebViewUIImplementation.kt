@@ -13,7 +13,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class WebKitWebViewUIImplementation(val actionBarBackgroundColor: Int? = null, val actionBarButtonTintColor: Int? = null) : UIImplementation {
+class WebKitWebViewUIImplementation(
+    var actionBarBackgroundColor: Int? = null,
+    var actionBarButtonTintColor: Int? = null,
+    var wechatRedirectURI: Uri? = null,
+    var authgearDelegate: AuthgearDelegate? = null,
+) : UIImplementation {
 
     override fun openAuthorizationURL(
         context: Context,
@@ -53,6 +58,14 @@ class WebKitWebViewUIImplementation(val actionBarBackgroundColor: Int? = null, v
                                     k.resumeWithException(CancelException())
                                 }
                             }
+                            OAuthBroadcastType.OPEN_WECHAT_REDIRECT_URI.name -> {
+                                val wechatRedirectURIString = intent.getStringExtra(AuthgearCore.KEY_WECHAT_REDIRECT_URI)!!
+                                val parsed = Uri.parse(wechatRedirectURIString)!!
+                                val state = parsed.getQueryParameter("state")
+                                if (state != null && state != "") {
+                                    this@WebKitWebViewUIImplementation.authgearDelegate?.sendWechatAuthRequest(state)
+                                }
+                            }
                         }
                     }
                 }
@@ -64,6 +77,7 @@ class WebKitWebViewUIImplementation(val actionBarBackgroundColor: Int? = null, v
             val webViewOptions = WebKitWebViewActivity.Options(options.url, options.redirectURI)
             webViewOptions.actionBarBackgroundColor = this@WebKitWebViewUIImplementation.actionBarBackgroundColor
             webViewOptions.actionBarButtonTintColor = this@WebKitWebViewUIImplementation.actionBarButtonTintColor
+            webViewOptions.wechatRedirectURI = this@WebKitWebViewUIImplementation.wechatRedirectURI
             context.startActivity(
                 WebKitWebViewActivity.createIntent(
                     context,

@@ -43,10 +43,6 @@ internal class WebViewActivity : AppCompatActivity() {
                 view: WebView?,
                 request: WebResourceRequest?
             ): Boolean {
-                val deepLink = request?.url.toString()
-                if (AuthgearCore.handleWechatRedirectDeepLink(deepLink)) {
-                    return true
-                }
                 return super.shouldOverrideUrlLoading(view, request)
             }
         })
