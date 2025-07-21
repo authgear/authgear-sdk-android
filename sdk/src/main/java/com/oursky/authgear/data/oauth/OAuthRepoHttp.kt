@@ -4,7 +4,7 @@ import android.net.Uri
 import com.oursky.authgear.AuthgearException
 import com.oursky.authgear.GrantType
 import com.oursky.authgear.UserInfo
-import com.oursky.authgear.data.HttpClient
+import com.oursky.authgear.net.HTTPClientHelper
 import com.oursky.authgear.dpop.DPoPProvider
 import com.oursky.authgear.getOrigin
 import com.oursky.authgear.net.HTTPClient
@@ -55,8 +55,8 @@ internal class OAuthRepoHttp(
             val responseString = response.body.use {
                 String(it.readBytes(), UTF_8)
             }
-            HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
-            val newConfig: OidcConfiguration = HttpClient.json.decodeFromString(responseString)
+            HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+            val newConfig: OidcConfiguration = HTTPClientHelper.json.decodeFromString(responseString)
             this.config = newConfig
             return newConfig
         }
@@ -100,8 +100,8 @@ internal class OAuthRepoHttp(
         val responseString = response.body.use {
             String(it.readBytes(), UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
-        val responseBody: OidcTokenResponse = HttpClient.json.decodeFromString(responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+        val responseBody: OidcTokenResponse = HTTPClientHelper.json.decodeFromString(responseString)
         return responseBody
     }
 
@@ -124,7 +124,7 @@ internal class OAuthRepoHttp(
         val responseString = response.body.use {
             String(it.readBytes(), UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
     }
 
     override fun oidcRevocationRequest(refreshToken: String) {
@@ -143,7 +143,7 @@ internal class OAuthRepoHttp(
         val responseString = response.body.use {
             String(it.readBytes(), UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
     }
 
     override fun oidcUserInfoRequest(accessToken: String): UserInfo {
@@ -159,8 +159,8 @@ internal class OAuthRepoHttp(
         val responseString = response.body.use {
             String(it.readBytes(), UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
-        val responseBody: UserInfo = HttpClient.json.decodeFromString(responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+        val responseBody: UserInfo = HTTPClientHelper.json.decodeFromString(responseString)
         return responseBody
     }
 
@@ -173,13 +173,13 @@ internal class OAuthRepoHttp(
             headers = mutableMapOf(
                 "content-type" to mutableListOf("application/json")
             ),
-            requestBodyBytes = HttpClient.json.encodeToString(body).toByteArray(UTF_8),
+            requestBodyBytes = HTTPClientHelper.json.encodeToString(body).toByteArray(UTF_8),
         )
         val responseString = response.body.use {
             String(it.readBytes(), UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
-        val responseBody: ChallengeResponseResult = HttpClient.json.decodeFromString(responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+        val responseBody: ChallengeResponseResult = HTTPClientHelper.json.decodeFromString(responseString)
         return responseBody.result
     }
 
@@ -192,13 +192,13 @@ internal class OAuthRepoHttp(
             headers = mutableMapOf(
                 "content-type" to mutableListOf("application/json")
             ),
-            requestBodyBytes = HttpClient.json.encodeToString(body).toByteArray(UTF_8)
+            requestBodyBytes = HTTPClientHelper.json.encodeToString(body).toByteArray(UTF_8)
         )
         val responseString = response.body.use {
             String(it.readBytes(), UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
-        val responseBody: AppSessionTokenResponseResult = HttpClient.json.decodeFromString(responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+        val responseBody: AppSessionTokenResponseResult = HTTPClientHelper.json.decodeFromString(responseString)
         return responseBody.result
     }
 
@@ -218,7 +218,7 @@ internal class OAuthRepoHttp(
         val responseString = response.body.use {
             String(it.readBytes(), UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode, responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
     }
 
     private fun fetchWithDPoP(

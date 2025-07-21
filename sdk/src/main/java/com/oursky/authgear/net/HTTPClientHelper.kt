@@ -1,4 +1,4 @@
-package com.oursky.authgear.data
+package com.oursky.authgear.net
 
 import com.oursky.authgear.AuthgearException
 import com.oursky.authgear.OAuthException
@@ -7,11 +7,11 @@ import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
 
-internal class HttpClient {
+internal abstract class HTTPClientHelper {
     companion object {
         val json = Json { ignoreUnknownKeys = true }
 
-        fun throwErrorIfNeeded(statusCode: Int, responseString: String) {
+        internal fun throwErrorIfNeeded(statusCode: Int, responseString: String) {
             if (statusCode < 200 || statusCode >= 300) {
                 try {
                     val jsonObject = JSONObject(responseString)
@@ -26,7 +26,7 @@ internal class HttpClient {
             }
         }
 
-        fun makeError(jsonObject: JSONObject): Exception? {
+        private fun makeError(jsonObject: JSONObject): Exception? {
             if (jsonObject.has("error")) {
                 val any = jsonObject.get("error")
                 if (any is JSONObject) {

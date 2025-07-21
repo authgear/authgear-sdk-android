@@ -1,7 +1,7 @@
 package com.oursky.authgear.data.assetlink
 
 import android.net.Uri
-import com.oursky.authgear.data.HttpClient
+import com.oursky.authgear.net.HTTPClientHelper
 import com.oursky.authgear.net.HTTPClient
 import com.oursky.authgear.net.HTTPRequest
 import java.net.URI
@@ -29,8 +29,8 @@ internal class AssetLinkRepoHttp(private val httpClient: HTTPClient) : AssetLink
         val responseString = response.body.use {
             String(it.readBytes(), StandardCharsets.UTF_8)
         }
-        HttpClient.throwErrorIfNeeded(response.statusCode,responseString)
-        val result: List<AssetLink> = HttpClient.json.decodeFromString(responseString)
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+        val result: List<AssetLink> = HTTPClientHelper.json.decodeFromString(responseString)
 
         return result
     }
