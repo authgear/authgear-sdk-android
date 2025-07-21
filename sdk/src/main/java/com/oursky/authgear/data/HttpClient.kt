@@ -6,42 +6,13 @@ import com.oursky.authgear.ServerException
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 
 internal class HttpClient {
     companion object {
         val json = Json { ignoreUnknownKeys = true }
-        fun <T> fetch(
-            url: URL,
-            method: String,
-            headers: Map<String, String>,
-            followRedirect: Boolean = true,
-            callback: (conn: HttpURLConnection) -> T
-        ): T {
-            val conn = url.openConnection() as HttpURLConnection
-            try {
-                conn.requestMethod = method
-                conn.doInput = true
 
-                if (!followRedirect) {
-                    conn.instanceFollowRedirects = false
-                }
-
-                if (method != "GET" && method != "HEAD") {
-                    conn.doOutput = true
-                }
-                headers.forEach { (key, value) ->
-                    conn.setRequestProperty(key, value)
-                }
-                return callback(conn)
-            } finally {
-                conn.disconnect()
-            }
-        }
-
-        fun throwErrorIfNeeded(conn: HttpURLConnection, responseString: String) {
-            if (conn.responseCode < 200 || conn.responseCode >= 300) {
+        fun throwErrorIfNeeded(statusCode: Int, responseString: String) {
+            if (statusCode < 200 || statusCode >= 300) {
                 try {
                     val jsonObject = JSONObject(responseString)
                     val e = makeError(jsonObject)

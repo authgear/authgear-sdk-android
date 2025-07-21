@@ -16,6 +16,7 @@ import com.oursky.authgear.data.assetlink.AssetLinkRepoHttp
 import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
 import com.oursky.authgear.dpop.DefaultDPoPProvider
+import com.oursky.authgear.net.DefaultHTTPClient
 import kotlinx.coroutines.*
 import java.util.*
 
@@ -40,6 +41,7 @@ constructor(
 
     init {
         val name = name ?: "default"
+        val httpClient = DefaultHTTPClient()
         val keyRepo = KeyRepoKeystore()
         val sharedStorage = PersistentInterAppSharedStorage(application)
         val dpopProvider = DefaultDPoPProvider(
@@ -47,6 +49,8 @@ constructor(
             keyRepo = keyRepo,
             sharedStorage = sharedStorage,
         )
+        val oauthRepo = OAuthRepoHttp(httpClient = httpClient, dPoPProvider = dpopProvider)
+        val assetLinkRepo = AssetLinkRepoHttp(httpClient)
         this.core = AuthgearCore(
             this,
             application,
@@ -60,9 +64,9 @@ constructor(
             uiImplementation,
             PersistentContainerStorage(application),
             sharedStorage,
-            OAuthRepoHttp(dPoPProvider = dpopProvider),
+            oauthRepo,
             keyRepo,
-            AssetLinkRepoHttp(),
+            assetLinkRepo,
             name
         )
     }
