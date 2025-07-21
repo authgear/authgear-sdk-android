@@ -17,6 +17,7 @@ import com.oursky.authgear.data.key.KeyRepoKeystore
 import com.oursky.authgear.data.oauth.OAuthRepoHttp
 import com.oursky.authgear.dpop.DefaultDPoPProvider
 import com.oursky.authgear.net.DefaultHTTPClient
+import com.oursky.authgear.net.HTTPClient
 import kotlinx.coroutines.*
 import java.util.*
 
@@ -27,6 +28,7 @@ constructor(
     authgearEndpoint: String,
     tokenStorage: TokenStorage = PersistentTokenStorage(application),
     uiImplementation: UIImplementation = CustomTabsUIImplementation(),
+    httpClient: HTTPClient = DefaultHTTPClient(),
     isSsoEnabled: Boolean = false,
     preAuthenticatedURLEnabled: Boolean = false,
     name: String? = null,
@@ -41,7 +43,6 @@ constructor(
 
     init {
         val name = name ?: "default"
-        val httpClient = DefaultHTTPClient()
         val keyRepo = KeyRepoKeystore()
         val sharedStorage = PersistentInterAppSharedStorage(application)
         val dpopProvider = DefaultDPoPProvider(

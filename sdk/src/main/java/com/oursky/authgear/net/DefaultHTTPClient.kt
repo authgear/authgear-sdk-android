@@ -4,7 +4,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 
-class DefaultHTTPClient: HTTPClient {
+open class DefaultHTTPClient: HTTPClient {
     override fun send(request: HTTPRequest): HTTPResponse {
         val followRedirect = request.followRedirect ?: true
         val url = request.uri.toURL()
