@@ -4,5 +4,6 @@ $dokka.linkExtension:html
 module:sdk
 com.oursky.authgear
 com.oursky.authgear.app2app
+com.oursky.authgear.net
 module:sdk-okhttp
 com.oursky.authgear.okhttp
