@@ -1,12 +1,13 @@
 package com.oursky.authgear.data.assetlink
 
 import android.net.Uri
-import com.oursky.authgear.data.HttpClient
-import kotlinx.serialization.decodeFromString
-import java.net.URL
+import com.oursky.authgear.net.HTTPClientHelper
+import com.oursky.authgear.net.HTTPClient
+import com.oursky.authgear.net.HTTPRequest
+import java.net.URI
 import java.nio.charset.StandardCharsets
 
-internal class AssetLinkRepoHttp : AssetLinkRepo {
+internal class AssetLinkRepoHttp(private val httpClient: HTTPClient) : AssetLinkRepo {
     companion object {
         @Suppress("unused")
         private val TAG = AssetLinkRepoHttp::class.java.simpleName
@@ -17,21 +18,20 @@ internal class AssetLinkRepoHttp : AssetLinkRepo {
             .path("/.well-known/assetlinks.json")
             .clearQuery()
             .build()
-        val result: List<AssetLink> = HttpClient.fetch(
-            url = URL(assetLinkUri.toString()),
+
+        val request = HTTPRequest(
             method = "GET",
-            headers = hashMapOf()
-        ) { conn ->
-            conn.errorStream?.use {
-                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                HttpClient.throwErrorIfNeeded(conn, responseString)
-            }
-            conn.inputStream.use {
-                val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                HttpClient.throwErrorIfNeeded(conn, responseString)
-                HttpClient.json.decodeFromString(responseString)
-            }
+            headers = hashMapOf(),
+            uri = URI(assetLinkUri.toString()),
+        )
+
+        val response = this.httpClient.send(request)
+        val responseString = response.body.use {
+            String(it.readBytes(), StandardCharsets.UTF_8)
         }
+        HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+        val result: List<AssetLink> = HTTPClientHelper.json.decodeFromString(responseString)
+
         return result
     }
 }

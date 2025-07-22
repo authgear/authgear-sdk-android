@@ -61,6 +61,7 @@ import com.oursky.authgear.WebKitWebViewUIImplementation;
 import com.oursky.authgear.app2app.App2AppAuthenticateOptions;
 import com.oursky.authgear.app2app.App2AppAuthenticateRequest;
 import com.oursky.authgear.app2app.App2AppOptions;
+import com.oursky.authgear.net.HTTPClient;
 import com.oursky.authgeartest.wxapi.WXEntryActivity;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
@@ -286,12 +287,15 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
             uiImplementation = new CustomTabsUIImplementation();
         }
 
+        HTTPClient httpClient = new MyHTTPClient();
+
         mAuthgear = new Authgear(
                 getApplication(),
                 clientID,
                 endpoint,
                 tokenStorage,
                 uiImplementation,
+                httpClient,
                 isSsoEnabled,
                 isPreAuthenticatedURLEnabled,
                 null,
@@ -887,6 +891,7 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
                                             mEndpoint.getValue(),
                                             new TransientTokenStorage(),
                                             uiImpl,
+                                            new MyHTTPClient(),
                                             true,
                                             false,
                                             "preAuthenticatedURL"
