@@ -14,8 +14,8 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.oursky.authgeartest"
-    compileSdk = 34
-    buildToolsVersion = "34.0.0"
+    compileSdk = 35
+    buildToolsVersion = "35.0.1"
 
     buildFeatures {
         buildConfig = true
@@ -26,7 +26,7 @@ android {
         applicationId = "com.authgear.sdk.exampleapp.android"
         // minSdk is set to 23 so that we do not need version check to use biometric and app2app.
         minSdk = 23
-        targetSdk = 34
+        targetSdk = 35
         if (project.hasProperty("VERSION_CODE")) {
             versionCode = Integer.parseInt(project.findProperty("VERSION_CODE") as String)
         } else {
