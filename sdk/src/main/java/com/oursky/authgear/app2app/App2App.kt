@@ -291,19 +291,22 @@ internal class App2App(
         return try {
             val pm = application.packageManager
             val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val signingInfo: SigningInfo = pm
+                val signingInfo: SigningInfo? = pm
                     .getPackageInfo(
                         packageName,
                         PackageManager.GET_SIGNING_CERTIFICATES
                     ).signingInfo
-                signingInfo.signingCertificateHistory
+                signingInfo?.signingCertificateHistory
             } else {
                 pm.getPackageInfo(
                     packageName,
                     PackageManager.GET_SIGNATURES
                 ).signatures
             }
-            return generateSignatureHexHashes(signatures)
+            if (signatures != null) {
+                return generateSignatureHexHashes(signatures)
+            }
+            return null
         } catch (e: PackageManager.NameNotFoundException) {
             null
         }

@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.oursky.authgear.okhttp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         multiDexEnabled = true
