@@ -434,28 +434,11 @@ internal class AuthgearCore(
             options = options
         )
 
-        return suspendCoroutine { k ->
-            val action = newRandomAction()
-            val intentFilter = IntentFilter(action)
-            val br = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    val type = intent?.getStringExtra(WebViewActivity.KEY_BROADCAST_TYPE) ?: return
-                    when (type) {
-                        WebViewActivity.BroadcastType.END.name -> {
-                            application.unregisterReceiver(this)
-                            k.resume(Unit)
-                        }
-                    }
-                }
-            }
-            if (Build.VERSION.SDK_INT >= 33) {
-                application.registerReceiver(br, intentFilter, Context.RECEIVER_NOT_EXPORTED)
-            } else {
-                application.registerReceiver(br, intentFilter)
-            }
-            application.startActivity(
-                WebViewActivity.createIntent(application, action, authorizeUrl)
-            )
+        try {
+            val _ignored = openAuthorizeUrl("nocallback://nocallback", authorizeUrl)
+        } catch (_: CancelException) {
+            // When the settings page is closed, it throws CancelException.
+            // This is treated as success.
         }
     }
 
