@@ -5,6 +5,7 @@
             android:exported="false"
             android:launchMode="singleTask" />
         <activity android:name=".WebKitWebViewActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:exported="false"
             android:launchMode="singleTask" />
     </application>

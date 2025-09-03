@@ -47,7 +47,7 @@ dependencies {
     // https://developer.android.com/studio/write/java8-support#library-desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("androidx.core:core-ktx:1.8.0")
+    implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.4.0")
     // NOTE(backup): Please search NOTE(backup) before you update security-crypto or tink-android.
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
