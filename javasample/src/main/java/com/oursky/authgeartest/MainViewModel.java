@@ -280,6 +280,8 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
         UIImplementation uiImplementation;
         if (mUseWebKitWebView.getValue()) {
             WebKitWebViewUIImplementation impl = new WebKitWebViewUIImplementation();
+            impl.setActionBarBackgroundColor(0x00ffffff);
+            impl.setActionBarButtonTintColor(0xff000000);
             impl.setWechatRedirectURI(Uri.parse(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI));
             impl.setAuthgearDelegate(this);
             uiImplementation = impl;
