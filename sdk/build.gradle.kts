@@ -2,7 +2,11 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization")
-    id("maven-publish")
+    // NOTE(maven-publish): Step 1: install the plugins
+    //
+    // This plugin is recommended by https://www.jetbrains.com/help/kotlin-multiplatform-dev/multiplatform-publish-libraries.html
+    // This is the only plugin I have seen so far that can handle Android library out-of-the-box.
+    id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
 android {
@@ -62,16 +66,50 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
 }
 
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            groupId = findProperty("group") as String
-            artifactId = "authgear-sdk-android"
-            version = findProperty("version") as String
+// NOTE(maven-publish): Step 4: configure the publishing plugin
+// The required environment variables are documented at https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets
+//
+// ORG_GRADLE_PROJECT_mavenCentralUsername       - The User Token username
+// ORG_GRADLE_PROJECT_mavenCentralPassword       - The User Token password
+// ORG_GRADLE_PROJECT_signingInMemoryKeyId       - The 8-digit GPG key ID
+// ORG_GRADLE_PROJECT_signingInMemoryKeyPassword - The password of the GPG key
+// ORG_GRADLE_PROJECT_signingInMemoryKey         - The contents of the ASCII armor GPG key
+mavenPublishing {
+    publishToMavenCentral()
 
-            afterEvaluate {
-                from(components["release"])
+     signAllPublications()
+
+     coordinates(
+        "com.authgear",
+        "android-sdk",
+        System.getenv("GITHUB_REF_NAME") ?: error("GITHUB_REF_NAME is not set")
+    )
+
+    pom {
+        name = "com.authgear:android-sdk"
+        description = "Authgear SDK for Android"
+        url = "https://github.com/authgear/authgear-sdk-android"
+
+        licenses {
+            license {
+                name = "The Apache License, Version 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0"
             }
+        }
+
+        developers {
+            developer {
+                name = "Louis Chan"
+                email = "louischan@oursky.com"
+                organization = "Oursky"
+                organizationUrl = "https://oursky.com"
+            }
+        }
+
+        scm {
+            connection = "scm:git:git://github.com/authgear/authgear-sdk-android.git"
+            developerConnection = "scm:git:ssh://github.com/authgear/authgear-sdk-android.git"
+            url = "https://github.com/authgear/authgear-sdk-android"
         }
     }
 }
