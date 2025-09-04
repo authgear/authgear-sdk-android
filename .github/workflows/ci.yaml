@@ -5,6 +5,8 @@ on:
     branches:
     - '*'
     - '!gh-pages'
+    tags:
+    - '*'
   pull_request:
     branches:
     - '*'
@@ -61,3 +63,19 @@ jobs:
         export GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE="$RUNNER_TEMP/google_service_account_key.json"
         echo -n "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64" | base64 --decode -o "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE"
         make upload-aab
+
+  publish:
+    if: ${{ github.repository == 'authgear/authgear-sdk-android' && github.ref_type == 'tag' }}
+    runs-on: macos-15
+    needs: ["test"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Publish to Maven Central
+      env:
+        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.MAVEN_CENTRAL_GPG_KEY_ID }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_CENTRAL_GPG_KEY_PASSWORD }}
+        ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_CENTRAL_GPG_KEY_ASCII_ARMOR_CONTENTS }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+      run: ./gradlew publishToMavenCentral --no-configuration-cache
