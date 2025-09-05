@@ -1,0 +1,11 @@
+name: Test
+description: Run tests
+runs:
+  using: "composite"
+  steps:
+  - run: make sdk
+    shell: bash
+  - run: make sdk-okhttp
+    shell: bash
+  - run: make app
+    shell: bash
