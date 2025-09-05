@@ -28,9 +28,7 @@ jobs:
     runs-on: macos-15
     steps:
     - uses: actions/checkout@v4
-    - run: make sdk
-    - run: make sdk-okhttp
-    - run: make app
+    - uses: ./.github/actions/test
 
   app:
     if: ${{ github.repository == 'authgear/authgear-sdk-android' }}
