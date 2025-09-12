@@ -77,12 +77,12 @@ dependencies {
 mavenPublishing {
     publishToMavenCentral()
 
-     signAllPublications()
+    signAllPublications()
 
-     coordinates(
+    coordinates(
         "com.authgear",
         "android-sdk",
-        System.getenv("GITHUB_REF_NAME") ?: error("GITHUB_REF_NAME is not set")
+        System.getenv("GITHUB_REF_NAME") ?: "0.0.0-SNAPSHOT"
     )
 
     pom {
