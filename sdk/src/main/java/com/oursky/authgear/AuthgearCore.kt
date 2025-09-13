@@ -544,20 +544,7 @@ internal class AuthgearCore(
                 )
             )
 
-            synchronized(this) {
-                if (tokenResponse.idToken != null) {
-                    this.idToken = tokenResponse.idToken
-                }
-            }
-
-            val idToken = this.idToken
-            val deviceSecret = tokenResponse.deviceSecret
-            if (idToken != null) {
-                sharedStorage.setIDToken(name, idToken)
-            }
-            if (deviceSecret != null) {
-                tokenStorage.setRefreshToken(name, deviceSecret)
-            }
+            saveToken(tokenResponse, SessionStateChangeReason.FOUND_TOKEN)
         } catch (e: Exception) {
             handleInvalidGrantError(e)
             throw e
