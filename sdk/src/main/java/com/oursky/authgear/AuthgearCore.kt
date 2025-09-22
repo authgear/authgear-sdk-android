@@ -117,7 +117,8 @@ internal class AuthgearCore(
         storage,
         oauthRepo,
         keyRepo,
-        assetLinkRepo
+        assetLinkRepo,
+        tokenStorage
     )
 
     init {
@@ -270,7 +271,12 @@ internal class AuthgearCore(
 
         val token: String
         try {
-            token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+            val response = oauthRepo.oauthAppSessionToken(refreshToken)
+            response.refreshToken?.let {
+                this.refreshToken = it
+                tokenStorage.setRefreshToken(name, it)
+            }
+            token = response.appSessionToken
         } catch (e: Exception) {
             handleInvalidGrantError(e)
             throw e
@@ -399,7 +405,12 @@ internal class AuthgearCore(
 
         val token: String
         try {
-            token = oauthRepo.oauthAppSessionToken(refreshToken).appSessionToken
+            val response = oauthRepo.oauthAppSessionToken(refreshToken)
+            response.refreshToken?.let {
+                this.refreshToken = it
+                tokenStorage.setRefreshToken(name, it)
+            }
+            token = response.appSessionToken
         } catch (e: Exception) {
             handleInvalidGrantError(e)
             throw e

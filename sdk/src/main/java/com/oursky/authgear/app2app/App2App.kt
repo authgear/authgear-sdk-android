@@ -32,7 +32,8 @@ internal class App2App(
     private val storage: ContainerStorage,
     private val oauthRepo: OAuthRepo,
     private val keyRepo: KeyRepo,
-    private val assetLinkRepo: AssetLinkRepo
+    private val assetLinkRepo: AssetLinkRepo,
+    private val tokenStorage: TokenStorage
 ) {
     companion object {
         internal fun makeSignature(privateKey: PrivateKey): Signature {
@@ -164,6 +165,9 @@ internal class App2App(
                 codeChallengeMethod = AuthgearCore.CODE_CHALLENGE_METHOD
             )
         )
+        tokenResponse.refreshToken?.let {
+            tokenStorage.setRefreshToken(namespace, it)
+        }
         val query = hashMapOf(
             "code" to tokenResponse.code!!
         )

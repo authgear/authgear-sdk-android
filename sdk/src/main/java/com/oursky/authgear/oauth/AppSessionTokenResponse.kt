@@ -8,5 +8,7 @@ internal data class AppSessionTokenResponse(
     @SerialName("app_session_token")
     val appSessionToken: String,
     @SerialName("expire_at")
-    val expireAt: String
+    val expireAt: String,
+    @SerialName("refresh_token")
+    val refreshToken: String? = null
 )
