@@ -25,6 +25,7 @@ import java.time.Instant
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import java.lang.ref.WeakReference
 
 internal class App2App(
     private val application: Application,
@@ -35,6 +36,8 @@ internal class App2App(
     private val assetLinkRepo: AssetLinkRepo,
     private val tokenStorage: TokenStorage
 ) {
+    var authgearCore = WeakReference<AuthgearCore>(null)
+
     companion object {
         internal fun makeSignature(privateKey: PrivateKey): Signature {
             val signature = Signature.getInstance("SHA256withRSA")
@@ -166,7 +169,7 @@ internal class App2App(
             )
         )
         tokenResponse.refreshToken?.let {
-            tokenStorage.setRefreshToken(namespace, it)
+            this.authgearCore.get()?.updateRefreshToken(tokenResponse.refreshToken)
         }
         val query = hashMapOf(
             "code" to tokenResponse.code!!

@@ -34,6 +34,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import java.lang.RuntimeException
+import java.lang.ref.WeakReference
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
@@ -123,6 +124,7 @@ internal class AuthgearCore(
 
     init {
         oauthRepo.endpoint = authgearEndpoint
+        app2app.authgearCore = WeakReference(this)
 
         if (app2AppOptions.isEnabled) {
             requireMinimumApp2AppAPILevel()
@@ -273,8 +275,7 @@ internal class AuthgearCore(
         try {
             val response = oauthRepo.oauthAppSessionToken(refreshToken)
             response.refreshToken?.let {
-                this.refreshToken = it
-                tokenStorage.setRefreshToken(name, it)
+                this.updateRefreshToken(response.refreshToken)
             }
             token = response.appSessionToken
         } catch (e: Exception) {
@@ -407,8 +408,7 @@ internal class AuthgearCore(
         try {
             val response = oauthRepo.oauthAppSessionToken(refreshToken)
             response.refreshToken?.let {
-                this.refreshToken = it
-                tokenStorage.setRefreshToken(name, it)
+                this.updateRefreshToken(response.refreshToken)
             }
             token = response.appSessionToken
         } catch (e: Exception) {
@@ -690,12 +690,12 @@ internal class AuthgearCore(
     }
 
     private fun saveToken(tokenResponse: OidcTokenResponse, reason: SessionStateChangeReason) {
+        if (tokenResponse.refreshToken != null) {
+            updateRefreshToken(tokenResponse.refreshToken)
+        }
         synchronized(this) {
             if (tokenResponse.accessToken != null) {
                 accessToken = tokenResponse.accessToken
-            }
-            if (tokenResponse.refreshToken != null) {
-                refreshToken = tokenResponse.refreshToken
             }
             if (tokenResponse.idToken != null) {
                 idToken = tokenResponse.idToken
@@ -706,17 +706,23 @@ internal class AuthgearCore(
             }
             updateSessionState(SessionState.AUTHENTICATED, reason)
         }
-        val refreshToken = this.refreshToken
         val idToken = this.idToken
         val deviceSecret = tokenResponse.deviceSecret
-        if (refreshToken != null) {
-            tokenStorage.setRefreshToken(name, refreshToken)
-        }
         if (idToken != null) {
             sharedStorage.setIDToken(name, idToken)
         }
         if (deviceSecret != null) {
             sharedStorage.setDeviceSecret(name, deviceSecret)
+        }
+    }
+
+    internal fun updateRefreshToken(refreshToken: String) {
+        tokenStorage.setRefreshToken(name, refreshToken)
+        synchronized(this) {
+            this.refreshToken = refreshToken
+            // We should invalidate the existing access token whenever we got a new refresh token
+            this.accessToken = null
+            this.expireAt = null
         }
     }
 
