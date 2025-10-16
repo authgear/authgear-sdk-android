@@ -274,7 +274,7 @@ internal class App2App(
         val expectedPackageName = matchedPackageLink.target.packageName
         val actualSigningCertHashes = getSigningCertificatesHexHashes(expectedPackageName)
         val expectedHashes = matchedPackageLink.target.sha256CertFingerprints.map { fingerprints ->
-            fingerprints.replace(":", "").toLowerCase(Locale.ROOT)
+            fingerprints.replace(":", "").lowercase()
         }.toSet()
         if (
             actualSigningCertHashes != null &&
@@ -328,5 +328,5 @@ fun ByteArray.toHex(): String {
     for (b in this) {
         sb.append(String.format("%02x", b))
     }
-    return sb.toString().toLowerCase(Locale.ROOT)
+    return sb.toString().lowercase()
 }
