@@ -1,5 +1,7 @@
 package com.oursky.authgear.net
 
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
@@ -32,12 +34,24 @@ open class DefaultHTTPClient: HTTPClient {
 
             val statusCode = conn.responseCode
             val responseHeaders = conn.headerFields
-            val responseBody: InputStream
+
+            // Determine which input stream to read from.
+            val originalInputStream: InputStream?
             if (conn.errorStream != null) {
-                responseBody = conn.errorStream
+                originalInputStream = conn.errorStream
             } else {
-                responseBody = conn.inputStream
+                originalInputStream = conn.inputStream
             }
+
+            // Since we have to call conn.disconnect() in this method,
+            // the original input stream will be closed when this method returns.
+            // Therefore, we copy the original input stream to a byte buffer.
+            // It should not be a problem as the response body should be small.
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            originalInputStream?.use {
+                this.transferTo(originalInputStream, byteArrayOutputStream)
+            }
+            val responseBody = ByteArrayInputStream(byteArrayOutputStream.toByteArray())
 
             val response = HTTPResponse(statusCode, responseHeaders, responseBody)
             return response
