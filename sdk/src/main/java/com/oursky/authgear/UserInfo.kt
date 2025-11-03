@@ -13,6 +13,8 @@ data class UserInfo(
     val isAnonymous: Boolean,
     @SerialName("https://authgear.com/claims/user/can_reauthenticate")
     val canReauthenticate: Boolean,
+    @SerialName("https://authgear.com/claims/user/has_primary_password")
+    val hasPrimaryPassword: Boolean,
     @SerialName("https://authgear.com/claims/user/roles")
     val roles: Array<String>? = null,
     @SerialName("custom_attributes")
