@@ -3,15 +3,20 @@ package com.oursky.authgear.latte
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.Fragment
 import com.oursky.authgear.*
-import com.oursky.authgear.data.HttpClient
+import com.oursky.authgear.net.HTTPClientHelper
 import com.oursky.authgear.latte.fragment.LatteFragment
 import com.oursky.authgear.latte.fragment.LatteFragmentListener
+import com.oursky.authgear.net.DefaultHTTPClient
+import com.oursky.authgear.net.HTTPClient
+import com.oursky.authgear.net.HTTPRequest
 import com.oursky.authgear.net.toQueryParameter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
@@ -20,11 +25,14 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
+import java.net.URI
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 
 @OptIn(ExperimentalAuthgearApi::class)
+@RequiresApi(Build.VERSION_CODES.KITKAT)
 class Latte(
     internal val authgear: Authgear,
     internal val customUIEndpoint: String,
@@ -34,7 +42,8 @@ class Latte(
     private val rewriteAppLinkOrigin: Uri? = null,
     private val rewriteShortLinkOrigin: Uri? = null,
     private val webContentsDebuggingEnabled: Boolean = false,
-    private val webViewLoadTimeoutMillis: Long = 15000
+    private val webViewLoadTimeoutMillis: Long = 15000,
+    internal val httpClient: HTTPClient = DefaultHTTPClient(),
 ) {
     var delegate: LatteDelegate? = null
     private val intents = MutableSharedFlow<Intent?>(1, 0, BufferOverflow.DROP_OLDEST)
@@ -392,20 +401,18 @@ class Latte(
     private suspend fun createXSecretsToken(data: ByteArray): String {
         return withContext(Dispatchers.IO) {
             val url = URL(this@Latte.middlewareEndpoint + "/token")
-            return@withContext HttpClient.fetch(url, "POST", emptyMap()) { conn ->
-                conn.outputStream.use {
-                    it.write(data)
-                }
-                conn.errorStream?.use {
-                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                    HttpClient.throwErrorIfNeeded(conn, responseString)
-                }
-                conn.inputStream.use {
-                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                    HttpClient.throwErrorIfNeeded(conn, responseString)
-                    return@fetch responseString
-                }
+            val req = HTTPRequest(
+                method = "POST",
+                headers = hashMapOf(),
+                uri = URI(url.toString()),
+                body = ByteArrayInputStream(data),
+            )
+            val response = this@Latte.httpClient.send(req)
+            val responseString = response.body.use {
+                String(it.readBytes(), StandardCharsets.UTF_8)
             }
+            HTTPClientHelper.throwErrorIfNeeded(response.statusCode, responseString)
+            return@withContext responseString
         }
     }
 
@@ -421,20 +428,20 @@ class Latte(
             )
             val encoded = Json.encodeToString(request)
 
-            val response: SessionMigrationResponse = HttpClient.fetch(url, "POST", emptyMap()) { conn ->
-                conn.outputStream.use {
-                    it.write(encoded.toByteArray(StandardCharsets.UTF_8))
-                }
-                conn.errorStream?.use {
-                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                    HttpClient.throwErrorIfNeeded(conn, responseString)
-                }
-                conn.inputStream.use {
-                    val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                    HttpClient.throwErrorIfNeeded(conn, responseString)
-                    HttpClient.json.decodeFromString(responseString)
-                }
+            val req = HTTPRequest(
+                method = "POST",
+                headers = hashMapOf(),
+                uri = URI(url.toString()),
+                body = ByteArrayInputStream(encoded.toByteArray(StandardCharsets.UTF_8)),
+            )
+
+            val resp = this@Latte.httpClient.send(req)
+            val responseString = resp.body.use {
+                String(it.readBytes(), StandardCharsets.UTF_8)
             }
+            HTTPClientHelper.throwErrorIfNeeded(resp.statusCode, responseString)
+            val response = HTTPClientHelper.json.decodeFromString<SessionMigrationResponse>(responseString)
+
 
             val migrationResult = CompletableDeferred<UserInfo>()
 
@@ -467,6 +474,7 @@ class Latte(
 
             authgear.refreshAccessTokenIfNeeded(
                 object : OnRefreshAccessTokenIfNeededListener {
+                    @RequiresApi(Build.VERSION_CODES.KITKAT)
                     override fun onFinished() {
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
@@ -479,21 +487,18 @@ class Latte(
                                 )
                                 val encoded = Json.encodeToString(request)
 
-                                val response: ProofOfPhoneNumberVerificationResponse = HttpClient.fetch(url, "POST", emptyMap()) { conn ->
-                                    conn.outputStream.use {
-                                        it.write(encoded.toByteArray(StandardCharsets.UTF_8))
-                                    }
-                                    conn.errorStream?.use {
-                                        val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                                        HttpClient.throwErrorIfNeeded(conn, responseString)
-                                    }
-                                    conn.inputStream.use {
-                                        val responseString = String(it.readBytes(), StandardCharsets.UTF_8)
-                                        HttpClient.throwErrorIfNeeded(conn, responseString)
-                                        HttpClient.json.decodeFromString(responseString)
-                                    }
+                                val req = HTTPRequest(
+                                    method = "POST",
+                                    headers = hashMapOf(),
+                                    uri = URI(url.toString()),
+                                    body = ByteArrayInputStream(encoded.toByteArray(StandardCharsets.UTF_8)),
+                                )
+                                val resp = this@Latte.httpClient.send(req)
+                                val responseString = resp.body.use {
+                                    String(it.readBytes(), StandardCharsets.UTF_8)
                                 }
-
+                                HTTPClientHelper.throwErrorIfNeeded(resp.statusCode, responseString)
+                                val response = HTTPClientHelper.json.decodeFromString<ProofOfPhoneNumberVerificationResponse>(responseString)
                                 proofResult.complete(response.proofOfPhoneNumberVerification)
                             } catch (e: Throwable) {
                                 proofResult.completeExceptionally(e)
@@ -530,9 +535,7 @@ class Latte(
         return AuthenticateOptions(
             xState = finalXState.toQueryParameter(),
             redirectUri = "latte://complete",
-            responseType = latteOptions.responseType,
             prompt = latteOptions.prompt,
-            loginHint = latteOptions.loginHint,
             uiLocales = latteOptions.uiLocales,
             colorScheme = latteOptions.colorScheme,
             wechatRedirectURI = latteOptions.wechatRedirectURI,
