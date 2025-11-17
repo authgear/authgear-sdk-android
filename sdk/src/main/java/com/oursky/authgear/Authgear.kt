@@ -640,8 +640,8 @@ constructor(
      */
     @MainThread
     @RequiresApi(api = Build.VERSION_CODES.M)
-    fun checkBiometricSupported(context: Context, allowedAuthenticators: Int) {
-        core.checkBiometricSupported(context, allowedAuthenticators)
+    fun checkBiometricSupported(context: Context, allowedAuthenticatorsOnEnable: List<BiometricAuthenticator>) {
+        core.checkBiometricSupported(context, allowedAuthenticatorsOnEnable)
     }
 
     /**

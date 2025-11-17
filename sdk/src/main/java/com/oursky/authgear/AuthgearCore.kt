@@ -886,13 +886,11 @@ internal class AuthgearCore(
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
-    fun checkBiometricSupported(context: Context, allowed: Int) {
+    fun checkBiometricSupported(context: Context, allowedAuthenticatorsOnEnable: List<BiometricAuthenticator>) {
         requireIsInitialized()
         requireMinimumBiometricAPILevel()
 
-        var allowed = allowed
-        ensureAllowedIsValid(allowed)
-        allowed = convertAllowed(allowed)
+        val allowed = convertAllowed(allowedAuthenticatorsOnEnable)
         val result = BiometricManager.from(context).canAuthenticate(allowed)
         if (result != BiometricManager.BIOMETRIC_SUCCESS) {
             throw wrapException(BiometricCanAuthenticateException(result))
@@ -931,21 +929,22 @@ internal class AuthgearCore(
         val accessToken: String = this.accessToken
             ?: throw UnauthenticatedUserException()
 
-        ensureAllowedIsValid(options.allowedAuthenticators)
-        val allowed = convertAllowed(options.allowedAuthenticators)
+        val allowedAuthenticatorsOnEnable = convertAllowed(options.allowedAuthenticatorsOnEnable)
+        val allowedAuthenticatorsOnAuthenticate = convertAllowed(options.allowedAuthenticatorsOnAuthenticate)
+
         val promptInfo = buildPromptInfo(
             options.title,
             options.subtitle,
             options.description,
             options.negativeButtonText,
-            allowed
+            allowedAuthenticatorsOnEnable
         )
 
         val kid = UUID.randomUUID().toString()
         val alias = "com.authgear.keys.biometric.$kid"
         val spec = makeGenerateKeyPairSpec(
             alias,
-            authenticatorTypesToKeyProperties(allowed),
+            authenticatorTypesToKeyProperties(allowedAuthenticatorsOnAuthenticate),
             options.invalidatedByBiometricEnrollment)
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
         val keyPair = createKeyPair(spec)
@@ -1019,14 +1018,13 @@ internal class AuthgearCore(
         requireIsInitialized()
         requireMinimumBiometricAPILevel()
 
-        ensureAllowedIsValid(options.allowedAuthenticators)
-        val allowed = convertAllowed(options.allowedAuthenticators)
+        val allowedAuthenticatorsOnAuthenticate = convertAllowed(options.allowedAuthenticatorsOnAuthenticate)
         val promptInfo = buildPromptInfo(
             options.title,
             options.subtitle,
             options.description,
             options.negativeButtonText,
-            allowed
+            allowedAuthenticatorsOnAuthenticate
         )
 
         val challenge = this.oauthRepo.oauthChallenge("biometric_request").token
