@@ -18,6 +18,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.oursky.authgear.BiometricAuthenticator;
 import com.oursky.authgear.PreAuthenticatedURLNotAllowedException;
 import com.oursky.authgear.PreAuthenticatedURLOptions;
 import com.oursky.authgear.Authgear;
@@ -68,10 +69,12 @@ import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 import java.util.Date;
+import java.util.List;
 
 @SuppressWarnings("ConstantConditions")
 public class MainViewModel extends AndroidViewModel implements AuthgearDelegate {
-    private static final int ALLOWED = BiometricManager.Authenticators.BIOMETRIC_STRONG;
+    private static final List<BiometricAuthenticator> ALLOWED_AUTHENTICATORS_ON_ENABLE = List.of(BiometricAuthenticator.BIOMETRIC_STRONG);
+    private static final List<BiometricAuthenticator> ALLOWED_AUTHENTICATORS_ON_AUTHENTICATE = List.of(BiometricAuthenticator.BIOMETRIC_STRONG, BiometricAuthenticator.DEVICE_CREDENTIAL);
     private static final String TAG = MainViewModel.class.getSimpleName();
     private Authgear mAuthgear = null;
     private IWXAPI wechatAPI;
@@ -136,7 +139,7 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
             if (Build.VERSION.SDK_INT >= 23) {
                 mAuthgear.checkBiometricSupported(
                         this.getApplication(),
-                        ALLOWED
+                        ALLOWED_AUTHENTICATORS_ON_ENABLE
                 );
                 supported = true;
             }
@@ -609,7 +612,8 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
                 "Biometric authentication",
                 "Use biometric to authenticate",
                 "Cancel",
-                ALLOWED,
+                ALLOWED_AUTHENTICATORS_ON_ENABLE,
+                ALLOWED_AUTHENTICATORS_ON_AUTHENTICATE,
                 true
         );
     }
@@ -634,7 +638,7 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
         mIsLoading.setValue(true);
 
         try {
-            mAuthgear.checkBiometricSupported(activity, ALLOWED);
+            mAuthgear.checkBiometricSupported(activity, ALLOWED_AUTHENTICATORS_ON_ENABLE);
         } catch (Exception e) {
             mIsLoading.setValue(false);
             setError(e);
