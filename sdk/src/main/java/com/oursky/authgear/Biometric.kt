@@ -9,10 +9,6 @@ import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.PromptInfo
 import java.security.*
 
-internal const val BIOMETRIC_ONLY = BiometricManager.Authenticators.BIOMETRIC_STRONG
-internal const val BIOMETRIC_OR_DEVICE_CREDENTIAL =
-    BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-
 @RequiresApi(api = Build.VERSION_CODES.M)
 internal fun makeGenerateKeyPairSpec(alias: String, allowed: Int, invalidatedByBiometricEnrollment: Boolean): KeyGenParameterSpec {
     val builder = KeyGenParameterSpec.Builder(
@@ -107,17 +103,25 @@ internal fun authenticatorTypesToKeyProperties(allowed: Int): Int {
     return out
 }
 
-internal fun ensureAllowedIsValid(allowed: Int) {
-    if (allowed != BIOMETRIC_ONLY && allowed != BIOMETRIC_OR_DEVICE_CREDENTIAL) {
-        throw IllegalArgumentException("AuthenticateTypes must be BIOMETRIC_STRONG or BIOMETRIC_STRONG | DEVICE_CREDENTIAL")
+internal fun convertAllowed(allowedAuthenticators: List<BiometricAuthenticator>): Int {
+    var flags = 0
+    for (allowed in allowedAuthenticators) {
+        flags = flags or allowed.raw
     }
-}
 
-internal fun convertAllowed(allowed: Int): Int {
-    if (Build.VERSION.SDK_INT < 30 && (allowed and BiometricManager.Authenticators.DEVICE_CREDENTIAL) != 0) {
-        return allowed xor BiometricManager.Authenticators.DEVICE_CREDENTIAL
+    // The official documentation says that on 29 and below,
+    // DEVICE_CREDENTIAL and BIOMETRIC_STRONG | DEVICE_CREDENTIAL
+    // are unsupported.
+    // https://developer.android.com/identity/sign-in/biometric-auth#:~:text=The%20following%20combinations%20of%20authenticator%20types%20aren%27t%20supported%20on%20Android%2010%20(API%20level%2029)%20and%20lower
+    if (Build.VERSION.SDK_INT < 30) {
+        if (flags == BiometricManager.Authenticators.DEVICE_CREDENTIAL || flags == (BiometricManager.Authenticators.DEVICE_CREDENTIAL or BiometricManager.Authenticators.BIOMETRIC_STRONG)) {
+            // Fallback to BiometricManager.Authenticators.BIOMETRIC_STRONG
+            // which is a strong default.
+            flags = BiometricManager.Authenticators.BIOMETRIC_STRONG
+        }
     }
-    return allowed
+
+    return flags
 }
 
 internal fun canAuthenticateResultToString(result: Int): String {
@@ -160,7 +164,6 @@ internal fun buildPromptInfo(
     negativeButtonText: String,
     allowed: Int
 ): PromptInfo {
-    ensureAllowedIsValid(allowed)
     val builder = PromptInfo.Builder()
         .setTitle(title)
         .setSubtitle(subtitle)
