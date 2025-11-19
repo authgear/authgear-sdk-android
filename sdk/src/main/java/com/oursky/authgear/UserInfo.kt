@@ -41,5 +41,7 @@ data class UserInfo(
     val birthdate: String? = null,
     val zoneinfo: String? = null,
     val locale: String? = null,
-    val address: UserInfoAddress? = null
+    val address: UserInfoAddress? = null,
+    @SerialName("https://authgear.com/claims/user/authenticators")
+    val authenticators: List<Authenticator>? = null
 )
