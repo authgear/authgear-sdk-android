@@ -13,6 +13,8 @@ data class UserInfo(
     val isAnonymous: Boolean,
     @SerialName("https://authgear.com/claims/user/can_reauthenticate")
     val canReauthenticate: Boolean,
+    @SerialName("https://authgear.com/claims/user/recovery_code_enabled")
+    val recoveryCodeEnabled: Boolean? = null,
     @SerialName("https://authgear.com/claims/user/roles")
     val roles: Array<String>? = null,
     @SerialName("custom_attributes")
@@ -41,5 +43,7 @@ data class UserInfo(
     val birthdate: String? = null,
     val zoneinfo: String? = null,
     val locale: String? = null,
-    val address: UserInfoAddress? = null
+    val address: UserInfoAddress? = null,
+    @SerialName("https://authgear.com/claims/user/authenticators")
+    val authenticators: List<Authenticator>? = null
 )
