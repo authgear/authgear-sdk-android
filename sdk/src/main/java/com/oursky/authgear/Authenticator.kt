@@ -10,9 +10,5 @@ data class Authenticator(
     @SerialName("updated_at")
     val updatedAt: String,
     val type: AuthenticatorType,
-    val kind: AuthenticatorKind,
-    @SerialName("display_name")
-    val displayName: String? = null,
-    val email: String? = null,
-    val phone: String? = null
+    val kind: AuthenticatorKind
 )
