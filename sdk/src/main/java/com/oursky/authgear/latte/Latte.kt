@@ -182,6 +182,33 @@ class Latte(
         return Pair(fragment, handle)
     }
 
+    suspend fun reauthenticateV2(
+        context: Context,
+        coroutineScope: CoroutineScope,
+        options: ReauthenticateV2Options
+    ): Pair<Fragment, LatteHandle<UserInfo>> {
+        val request = authgear.createReauthenticateRequest(makeAuthgearReauthenticateOptionsV2(context, options))
+        val fragment = LatteFragment.makeWithPreCreatedWebView(
+            context = context,
+            id = makeID(),
+            url = request.url,
+            redirectUri = request.redirectUri,
+            webContentsDebuggingEnabled = webContentsDebuggingEnabled
+        )
+
+        val listenHandle = fragment.listen(authgear.core.application, this)
+        fragment.waitWebViewToLoad(webViewLoadTimeoutMillis)
+
+        val d = coroutineScope.async {
+            val result = waitForResult(listenHandle)
+            val userInfo = authgear.finishReauthentication(result.getOrThrow().toString(), request)
+            userInfo
+        }
+
+        val handle = LatteHandle(fragment.latteID, d)
+        return Pair(fragment, handle)
+    }
+
     suspend fun verifyEmail(
         context: Context,
         coroutineScope: CoroutineScope,
@@ -557,6 +584,24 @@ class Latte(
         }
 
         reauthXState["capabilities"] = capabilities.joinToString(separator = ",") { it.raw }
+
+        val reauthXSecrets = hashMapOf(
+            "email" to latteOptions.email,
+            "phone" to latteOptions.phone
+        )
+
+        val finalXState = makeXStateWithSecrets(reauthXState, reauthXSecrets)
+
+        return ReauthenticateOptions(
+            xState = finalXState.toQueryParameter(),
+            redirectUri = "latte://complete",
+            uiLocales = latteOptions.uiLocales
+        )
+    }
+
+    private suspend fun makeAuthgearReauthenticateOptionsV2(context: Context, latteOptions: ReauthenticateV2Options): com.oursky.authgear.ReauthenticateOptions {
+        val reauthXState = HashMap(latteOptions.xState)
+        reauthXState["user_initiate"] = "reauthv2"
 
         val reauthXSecrets = hashMapOf(
             "email" to latteOptions.email,
