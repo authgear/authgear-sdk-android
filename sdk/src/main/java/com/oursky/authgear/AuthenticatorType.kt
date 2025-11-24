@@ -14,6 +14,7 @@ enum class AuthenticatorType {
     OOB_OTP_EMAIL,
     OOB_OTP_SMS,
     TOTP,
+    PASSKEY,
     UNKNOWN
 }
 
@@ -28,6 +29,7 @@ object AuthenticatorTypeSerializer : KSerializer<AuthenticatorType> {
             "oob_otp_email" -> AuthenticatorType.OOB_OTP_EMAIL
             "oob_otp_sms" -> AuthenticatorType.OOB_OTP_SMS
             "totp" -> AuthenticatorType.TOTP
+            "passkey" -> AuthenticatorType.PASSKEY
             else -> AuthenticatorType.UNKNOWN
         }
     }
@@ -38,6 +40,7 @@ object AuthenticatorTypeSerializer : KSerializer<AuthenticatorType> {
             AuthenticatorType.OOB_OTP_EMAIL -> "oob_otp_email"
             AuthenticatorType.OOB_OTP_SMS -> "oob_otp_sms"
             AuthenticatorType.TOTP -> "totp"
+            AuthenticatorType.PASSKEY -> "passkey"
             AuthenticatorType.UNKNOWN -> "unknown"
         }
         encoder.encodeString(stringValue)
