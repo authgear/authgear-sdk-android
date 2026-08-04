@@ -5,5 +5,7 @@ package com.oursky.authgear
  */
 enum class Page {
     SETTINGS,
+
+    @Deprecated("Use Page.SETTINGS to see a list of identities, and changeEmail / changePhone / etc. to change them.")
     IDENTITY
 }
