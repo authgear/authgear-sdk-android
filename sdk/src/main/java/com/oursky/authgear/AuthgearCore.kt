@@ -670,7 +670,7 @@ internal class AuthgearCore(
             )
         } catch (e: Exception) {
             handleInvalidGrantError(e)
-            if (e is OAuthException && e.error == "invalid_grant") {
+            if (e is OAuthException && (e.error == "invalid_grant" || e.error == "invalid_dpop_proof")) {
                 return
             }
             throw e
@@ -876,7 +876,7 @@ internal class AuthgearCore(
     }
 
     private fun handleInvalidGrantError(e: Exception) {
-        if (e is OAuthException && e.error == "invalid_grant") {
+        if (e is OAuthException && (e.error == "invalid_grant" || e.error == "invalid_dpop_proof")) {
             clearSession(SessionStateChangeReason.INVALID)
             return
         } else if (e is ServerException && e.reason == "InvalidGrant") {
