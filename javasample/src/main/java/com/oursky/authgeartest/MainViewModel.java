@@ -43,6 +43,7 @@ import com.oursky.authgear.OnOpenSettingsActionListener;
 import com.oursky.authgear.OnOpenURLListener;
 import com.oursky.authgear.OnPromoteAnonymousUserListener;
 import com.oursky.authgear.OnReauthenticateListener;
+import com.oursky.authgear.OnRefreshAccessTokenIfNeededListener;
 import com.oursky.authgear.OnRefreshIDTokenListener;
 import com.oursky.authgear.OnWechatAuthCallbackListener;
 import com.oursky.authgear.OpenAuthorizationURLOptions;
@@ -99,6 +100,7 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
     final private MutableLiveData<UserInfo> mUserInfo = new MutableLiveData<>(null);
     final private MutableLiveData<SessionState> mSessionState = new MutableLiveData<>(SessionState.UNKNOWN);
     final private MutableLiveData<Throwable> mError = new MutableLiveData<>(null);
+    final private MutableLiveData<String> mRefreshAccessTokenResult = new MutableLiveData<>(null);
     private Intent pendingApp2AppIntent = null;
     final private MutableLiveData<Boolean> mAuthgearConfigured = new MutableLiveData<>(false);
     final private MutableLiveData<ConfirmationViewModel> mApp2AppConfirmation = new MutableLiveData<>(null);
@@ -238,6 +240,10 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
 
     public LiveData<Throwable> error() {
         return mError;
+    }
+
+    public LiveData<String> refreshAccessTokenResult() {
+        return mRefreshAccessTokenResult;
     }
     public LiveData<ConfirmationViewModel> app2appConfirmation() { return mApp2AppConfirmation; }
 
@@ -842,6 +848,26 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
             @Override
             public void onFetchingUserInfoFailed(@NonNull Throwable throwable) {
                 mUserInfo.setValue(null);
+                setError(throwable);
+            }
+        });
+    }
+
+    // Unlike fetchUserInfo(), this does NOT chain any follow-up request
+    // after refresh, so the refresh result (e.g. invalid_grant vs
+    // invalid_dpop_proof) is not masked by a subsequent request made with a
+    // stale/missing access token.
+    public void refreshAccessToken() {
+        mAuthgear.refreshAccessTokenIfNeeded(new OnRefreshAccessTokenIfNeededListener() {
+            @Override
+            public void onFinished() {
+                mRefreshAccessTokenResult.setValue(
+                        "Refreshed access token successfully.\nsessionState: " + mAuthgear.getSessionState()
+                );
+            }
+
+            @Override
+            public void onFailed(Throwable throwable) {
                 setError(throwable);
             }
         });

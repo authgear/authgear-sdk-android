@@ -587,6 +587,15 @@
                     tools:ignore="HardcodedText" />
 
                 <Button
+                    android:id="@+id/refreshAccessToken"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Refresh Access Token If Needed"
+                    tools:ignore="HardcodedText" />
+
+                <Button
                     android:id="@+id/showAuthTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

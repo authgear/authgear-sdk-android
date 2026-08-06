@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private View mChangePassword;
     private View mDeleteAccount;
     private View mFetchUserInfo;
+    private View mRefreshAccessToken;
     private View mShowAuthTime;
     private View mLogout;
     private MainViewModel viewModel;
@@ -104,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
         mChangePassword = findViewById(R.id.changePassword);
         mDeleteAccount = findViewById(R.id.deleteAccount);
         mFetchUserInfo = findViewById(R.id.fetchUserInfo);
+        mRefreshAccessToken = findViewById(R.id.refreshAccessToken);
         mShowAuthTime = findViewById(R.id.showAuthTime);
         mLogout = findViewById(R.id.logout);
         mUseWebKitWebView = findViewById(R.id.useWebKitWebView);
@@ -167,6 +169,7 @@ public class MainActivity extends AppCompatActivity {
         mChangePassword.setOnClickListener(view -> viewModel.openChangePassword());
         mDeleteAccount.setOnClickListener(view -> viewModel.openDeleteAccount());
         mFetchUserInfo.setOnClickListener(view -> viewModel.fetchUserInfo());
+        mRefreshAccessToken.setOnClickListener(view -> viewModel.refreshAccessToken());
         mShowAuthTime.setOnClickListener(view -> viewModel.showAuthTime(this));
         mLogout.setOnClickListener(view -> viewModel.logout());
 
@@ -280,6 +283,16 @@ public class MainActivity extends AppCompatActivity {
             builder.create().show();
         });
 
+        viewModel.refreshAccessTokenResult().observe(this, message -> {
+            if (message == null) return;
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Refresh Access Token If Needed");
+            builder.setMessage(message);
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+            });
+            builder.create().show();
+        });
+
         viewModel.error().observe(this, e -> {
             if (e == null) return;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -358,6 +371,7 @@ public class MainActivity extends AppCompatActivity {
         mChangePassword.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mDeleteAccount.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mFetchUserInfo.setEnabled(!isLoading && isConfigured && isLoggedIn);
+        mRefreshAccessToken.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mShowAuthTime.setEnabled(!isLoading && isConfigured && isLoggedIn);
         mLogout.setEnabled(!isLoading && isConfigured && isLoggedIn);
     }
