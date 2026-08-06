@@ -267,7 +267,10 @@ public class MainActivity extends AppCompatActivity {
             mApp2AppstateField.setVisibility(app2appEnabled ? View.VISIBLE : View.GONE);
         });
 
-        viewModel.sessionState().observe(this, sessionState -> mSessionState.setText(viewModel.sessionState().getValue().toString()));
+        viewModel.sessionState().observe(this, sessionState -> {
+            mSessionState.setText(viewModel.sessionState().getValue().toString());
+            updateButtonDisabledState(viewModel);
+        });
 
         viewModel.isLoading().observe(this, isLoading -> updateButtonDisabledState(viewModel));
         viewModel.isBiometricEnabled().observe(this, isEnabled -> updateButtonDisabledState(viewModel));
