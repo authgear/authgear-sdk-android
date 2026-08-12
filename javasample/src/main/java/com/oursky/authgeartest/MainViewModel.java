@@ -353,8 +353,8 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
     }
 
     @Override
-    public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason) {
-        Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason);
+    public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason, @Nullable Throwable error) {
+        Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason + " error=" + error);
         this.mSessionState.setValue(container.getSessionState());
     }
 

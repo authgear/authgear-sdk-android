@@ -564,12 +564,12 @@ internal class AuthgearCore(
         clearSession(SessionStateChangeReason.CLEAR)
     }
 
-    private fun updateSessionState(state: SessionState, reason: SessionStateChangeReason) {
+    private fun updateSessionState(state: SessionState, reason: SessionStateChangeReason, error: Throwable? = null) {
         // TODO: Add re-entry detection
         sessionState = state
         val handler = Handler(Looper.getMainLooper())
         handler.post {
-            this.delegate?.onSessionStateChanged(this.authgear, reason)
+            this.delegate?.onSessionStateChanged(this.authgear, reason, error)
         }
     }
 
@@ -709,7 +709,7 @@ internal class AuthgearCore(
         }
     }
 
-    internal fun clearSession(changeReason: SessionStateChangeReason) {
+    internal fun clearSession(changeReason: SessionStateChangeReason, error: Throwable? = null) {
         tokenStorage.deleteRefreshToken(name)
         sharedStorage.onLogout(name)
         storage.deleteApp2AppDeviceKeyId(name)
@@ -718,7 +718,7 @@ internal class AuthgearCore(
             refreshToken = null
             idToken = null
             expireAt = null
-            updateSessionState(SessionState.NO_SESSION, changeReason)
+            updateSessionState(SessionState.NO_SESSION, changeReason, error)
         }
     }
 
@@ -877,10 +877,10 @@ internal class AuthgearCore(
 
     private fun handleInvalidGrantError(e: Exception) {
         if (e is OAuthException && (e.error == "invalid_grant" || e.error == "invalid_dpop_proof")) {
-            clearSession(SessionStateChangeReason.INVALID)
+            clearSession(SessionStateChangeReason.INVALID, e)
             return
         } else if (e is ServerException && e.reason == "InvalidGrant") {
-            clearSession(SessionStateChangeReason.INVALID)
+            clearSession(SessionStateChangeReason.INVALID, e)
             return
         }
     }
