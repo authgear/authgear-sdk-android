@@ -29,6 +29,7 @@ import com.oursky.authgear.BiometricOptions;
 import com.oursky.authgear.CancelException;
 import com.oursky.authgear.ColorScheme;
 import com.oursky.authgear.CustomTabsUIImplementation;
+import com.oursky.authgear.OAuthException;
 import com.oursky.authgear.OnAuthenticateAnonymouslyListener;
 import com.oursky.authgear.OnAuthenticateBiometricListener;
 import com.oursky.authgear.OnAuthenticateListener;
@@ -355,6 +356,14 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
     @Override
     public void onSessionStateChanged(Authgear container, SessionStateChangeReason reason, @Nullable Throwable error) {
         Log.d(TAG, "Session state=" + container.getSessionState() + " reason=" + reason + " error=" + error);
+        if (error instanceof OAuthException) {
+            String oauthError = ((OAuthException) error).getError();
+            if ("invalid_grant".equals(oauthError)) {
+                Log.d(TAG, "onSessionStateChanged: error is invalid_grant");
+            } else if ("invalid_dpop_proof".equals(oauthError)) {
+                Log.d(TAG, "onSessionStateChanged: error is invalid_dpop_proof");
+            }
+        }
         this.mSessionState.setValue(container.getSessionState());
     }
 
