@@ -40,13 +40,49 @@ android {
         buildConfigField("String", "LOCAL_AUTHGEAR_ENDPOINT", "\"${localProperties.getProperty("local.authgear.endpoint")}\"")
     }
 
-    if (project.hasProperty("STORE_FILE")) {
-        signingConfigs {
-            create("release") {
+    signingConfigs {
+        if (project.hasProperty("STORE_FILE")) {
+            create("app1Release") {
                 storeFile = File(project.findProperty("STORE_FILE") as String)
                 storePassword = project.findProperty("STORE_PASSWORD") as String
                 keyAlias = project.findProperty("KEY_ALIAS") as String
                 keyPassword = project.findProperty("KEY_PASSWORD") as String
+            }
+        }
+        // App2 is a separate Play Store listing, so it needs its own upload key.
+        if (project.hasProperty("STORE_FILE_APP2")) {
+            create("app2Release") {
+                storeFile = File(project.findProperty("STORE_FILE_APP2") as String)
+                storePassword = project.findProperty("STORE_PASSWORD_APP2") as String
+                keyAlias = project.findProperty("KEY_ALIAS_APP2") as String
+                keyPassword = project.findProperty("KEY_PASSWORD_APP2") as String
+            }
+        }
+    }
+
+    flavorDimensions += "app"
+    productFlavors {
+        create("app1") {
+            dimension = "app"
+            resValue("string", "app_name", "Authgear Test")
+            buildConfigField("String", "AUTHGEAR_REDIRECT_URI_SCHEME", "\"com.authgear.exampleapp.android\"")
+            buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android.pandawork.com\"")
+            manifestPlaceholders["authgearRedirectScheme"] = "com.authgear.exampleapp.android"
+            manifestPlaceholders["authgearAppLinksHost"] = "authgear-demo-android.pandawork.com"
+            if (project.hasProperty("STORE_FILE")) {
+                signingConfig = signingConfigs.getByName("app1Release")
+            }
+        }
+        create("app2") {
+            dimension = "app"
+            applicationIdSuffix = ".app2"
+            resValue("string", "app_name", "Authgear Test 2")
+            buildConfigField("String", "AUTHGEAR_REDIRECT_URI_SCHEME", "\"com.authgear.exampleapp.android.app2\"")
+            buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android-app2.pandawork.com\"")
+            manifestPlaceholders["authgearRedirectScheme"] = "com.authgear.exampleapp.android.app2"
+            manifestPlaceholders["authgearAppLinksHost"] = "authgear-demo-android-app2.pandawork.com"
+            if (project.hasProperty("STORE_FILE_APP2")) {
+                signingConfig = signingConfigs.getByName("app2Release")
             }
         }
     }
@@ -58,9 +94,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (project.hasProperty("STORE_FILE")) {
-                signingConfig = signingConfigs.getByName("release")
-            }
         }
     }
 
