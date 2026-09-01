@@ -59,3 +59,36 @@ jobs:
         export GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE="$RUNNER_TEMP/google_service_account_key.json"
         echo -n "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64" | base64 --decode -o "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE"
         make upload-aab
+
+  app2:
+    if: ${{ github.repository == 'authgear/authgear-sdk-android' }}
+    runs-on: macos-15
+    needs: ["test"]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ruby/setup-ruby@v1
+      with:
+        # runs 'bundle install' and caches installed gems automatically
+        bundler-cache: true
+    - name: Build aab
+      if: ${{ github.ref == 'refs/heads/main' }}
+      env:
+        STORE_BASE64: ${{ secrets.ANDROID_APP2_KEYSTORE_BASE64 }}
+        STORE_PASSWORD: ${{ secrets.ANDROID_APP2_KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.ANDROID_APP2_KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.ANDROID_APP2_KEY_PASSWORD }}
+      run: |
+        export STORE_FILE_APP2="$RUNNER_TEMP/upload_key_app2.jks"
+        echo -n "$STORE_BASE64" | base64 --decode -o "$STORE_FILE_APP2"
+        export STORE_PASSWORD_APP2="$STORE_PASSWORD"
+        export KEY_ALIAS_APP2="$KEY_ALIAS"
+        export KEY_PASSWORD_APP2="$KEY_PASSWORD"
+        make build-aab-app2
+    - name: Upload aab
+      if: ${{ github.ref == 'refs/heads/main' }}
+      env:
+        GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}
+      run: |
+        export GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE="$RUNNER_TEMP/google_service_account_key.json"
+        echo -n "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_BASE64" | base64 --decode -o "$GOOGLE_SERVICE_ACCOUNT_KEY_JSON_FILE"
+        make upload-aab-app2
