@@ -64,7 +64,7 @@ android {
     productFlavors {
         create("app1") {
             dimension = "app"
-            resValue("string", "app_name", "Authgear Test")
+            resValue("string", "app_name", "Authgear Demo Android")
             buildConfigField("String", "AUTHGEAR_REDIRECT_URI_SCHEME", "\"com.authgear.exampleapp.android\"")
             buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android.pandawork.com\"")
             manifestPlaceholders["authgearRedirectScheme"] = "com.authgear.exampleapp.android"
@@ -76,7 +76,7 @@ android {
         create("app2") {
             dimension = "app"
             applicationIdSuffix = ".app2"
-            resValue("string", "app_name", "Authgear Test 2")
+            resValue("string", "app_name", "Authgear Demo Android 2")
             buildConfigField("String", "AUTHGEAR_REDIRECT_URI_SCHEME", "\"com.authgear.exampleapp.android.app2\"")
             buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android-app2.pandawork.com\"")
             manifestPlaceholders["authgearRedirectScheme"] = "com.authgear.exampleapp.android.app2"
