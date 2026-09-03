@@ -53,6 +53,8 @@ To join, just raise your hand on the [Authgear Discord server](https://discord.g
 
 If you are unfamiliar with how to contribute to GitHub projects, here is a [Getting Started Guide](https://docs.github.com/en/get-started/quickstart/contributing-to-projects). A full set of contribution guidelines, along with templates, are in progress.
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the release workflow.
+
 ## Supported and maintained by
 
 <div align="center">
