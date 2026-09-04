@@ -3,7 +3,7 @@ default_platform(:android)
 platform :android do
   lane :build_aab do |options|
     gradle(
-      tasks: [":javasample:bundleRelease"],
+      tasks: [":javasample:bundleApp1Release"],
       properties: {
         "VERSION_CODE" => options[:VERSION_CODE],
         "STORE_FILE" => options[:STORE_FILE],
@@ -19,7 +19,29 @@ platform :android do
       json_key: options[:json_key],
       package_name: "com.authgear.sdk.exampleapp.android",
       track: "internal",
-      aab: "./javasample/build/outputs/bundle/release/javasample-release.aab",
+      aab: "./javasample/build/outputs/bundle/app1Release/javasample-app1-release.aab",
+    )
+  end
+
+  lane :build_aab_app2 do |options|
+    gradle(
+      tasks: [":javasample:bundleApp2Release"],
+      properties: {
+        "VERSION_CODE" => options[:VERSION_CODE],
+        "STORE_FILE_APP2" => options[:STORE_FILE_APP2],
+        "STORE_PASSWORD_APP2" => options[:STORE_PASSWORD_APP2],
+        "KEY_ALIAS_APP2" => options[:KEY_ALIAS_APP2],
+        "KEY_PASSWORD_APP2" => options[:KEY_PASSWORD_APP2],
+      },
+    )
+  end
+
+  lane :upload_aab_app2 do |options|
+    upload_to_play_store(
+      json_key: options[:json_key],
+      package_name: "com.authgear.sdk.exampleapp.android.app2",
+      track: "internal",
+      aab: "./javasample/build/outputs/bundle/app2Release/javasample-app2-release.aab",
     )
   end
 end

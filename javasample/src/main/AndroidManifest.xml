@@ -40,7 +40,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https"
-                    android:host="authgear-demo-android.pandawork.com"
+                    android:host="${authgearAppLinksHost}"
                     android:path="/app2app/authorize"/>
             </intent-filter>
         </activity>
@@ -51,10 +51,10 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.authgear.exampleapp.android"
+                <data android:scheme="${authgearRedirectScheme}"
                     android:host="host"
                     android:pathPrefix="/path"/>
-                <data android:scheme="com.authgear.exampleapp.android"
+                <data android:scheme="${authgearRedirectScheme}"
                     android:host="host"
                     android:pathPrefix="/open_wechat_app"/>
             </intent-filter>
@@ -68,7 +68,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https"
-                    android:host="authgear-demo-android.pandawork.com"
+                    android:host="${authgearAppLinksHost}"
                     android:path="/app2app/redirect"/>
             </intent-filter>
         </activity>
