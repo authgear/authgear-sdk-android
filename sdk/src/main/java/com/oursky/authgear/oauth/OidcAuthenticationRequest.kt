@@ -25,7 +25,8 @@ internal data class OidcAuthenticationRequest constructor(
     var responseMode: String? = null,
     var xPreAuthenticatedURLToken: String? = null,
     var dpopJKT: String? = null,
-    var oauthProviderAlias: String? = null
+    var oauthProviderAlias: String? = null,
+    var resource: String? = null
 )
 
 internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: AuthgearCore.Verifier?): Map<String, String> {
@@ -117,6 +118,10 @@ internal fun OidcAuthenticationRequest.toQuery(clientID: String, codeVerifier: A
 
     this.oauthProviderAlias?.let {
         query["x_oauth_provider_alias"] = it
+    }
+
+    this.resource?.let {
+        query["resource"] = it
     }
 
     return query

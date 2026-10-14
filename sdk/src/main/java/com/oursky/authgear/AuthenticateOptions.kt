@@ -53,7 +53,15 @@ data class AuthenticateOptions @JvmOverloads constructor(
     /**
      * OAuth provider alias
      */
-    var oauthProviderAlias: String? = null
+    var oauthProviderAlias: String? = null,
+
+    /**
+     * Resource indicator (RFC 8707). The URI of an API Resource registered in Authgear Portal.
+     *
+     * When it is set, the access tokens of the resulting session have `aud` set to this URI instead of the Authgear endpoint.
+     * The binding lasts for the whole session, including tokens obtained by refreshing.
+     */
+    var resource: String? = null
 ) {
     companion object {
         internal fun getScopes(preAuthenticatedURLEnabled: Boolean): List<String> {
@@ -89,6 +97,7 @@ internal fun AuthenticateOptions.toRequest(
         page = this.page,
         authenticationFlowGroup = this.authenticationFlowGroup,
         dpopJKT = dpopJKT,
-        oauthProviderAlias = this.oauthProviderAlias
+        oauthProviderAlias = this.oauthProviderAlias,
+        resource = this.resource
     )
 }
