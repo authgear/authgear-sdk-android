@@ -42,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private View mApp2AppstateField;
     private EditText mOAuthProviderAlias;
     private EditText mAuthenticationFlowGroup;
+    private EditText mResource;
     private Spinner mPage;
     private Spinner mTokenStorage;
     private Spinner mColorScheme;
@@ -87,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         mApp2AppstateField = findViewById(R.id.app2appstateField);
         mOAuthProviderAlias = findViewById(R.id.oauthProviderAliasInput);
         mAuthenticationFlowGroup = findViewById(R.id.authenticationFlowGroupInput);
+        mResource = findViewById(R.id.resourceInput);
         mPreAuthenticatedURLClientID = findViewById(R.id.preAuthenticatedURLClientIDInput);
         mPreAuthenticatedURLRedirectURI = findViewById(R.id.preAuthenticatedURLRedirectURIInput);
         mLoading = findViewById(R.id.loading);
@@ -200,6 +202,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable editable) {
                 viewModel.setAuthenticationiFlowGroup(editable.toString());
+            }
+        });
+        mResource.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                viewModel.setResource(editable.toString());
             }
         });
 

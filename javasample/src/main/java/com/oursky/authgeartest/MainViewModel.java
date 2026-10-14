@@ -86,6 +86,7 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
     final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mOAuthProviderAlias = new MutableLiveData<>("");
     final private MutableLiveData<String> mAuthenticationiFlowGroup = new MutableLiveData<>("");
+    final private MutableLiveData<String> mResource = new MutableLiveData<>("");
     final private MutableLiveData<String> mPreAuthenticatedURLClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mPreAuthenticatedURLRedirectURI = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
@@ -179,6 +180,10 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
 
     public void setAuthenticationiFlowGroup(String flowGroup) {
         mAuthenticationiFlowGroup.setValue(flowGroup);
+    }
+
+    public void setResource(String resource) {
+        mResource.setValue(resource);
     }
 
     public void setPage(String page) {
@@ -389,6 +394,9 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
         options.setAuthenticationFlowGroup(mAuthenticationiFlowGroup.getValue());
         if (!mOAuthProviderAlias.getValue().isEmpty()) {
             options.setOauthProviderAlias(mOAuthProviderAlias.getValue());
+        }
+        if (!mResource.getValue().isEmpty()) {
+            options.setResource(mResource.getValue());
         }
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
