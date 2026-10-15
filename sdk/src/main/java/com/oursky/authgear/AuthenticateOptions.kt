@@ -53,14 +53,34 @@ data class AuthenticateOptions @JvmOverloads constructor(
     /**
      * OAuth provider alias
      */
-    var oauthProviderAlias: String? = null
+    var oauthProviderAlias: String? = null,
+
+    /**
+     * Resource indicator (RFC 8707). The URI of an API Resource registered in Authgear Portal.
+     *
+     * When it is set, the access tokens of the resulting session have `aud` set to this URI instead of the Authgear endpoint.
+     * The binding lasts for the whole session, including tokens obtained by refreshing.
+     */
+    var resource: String? = null,
+
+    /**
+     * Scopes of the API Resource given in [resource] to request.
+     *
+     * They are merged with the scopes required by the SDK. The scopes required by the SDK are always requested.
+     */
+    var scopes: List<String>? = null
 ) {
     companion object {
-        internal fun getScopes(preAuthenticatedURLEnabled: Boolean): List<String> {
+        internal fun getScopes(preAuthenticatedURLEnabled: Boolean, additionalScopes: List<String>? = null): List<String> {
             val scopes = mutableListOf("openid", "offline_access", "https://authgear.com/scopes/full-access")
             if (preAuthenticatedURLEnabled) {
                 scopes.add("device_sso")
                 scopes.add("https://authgear.com/scopes/pre-authenticated-url")
+            }
+            additionalScopes?.forEach {
+                if (!scopes.contains(it)) {
+                    scopes.add(it)
+                }
             }
             return scopes
         }
@@ -75,7 +95,7 @@ internal fun AuthenticateOptions.toRequest(
     return OidcAuthenticationRequest(
         redirectUri = this.redirectUri,
         responseType = "code",
-        scope = AuthenticateOptions.getScopes(preAuthenticatedURLEnabled),
+        scope = AuthenticateOptions.getScopes(preAuthenticatedURLEnabled, this.scopes),
         isSsoEnabled = isSsoEnabled,
         state = null,
         xState = this.xState,
@@ -89,6 +109,7 @@ internal fun AuthenticateOptions.toRequest(
         page = this.page,
         authenticationFlowGroup = this.authenticationFlowGroup,
         dpopJKT = dpopJKT,
-        oauthProviderAlias = this.oauthProviderAlias
+        oauthProviderAlias = this.oauthProviderAlias,
+        resource = this.resource
     )
 }
