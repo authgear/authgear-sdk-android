@@ -24,8 +24,9 @@ android {
     defaultConfig {
         multiDexEnabled = true
         applicationId = "com.authgear.sdk.exampleapp.android"
-        // minSdk is set to 23 so that we do not need version check to use biometric and app2app.
-        minSdk = 23
+        // minSdk is set to 24 because Play automatic protection requires it.
+        // It is also above 23, so we do not need version check to use biometric and app2app.
+        minSdk = 24
         targetSdk = 36
         if (project.hasProperty("VERSION_CODE")) {
             versionCode = Integer.parseInt(project.findProperty("VERSION_CODE") as String)
