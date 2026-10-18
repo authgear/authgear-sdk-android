@@ -70,6 +70,7 @@ import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -86,6 +87,8 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
     final private MutableLiveData<String> mApp2AppEndpoint = new MutableLiveData<>("");
     final private MutableLiveData<String> mOAuthProviderAlias = new MutableLiveData<>("");
     final private MutableLiveData<String> mAuthenticationiFlowGroup = new MutableLiveData<>("");
+    final private MutableLiveData<String> mResource = new MutableLiveData<>("");
+    final private MutableLiveData<String> mScopes = new MutableLiveData<>("");
     final private MutableLiveData<String> mPreAuthenticatedURLClientID = new MutableLiveData<>("");
     final private MutableLiveData<String> mPreAuthenticatedURLRedirectURI = new MutableLiveData<>("");
     final private MutableLiveData<String> mPage = new MutableLiveData<>("");
@@ -179,6 +182,14 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
 
     public void setAuthenticationiFlowGroup(String flowGroup) {
         mAuthenticationiFlowGroup.setValue(flowGroup);
+    }
+
+    public void setResource(String resource) {
+        mResource.setValue(resource);
+    }
+
+    public void setScopes(String scopes) {
+        mScopes.setValue(scopes);
     }
 
     public void setPage(String page) {
@@ -389,6 +400,12 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
         options.setAuthenticationFlowGroup(mAuthenticationiFlowGroup.getValue());
         if (!mOAuthProviderAlias.getValue().isEmpty()) {
             options.setOauthProviderAlias(mOAuthProviderAlias.getValue());
+        }
+        if (!mResource.getValue().isEmpty()) {
+            options.setResource(mResource.getValue());
+        }
+        if (!mScopes.getValue().trim().isEmpty()) {
+            options.setScopes(Arrays.asList(mScopes.getValue().trim().split("\\s+")));
         }
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
