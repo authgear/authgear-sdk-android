@@ -6,7 +6,12 @@ import com.oursky.authgear.AuthgearCore
 data class App2AppAuthenticateOptions @JvmOverloads constructor(
     var authorizationEndpoint: String,
     var redirectUri: String,
-    var state: String? = null
+    var state: String? = null,
+    /**
+     * Resource indicator (RFC 8707). Defaults to the `resource` given to `configure`; a value given here replaces it.
+     * The authenticated app passes it on unchanged.
+     */
+    var resource: String? = null
 )
 
 internal fun App2AppAuthenticateOptions.toRequest(
@@ -19,5 +24,6 @@ internal fun App2AppAuthenticateOptions.toRequest(
         clientID = clientID,
         codeChallenge = codeVerifier.challenge,
         state = state,
+        resource = resource,
     )
 }
