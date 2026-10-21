@@ -45,4 +45,11 @@ class AuthenticateOptionsTest {
             request.scope
         )
     }
+
+    @Test
+    fun toRequestIncludesResource() {
+        val request = AuthenticateOptions(redirectUri = "com.example://host/path", resource = "https://api.example.com")
+            .toRequest(isSsoEnabled = false, preAuthenticatedURLEnabled = false, dpopJKT = null)
+        assertEquals("https://api.example.com", request.resource)
+    }
 }

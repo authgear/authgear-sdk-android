@@ -5,12 +5,13 @@ import com.oursky.authgear.AuthgearCore
 import com.oursky.authgear.getQueryList
 import com.oursky.authgear.net.toQueryParameter
 
-data class App2AppAuthenticateRequest(
+data class App2AppAuthenticateRequest @JvmOverloads constructor(
     var authorizationEndpoint: String,
     var redirectUri: String,
     var clientID: String,
     var codeChallenge: String,
-    var state: String?
+    var state: String?,
+    var resource: String? = null
 ) {
     companion object {
         fun parse(uri: Uri): App2AppAuthenticateRequest? {
@@ -28,12 +29,14 @@ data class App2AppAuthenticateRequest(
             val clientID: String = queryMap["client_id"] ?: return null
             val codeChallenge: String = queryMap["code_challenge"] ?: return null
             val state: String? = queryMap["state"]
+            val resource: String? = queryMap["resource"]
             return App2AppAuthenticateRequest(
                 authorizationEndpoint = authorizationEndpoint,
                 redirectUri = redirectUri,
                 clientID = clientID,
                 codeChallenge = codeChallenge,
-                state = state
+                state = state,
+                resource = resource
             )
         }
     }
@@ -48,6 +51,9 @@ internal fun App2AppAuthenticateRequest.toUri(): Uri {
     )
     state?.let {
         query["state"] = it
+    }
+    resource?.let {
+        query["resource"] = it
     }
     return Uri.parse(this.authorizationEndpoint).buildUpon()
         .encodedQuery(query.toQueryParameter())

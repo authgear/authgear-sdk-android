@@ -133,16 +133,21 @@ constructor(
      * Authenticate anonymously by generating a dummy user. The dummy user persist until the app is uninstalled.
      * @param onAuthenticateAnonymouslyListener The listener.
      * @param handler The handler of the thread on which the listener is called.
+     * @param resource Resource indicator (RFC 8707). Defaults to the `resource` given to [configure].
+     * @param scopes Scopes of the API Resource given in `resource`. Defaults to the `scopes` given to [configure].
+     *   They are merged with the scopes required by the SDK.
      */
     @MainThread
     @JvmOverloads
     fun authenticateAnonymously(
         onAuthenticateAnonymouslyListener: OnAuthenticateAnonymouslyListener,
-        handler: Handler = Handler(Looper.getMainLooper())
+        handler: Handler = Handler(Looper.getMainLooper()),
+        resource: String? = null,
+        scopes: List<String>? = null
     ) {
         scope.launch {
             try {
-                val userInfo = core.authenticateAnonymously()
+                val userInfo = core.authenticateAnonymously(resource, scopes)
                 handler.post {
                     onAuthenticateAnonymouslyListener.onAuthenticated(userInfo)
                 }
@@ -270,16 +275,23 @@ constructor(
      *
      * @param onConfigureListener The listener.
      * @param handler The handler of the thread on which the listener is called.
+     * @param resource Default resource indicator (RFC 8707) for every method that takes a `resource`.
+     *   It is used only when the call does not specify its own, which replaces it.
+     * @param scopes Default scopes of the API Resource given in `resource`, for the methods that create a new grant.
+     *   They are used only when the call does not specify its own, which replaces them.
+     *   The scopes required by the SDK are always merged in.
      */
     @MainThread
     @JvmOverloads
     fun configure(
         onConfigureListener: OnConfigureListener,
-        handler: Handler = Handler(Looper.getMainLooper())
+        handler: Handler = Handler(Looper.getMainLooper()),
+        resource: String? = null,
+        scopes: List<String>? = null
     ) {
         scope.launch {
             try {
-                core.configure()
+                core.configure(resource, scopes)
                 handler.post {
                     onConfigureListener.onConfigured()
                 }
@@ -843,9 +855,9 @@ constructor(
 /**
  * @see [Authgear.configure].
  */
-suspend fun Authgear.configure() {
+suspend fun Authgear.configure(resource: String? = null, scopes: List<String>? = null) {
     return withContext(Dispatchers.IO) {
-        core.configure()
+        core.configure(resource, scopes)
     }
 }
 
@@ -912,8 +924,8 @@ suspend fun Authgear.finishReauthentication(
 /**
  * @see [Authgear.authenticateAnonymously]
  */
-suspend fun Authgear.authenticateAnonymousLy(): UserInfo {
-    return core.authenticateAnonymously()
+suspend fun Authgear.authenticateAnonymousLy(resource: String? = null, scopes: List<String>? = null): UserInfo {
+    return core.authenticateAnonymously(resource, scopes)
 }
 
 /**

@@ -100,6 +100,8 @@ internal class AuthgearCore(
     )
 
     private var isInitialized = false
+    private var defaultResource: String? = null
+    private var defaultScopes: List<String>? = null
     private var refreshToken: String? = null
     var accessToken: String? = null
         private set
@@ -178,7 +180,7 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun authenticateAnonymously(): UserInfo {
+    suspend fun authenticateAnonymously(resource: String? = null, scopes: List<String>? = null): UserInfo {
         requireIsInitialized()
         val challenge = oauthRepo.oauthChallenge("anonymous_request").token
 
@@ -219,7 +221,11 @@ internal class AuthgearCore(
                 grantType = GrantType.ANONYMOUS,
                 clientId = clientId,
                 xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
-                jwt = jwt
+                jwt = jwt,
+                scope = (scopes ?: defaultScopes)?.let {
+                    AuthenticateOptions.getScopes(preAuthenticatedURLEnabled, it)
+                },
+                resource = resource ?: defaultResource
             )
         )
         val userInfo = oauthRepo.oidcUserInfoRequest(
@@ -238,7 +244,10 @@ internal class AuthgearCore(
         verifier: Verifier = generateCodeVerifier()
     ): AuthenticationRequest {
         requireIsInitialized()
-        val request = options.toRequest(
+        val request = options.copy(
+            resource = options.resource ?: defaultResource,
+            scopes = options.scopes ?: defaultScopes
+        ).toRequest(
             this.isSsoEnabled,
             this.preAuthenticatedURLEnabled,
             dpopJKT = dPoPProvider.computeJKT())
@@ -336,7 +345,9 @@ internal class AuthgearCore(
     }
 
     @Suppress("RedundantSuspendModifier")
-    suspend fun configure() {
+    suspend fun configure(resource: String? = null, scopes: List<String>? = null) {
+        defaultResource = resource
+        defaultScopes = scopes
         isInitialized = true
         val refreshToken = tokenStorage.getRefreshToken(name)
         this.refreshToken = refreshToken
@@ -492,7 +503,7 @@ internal class AuthgearCore(
             OidcAuthenticationRequest(
                 redirectUri = options.redirectUri,
                 responseType = "code",
-                scope = listOf("openid", "offline_access", "https://authgear.com/scopes/full-access"),
+                scope = AuthenticateOptions.getScopes(false, options.scopes ?: defaultScopes),
                 isSsoEnabled = this.isSsoEnabled,
                 prompt = listOf(PromptOption.LOGIN),
                 loginHint = loginHint,
@@ -500,7 +511,8 @@ internal class AuthgearCore(
                 xState = options.xState,
                 uiLocales = options.uiLocales,
                 colorScheme = options.colorScheme,
-                wechatRedirectURI = options.wechatRedirectURI
+                wechatRedirectURI = options.wechatRedirectURI,
+                resource = options.resource ?: defaultResource
             ),
             codeVerifier
         )
@@ -1097,8 +1109,10 @@ internal class AuthgearCore(
                         xDeviceInfo = getDeviceInfo(this.application).toBase64URLEncodedString(),
                         jwt = jwt,
                         scope = AuthenticateOptions.getScopes(
-                            preAuthenticatedURLEnabled = preAuthenticatedURLEnabled
-                        )
+                            preAuthenticatedURLEnabled = preAuthenticatedURLEnabled,
+                            additionalScopes = options.scopes ?: defaultScopes
+                        ),
+                        resource = options.resource ?: defaultResource
                     )
                 )
                 val userInfo = oauthRepo.oidcUserInfoRequest(
@@ -1129,7 +1143,7 @@ internal class AuthgearCore(
         val verifier = setupVerifier()
         val request = app2app.createAuthenticateRequest(
             clientID = clientId,
-            options = options,
+            options = options.copy(resource = options.resource ?: defaultResource),
             verifier = verifier
         )
         val resultURI = app2app.startAuthenticateRequest(request)
@@ -1176,7 +1190,8 @@ internal class AuthgearCore(
                     subjectTokenType = SubjectTokenType.ID_TOKEN,
                     subjectToken = idToken,
                     actorTokenType = ActorTokenType.DEVICE_SECRET,
-                    actorToken = deviceSecret
+                    actorToken = deviceSecret,
+                    resource = options.resource ?: defaultResource
                 )
             )
             // Here access_token is pre-authenticated-url-token

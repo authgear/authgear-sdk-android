@@ -12,5 +12,9 @@ data class PreAuthenticatedURLOptions @JvmOverloads constructor(
     /**
      * Any string that will be passed to redirectURI by the `state` query parameter.
      */
-    var state: String?
+    var state: String?,
+    /**
+     * Resource indicator (RFC 8707) of the new session. Defaults to the `resource` given to `configure`; a value given here replaces it.
+     */
+    var resource: String? = null
 )

@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -324,6 +326,10 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
                 null,
                 app2appOptions
         );
+        // The resource and scopes are the defaults of every call that takes them.
+        String resource = mResource.getValue().isEmpty() ? null : mResource.getValue();
+        String scopesInput = mScopes.getValue().trim();
+        List<String> scopes = scopesInput.isEmpty() ? null : Arrays.asList(scopesInput.split("\\s+"));
         mAuthgear.configure(new OnConfigureListener() {
             @Override
             public void onConfigured() {
@@ -339,7 +345,7 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
                 mIsLoading.setValue(false);
                 setError(throwable);
             }
-        });
+        }, new Handler(Looper.getMainLooper()), resource, scopes);
 
         mAuthgear.setDelegate(this);
 
@@ -400,12 +406,6 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
         options.setAuthenticationFlowGroup(mAuthenticationiFlowGroup.getValue());
         if (!mOAuthProviderAlias.getValue().isEmpty()) {
             options.setOauthProviderAlias(mOAuthProviderAlias.getValue());
-        }
-        if (!mResource.getValue().isEmpty()) {
-            options.setResource(mResource.getValue());
-        }
-        if (!mScopes.getValue().trim().isEmpty()) {
-            options.setScopes(Arrays.asList(mScopes.getValue().trim().split("\\s+")));
         }
         mAuthgear.authenticate(options, new OnAuthenticateListener() {
             @Override
