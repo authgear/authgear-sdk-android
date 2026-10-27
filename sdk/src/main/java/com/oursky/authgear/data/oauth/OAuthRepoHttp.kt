@@ -84,6 +84,7 @@ internal class OAuthRepoHttp(
         request.actorTokenType?.let { body["actor_token_type"] = it.raw }
         request.actorToken?.let { body["actor_token"] = it }
         request.scope?.let { body["scope"] = it.joinToString(" ") }
+        request.resource?.let { body["resource"] = it }
         val headers = mutableMapOf(
             "content-type" to mutableListOf("application/x-www-form-urlencoded")
         )

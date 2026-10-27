@@ -161,7 +161,8 @@ internal class App2App(
                 codeChallenge = request.codeChallenge,
                 redirectUri = request.redirectUri,
                 refreshToken = refreshToken,
-                codeChallengeMethod = AuthgearCore.CODE_CHALLENGE_METHOD
+                codeChallengeMethod = AuthgearCore.CODE_CHALLENGE_METHOD,
+                resource = request.resource
             )
         )
         val query = hashMapOf(

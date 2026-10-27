@@ -50,5 +50,7 @@ internal data class OidcTokenRequest(
     @SerialName("actor_token")
     val actorToken: String? = null,
     @SerialName("scope")
-    val scope: List<String>? = null
+    val scope: List<String>? = null,
+    @SerialName("resource")
+    val resource: String? = null
 )
