@@ -67,9 +67,9 @@ android {
             dimension = "app"
             resValue("string", "app_name", "Authgear Demo Android")
             buildConfigField("String", "AUTHGEAR_REDIRECT_URI_SCHEME", "\"com.authgear.exampleapp.android\"")
-            buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android.pandawork.com\"")
+            buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android.oursky.codes\"")
             manifestPlaceholders["authgearRedirectScheme"] = "com.authgear.exampleapp.android"
-            manifestPlaceholders["authgearAppLinksHost"] = "authgear-demo-android.pandawork.com"
+            manifestPlaceholders["authgearAppLinksHost"] = "authgear-demo-android.oursky.codes"
             if (project.hasProperty("STORE_FILE")) {
                 signingConfig = signingConfigs.getByName("app1Release")
             }
@@ -79,9 +79,9 @@ android {
             applicationIdSuffix = ".app2"
             resValue("string", "app_name", "Authgear Demo Android 2")
             buildConfigField("String", "AUTHGEAR_REDIRECT_URI_SCHEME", "\"com.authgear.exampleapp.android.app2\"")
-            buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android-app2.pandawork.com\"")
+            buildConfigField("String", "AUTHGEAR_DEMO_HOST", "\"authgear-demo-android-app2.oursky.codes\"")
             manifestPlaceholders["authgearRedirectScheme"] = "com.authgear.exampleapp.android.app2"
-            manifestPlaceholders["authgearAppLinksHost"] = "authgear-demo-android-app2.pandawork.com"
+            manifestPlaceholders["authgearAppLinksHost"] = "authgear-demo-android-app2.oursky.codes"
             if (project.hasProperty("STORE_FILE_APP2")) {
                 signingConfig = signingConfigs.getByName("app2Release")
             }
