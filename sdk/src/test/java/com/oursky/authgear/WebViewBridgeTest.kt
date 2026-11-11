@@ -42,6 +42,31 @@ class WebViewBridgeTest {
     }
 
     @Test
+    fun credentialManagerRequestJsonKeepsOnlyTheSpecFields() {
+        val publicKey = parse(
+            """{"challenge":"c","rpId":"auth.example.com","userVerification":"preferred",""" +
+                """"allowCredentials":[{"type":"public-key","id":"a"}],""" +
+                """"timeout":60000,"hints":["security-key"],"extensions":{"prf":{}}}"""
+        )
+        assertEquals(
+            parse(
+                """{"challenge":"c","rpId":"auth.example.com","userVerification":"preferred",""" +
+                    """"allowCredentials":[{"type":"public-key","id":"a"}]}"""
+            ),
+            credentialManagerRequestJson(publicKey)
+        )
+    }
+
+    @Test
+    fun credentialManagerRequestJsonDropsEmptyAllowCredentials() {
+        val publicKey = parse("""{"challenge":"c","rpId":"auth.example.com","allowCredentials":[]}""")
+        assertEquals(
+            parse("""{"challenge":"c","rpId":"auth.example.com"}"""),
+            credentialManagerRequestJson(publicKey)
+        )
+    }
+
+    @Test
     fun allowedOriginRuleWithoutHost() {
         // java.net.URI has no host for a hostname with "_".
         assertNull(allowedOriginRule(URI("https://my_app.example.com")))
@@ -80,9 +105,25 @@ class WebViewBridgeTest {
         assertEquals(JsonPrimitive("1"), reply["id"])
         assertEquals(JsonPrimitive("ok"), reply["status"])
         assertEquals(
-            JsonArray(BRIDGE_CAPABILITIES.map { JsonPrimitive(it) }),
+            JsonArray(
+                listOf(
+                    JsonPrimitive("credentials.get"),
+                    JsonPrimitive("credentials.get:publicKey"),
+                    JsonPrimitive("credentials.get:immediate")
+                )
+            ),
             reply["capabilities"]
         )
+    }
+
+    @Test
+    fun isSameOriginOfStrings() {
+        assertTrue(isSameOrigin("https://auth.example.com/login?x=1", "https://auth.example.com"))
+        assertFalse(isSameOrigin("https://other.example.com/", "https://auth.example.com"))
+        assertFalse(isSameOrigin(null, "https://auth.example.com"))
+        assertFalse(isSameOrigin("https://auth.example.com", null))
+        assertFalse(isSameOrigin("https://auth example.com", "https://auth.example.com"))
+        assertFalse(isSameOrigin("about:blank", "https://auth.example.com"))
     }
 
     @Test
@@ -123,7 +164,7 @@ class WebViewBridgeTest {
 
     @Test
     fun replyWithEachStatus() {
-        for (status in listOf("ok", "unsupported", "error")) {
+        for (status in listOf("ok", "no_credential", "cancelled", "unsupported", "error")) {
             assertEquals(
                 parse("""{"id":"7","status":"$status"}"""),
                 parse(reply("7", status))
@@ -136,6 +177,31 @@ class WebViewBridgeTest {
         assertEquals(
             parse("""{"id":"7","status":"error","message":"boom"}"""),
             parse(reply("7", "error", "boom"))
+        )
+    }
+
+    @Test
+    fun okReplyCarriesTheCredentialUnchanged() {
+        val credentialText = """
+            {
+              "id": "dFcL6B0cTujk-mONTRqsP4TXVrLWWvzWfa7oG_b36T8",
+              "rawId": "dFcL6B0cTujk-mONTRqsP4TXVrLWWvzWfa7oG_b36T8",
+              "type": "public-key",
+              "authenticatorAttachment": "platform",
+              "response": {
+                "clientDataJSON": "Y2xpZW50RGF0YQ",
+                "authenticatorData": "YXV0aERhdGE",
+                "signature": "c2lnbmF0dXJl",
+                "userHandle": "dXNlcg"
+              },
+              "clientExtensionResults": {}
+            }
+        """
+        val credential = parse(credentialText)
+        val reply = parse(reply("2", "ok", fields = mapOf("credential" to credential)))
+        assertEquals(
+            parse("""{"id":"2","status":"ok","credential":$credentialText}"""),
+            reply
         )
     }
 }

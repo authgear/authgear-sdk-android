@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `WebKitWebViewUIImplementation` lets AuthUI check this device for a passkey
+  when the login page loads, where the device's WebView supports web message
+  listeners. If the device has a passkey for the site, the passkey sheet of
+  Credential Manager appears with no tap; otherwise nothing appears. Adds the
+  dependencies `androidx.credentials:credentials` and
+  `androidx.credentials:credentials-play-services-auth` 1.5.0. (ref DEV-4001)
+
 ## [4.1.0] - 2026-11-11
 
 ### Added
