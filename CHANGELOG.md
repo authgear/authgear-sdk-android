@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dependencies `androidx.credentials:credentials` and
   `androidx.credentials:credentials-play-services-auth` 1.5.0. (ref DEV-4001)
 
+### Changed
+
+- The activity of `WebKitWebViewUIImplementation` handles rotation and window
+  resizing itself instead of being recreated, so the page is no longer
+  reloaded and a pending passkey sheet stays usable. (ref DEV-4001)
+
 ## [4.1.0] - 2026-11-11
 
 ### Added
