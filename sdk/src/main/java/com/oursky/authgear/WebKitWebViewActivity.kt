@@ -129,6 +129,9 @@ class WebKitWebViewActivity: AppCompatActivity() {
             view?.evaluateJavascript(USERSCRIPT_USER_SELECT_NONE, null);
             activity.handleNonEdgeToEdge()
             activity.handleEdgeToEdge()
+            // The top-level page starts loading another page, so the page that sent
+            // the pending bridge requests is gone.
+            activity.mBridge?.cancelPending()
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
