@@ -68,6 +68,7 @@ class WebKitWebViewActivity: AppCompatActivity() {
     private var mLastSeenInsets: Insets? = null
     private var result: Uri? = null
     private val handles = StartActivityHandles<ValueCallback<Array<Uri>>>()
+    internal var mBridge: WebViewBridge? = null
 
     class Options {
         var url: Uri
@@ -357,6 +358,11 @@ class WebKitWebViewActivity: AppCompatActivity() {
                 webSettings,
                 WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP
             )
+        }
+        // Let AuthUI on the endpoint's origin use window.authgearBridge.
+        // It must be installed before loadUrl, so that it exists when the page's scripts run.
+        this.mBridge = WebViewBridge(this).also {
+            it.install(this.mWebView, listOf(options.url))
         }
 
         this.mRootFrameLayout.addView(this.mWebView)
