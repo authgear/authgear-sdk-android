@@ -4,6 +4,7 @@ import android.annotation.TargetApi
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -68,6 +69,7 @@ class WebKitWebViewActivity: AppCompatActivity() {
     private var mLastSeenInsets: Insets? = null
     private var result: Uri? = null
     private val handles = StartActivityHandles<ValueCallback<Array<Uri>>>()
+    internal var mBridge: WebViewBridge? = null
 
     class Options {
         var url: Uri
@@ -128,6 +130,9 @@ class WebKitWebViewActivity: AppCompatActivity() {
             view?.evaluateJavascript(USERSCRIPT_USER_SELECT_NONE, null);
             activity.handleNonEdgeToEdge()
             activity.handleEdgeToEdge()
+            // The top-level page starts loading another page, so the page that sent
+            // the pending bridge requests is gone.
+            activity.mBridge?.cancelPending()
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
@@ -358,6 +363,11 @@ class WebKitWebViewActivity: AppCompatActivity() {
                 WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP
             )
         }
+        // Let AuthUI on the endpoint's origin use window.authgearBridge.
+        // It must be installed before loadUrl, so that it exists when the page's scripts run.
+        this.mBridge = WebViewBridge(this).also {
+            it.install(this.mWebView, listOf(options.url))
+        }
 
         this.mRootFrameLayout.addView(this.mWebView)
         this.mRootFrameLayout.addView(this.mToolbarFrameLayout)
@@ -398,6 +408,19 @@ class WebKitWebViewActivity: AppCompatActivity() {
                 this.mWebView.loadUrl(options.url.toString())
             }
         }
+    }
+
+    // The activity handles rotation and resizing itself (see AndroidManifest.xml), so that the
+    // page and a pending bridge request survive them. The toolbar height depends on the
+    // configuration, so it is updated here.
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val actionBarSizeInDp = this.getActionBarSizeInDp()
+        val displayMetrics = this.resources.displayMetrics
+        this.mToolbar.layoutParams = this.mToolbar.layoutParams.apply {
+            height = TypedValueCompat.dpToPx(actionBarSizeInDp, displayMetrics).toInt()
+        }
+        this.applyInsetsToWebView(this.mLastSeenInsets ?: Insets.NONE)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
