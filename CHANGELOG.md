@@ -14,13 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   listeners. If the device has a passkey for the site, the passkey sheet of
   Credential Manager appears with no tap; otherwise nothing appears. Adds the
   dependencies `androidx.credentials:credentials` and
-  `androidx.credentials:credentials-play-services-auth` 1.5.0. (ref DEV-4001)
+  `androidx.credentials:credentials-play-services-auth` 1.5.0.
 
 ### Changed
 
+- Apps using the SDK must compile with `compileSdk` 35 or higher, because
+  `androidx.credentials:credentials` and
+  `androidx.credentials:credentials-play-services-auth` 1.5.0 require it.
 - The activity of `WebKitWebViewUIImplementation` handles rotation and window
   resizing itself instead of being recreated, so the page is no longer
-  reloaded and a pending passkey sheet stays usable. (ref DEV-4001)
+  reloaded and a pending passkey sheet stays usable.
 
 ## [4.1.0] - 2026-11-11
 
