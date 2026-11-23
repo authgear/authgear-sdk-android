@@ -12,8 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WebKitWebViewUIImplementation` lets AuthUI check this device for a passkey
   when the login page loads, where the device's WebView supports web message
   listeners. If the device has a passkey for the site, the passkey sheet of
-  Credential Manager appears with no tap; otherwise nothing appears. Adds the
-  dependencies `androidx.credentials:credentials` and
+  Credential Manager appears with no tap; otherwise nothing appears. As in a
+  browser, the request is refused unless its `rpId` is the page's host or a
+  parent domain of it, compared without case. Adds the dependencies
+  `androidx.credentials:credentials` and
   `androidx.credentials:credentials-play-services-auth` 1.5.0.
 
 ### Changed

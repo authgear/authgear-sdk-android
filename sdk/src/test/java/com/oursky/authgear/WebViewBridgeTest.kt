@@ -204,4 +204,39 @@ class WebViewBridgeTest {
             reply
         )
     }
+
+    @Test
+    fun isRpIdAllowedWhenEqualToHost() {
+        assertTrue(isRpIdAllowed("auth.example.com", "auth.example.com"))
+    }
+
+    @Test
+    fun isRpIdAllowedForParentDomain() {
+        assertTrue(isRpIdAllowed("example.com", "auth.example.com"))
+    }
+
+    @Test
+    fun isRpIdAllowedIgnoresCase() {
+        assertTrue(isRpIdAllowed("Example.COM", "AUTH.example.com"))
+    }
+
+    @Test
+    fun isRpIdAllowedRejectsSiblingDomain() {
+        assertFalse(isRpIdAllowed("other.example.com", "auth.example.com"))
+    }
+
+    @Test
+    fun isRpIdAllowedRejectsSuffixNotAtLabelBoundary() {
+        assertFalse(isRpIdAllowed("example.com", "evilexample.com"))
+    }
+
+    @Test
+    fun isRpIdAllowedRejectsRpIdLongerThanHost() {
+        assertFalse(isRpIdAllowed("auth.example.com", "example.com"))
+    }
+
+    @Test
+    fun isRpIdAllowedRejectsEmptyRpId() {
+        assertFalse(isRpIdAllowed("", "example.com"))
+    }
 }
