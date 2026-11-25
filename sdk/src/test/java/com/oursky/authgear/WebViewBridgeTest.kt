@@ -101,7 +101,7 @@ class WebViewBridgeTest {
 
     @Test
     fun capabilitiesReplyListsTheCapabilities() {
-        val reply = parse(capabilitiesReply("1"))
+        val reply = parse(capabilitiesReply("1").encode())
         assertEquals(JsonPrimitive("1"), reply["id"])
         assertEquals(JsonPrimitive("ok"), reply["status"])
         assertEquals(
@@ -163,45 +163,103 @@ class WebViewBridgeTest {
     }
 
     @Test
-    fun replyWithEachStatus() {
-        for (status in listOf("ok", "no_credential", "cancelled", "unsupported", "error")) {
+    fun statusesEncodeToTheirWireStrings() {
+        assertEquals(
+            mapOf(
+                BridgeStatus.OK to "ok",
+                BridgeStatus.UNSUPPORTED to "unsupported",
+                BridgeStatus.ERROR to "error",
+                BridgeStatus.NO_CREDENTIAL to "no_credential",
+                BridgeStatus.CANCELLED to "cancelled"
+            ),
+            BridgeStatus.values().associateWith { it.value }
+        )
+        for (status in BridgeStatus.values()) {
             assertEquals(
-                parse("""{"id":"7","status":"$status"}"""),
-                parse(reply("7", status))
+                parse("""{"id":"7","status":"${status.value}"}"""),
+                parse(BridgeReply("7", status).encode())
             )
         }
+    }
+
+    @Test
+    fun replyOmitsNullFields() {
+        val reply = parse(BridgeReply("7", BridgeStatus.ERROR).encode())
+        assertEquals(setOf("id", "status"), reply.keys)
     }
 
     @Test
     fun replyWithMessage() {
         assertEquals(
             parse("""{"id":"7","status":"error","message":"boom"}"""),
-            parse(reply("7", "error", "boom"))
+            parse(BridgeReply("7", BridgeStatus.ERROR, "boom").encode())
+        )
+    }
+
+    private val credentialText = """
+        {
+          "id": "dFcL6B0cTujk-mONTRqsP4TXVrLWWvzWfa7oG_b36T8",
+          "rawId": "dFcL6B0cTujk-mONTRqsP4TXVrLWWvzWfa7oG_b36T8",
+          "type": "public-key",
+          "authenticatorAttachment": "platform",
+          "response": {
+            "clientDataJSON": "Y2xpZW50RGF0YQ",
+            "authenticatorData": "YXV0aERhdGE",
+            "signature": "c2lnbmF0dXJl",
+            "userHandle": "dXNlcg"
+          },
+          "clientExtensionResults": {}
+        }
+    """
+
+    @Test
+    fun okReplyCarriesTheParsedCredential() {
+        val credential = BridgePublicKeyCredential.parse(credentialText)!!
+        assertEquals(
+            parse("""{"id":"2","status":"ok","credential":$credentialText}"""),
+            parse(BridgeReply("2", BridgeStatus.OK, credential = credential).encode())
         )
     }
 
     @Test
-    fun okReplyCarriesTheCredentialUnchanged() {
-        val credentialText = """
+    fun publicKeyCredentialWithoutOptionalFields() {
+        val text = """
             {
-              "id": "dFcL6B0cTujk-mONTRqsP4TXVrLWWvzWfa7oG_b36T8",
-              "rawId": "dFcL6B0cTujk-mONTRqsP4TXVrLWWvzWfa7oG_b36T8",
-              "type": "public-key",
-              "authenticatorAttachment": "platform",
-              "response": {
-                "clientDataJSON": "Y2xpZW50RGF0YQ",
-                "authenticatorData": "YXV0aERhdGE",
-                "signature": "c2lnbmF0dXJl",
-                "userHandle": "dXNlcg"
-              },
-              "clientExtensionResults": {}
+              "id": "a", "rawId": "a", "type": "public-key",
+              "response": { "clientDataJSON": "b", "authenticatorData": "c", "signature": "d" }
             }
         """
-        val credential = parse(credentialText)
-        val reply = parse(reply("2", "ok", fields = mapOf("credential" to credential)))
+        val credential = BridgePublicKeyCredential.parse(text)!!
+        assertNull(credential.authenticatorAttachment)
+        assertNull(credential.response.userHandle)
         assertEquals(
-            parse("""{"id":"2","status":"ok","credential":$credentialText}"""),
-            reply
+            parse(
+                """
+                {
+                  "id": "a", "rawId": "a", "type": "public-key",
+                  "response": { "clientDataJSON": "b", "authenticatorData": "c", "signature": "d" },
+                  "clientExtensionResults": {}
+                }
+                """
+            ),
+            credential.toJson()
+        )
+    }
+
+    @Test
+    fun publicKeyCredentialParseRejectsMissingFields() {
+        assertNull(BridgePublicKeyCredential.parse("not json"))
+        assertNull(BridgePublicKeyCredential.parse("[]"))
+        assertNull(BridgePublicKeyCredential.parse("""{"rawId":"a","response":{}}"""))
+        assertNull(
+            BridgePublicKeyCredential.parse(
+                """{"id":"a","rawId":"a","response":{"clientDataJSON":"b","authenticatorData":"c"}}"""
+            )
+        )
+        assertNull(
+            BridgePublicKeyCredential.parse(
+                """{"id":1,"rawId":"a","response":{"clientDataJSON":"b","authenticatorData":"c","signature":"d"}}"""
+            )
         )
     }
 
