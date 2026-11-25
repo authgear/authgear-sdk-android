@@ -73,6 +73,7 @@ import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -307,6 +308,8 @@ public class MainViewModel extends AndroidViewModel implements AuthgearDelegate 
             impl.setActionBarButtonTintColor(0xff000000);
             impl.setWechatRedirectURI(Uri.parse(MainApplication.AUTHGEAR_WECHAT_REDIRECT_URI));
             impl.setAuthgearDelegate(this);
+            // The Custom UI of the demo project, so that it can use the passkey on page load.
+            impl.setBridgeAllowedOrigins(Collections.singletonList(Uri.parse("https://ui.demo-app2app.qa.authgear-staging.com")));
             uiImplementation = impl;
         } else {
             uiImplementation = new CustomTabsUIImplementation();
