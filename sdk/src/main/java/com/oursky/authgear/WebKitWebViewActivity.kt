@@ -77,6 +77,7 @@ class WebKitWebViewActivity: AppCompatActivity() {
         var actionBarBackgroundColor: Int? = null
         var actionBarButtonTintColor: Int? = null
         var wechatRedirectURI: Uri? = null
+        var bridgeAllowedOrigins: List<Uri> = emptyList()
 
         constructor(url: Uri, redirectURI: Uri) {
             this.url = url
@@ -95,6 +96,8 @@ class WebKitWebViewActivity: AppCompatActivity() {
             if (bundle.containsKey("wechatRedirectURI")) {
                 this.wechatRedirectURI = bundle.getParcelable("wechatRedirectURI")
             }
+            this.bridgeAllowedOrigins =
+                bundle.getStringArrayList("bridgeAllowedOrigins")?.map { Uri.parse(it) } ?: emptyList()
         }
 
         fun toBundle(): Bundle {
@@ -110,6 +113,10 @@ class WebKitWebViewActivity: AppCompatActivity() {
             this.wechatRedirectURI?.let {
                 bundle.putParcelable("wechatRedirectURI", it)
             }
+            bundle.putStringArrayList(
+                "bridgeAllowedOrigins",
+                ArrayList(this.bridgeAllowedOrigins.map { it.toString() })
+            )
             return bundle
         }
     }
@@ -363,10 +370,13 @@ class WebKitWebViewActivity: AppCompatActivity() {
                 WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP
             )
         }
-        // Let AuthUI on the endpoint's origin use window.authgearBridge.
+        // Let AuthUI on the endpoint's origin, and the origins the app allows, use window.authgearBridge.
         // It must be installed before loadUrl, so that it exists when the page's scripts run.
         this.mBridge = WebViewBridge(this).also {
-            it.install(this.mWebView, listOf(options.url))
+            it.install(
+                this.mWebView,
+                listOf(options.url) + options.bridgeAllowedOrigins.filter { origin -> isBridgeAllowedOrigin(origin.toString()) }
+            )
         }
 
         this.mRootFrameLayout.addView(this.mWebView)

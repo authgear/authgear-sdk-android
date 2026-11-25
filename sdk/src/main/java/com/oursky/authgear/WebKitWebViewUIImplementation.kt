@@ -18,6 +18,14 @@ class WebKitWebViewUIImplementation(
     var actionBarButtonTintColor: Int? = null,
     var wechatRedirectURI: Uri? = null,
     var authgearDelegate: AuthgearDelegate? = null,
+    /**
+     * URLs whose origins may use `window.authgearBridge` besides the origin of the endpoint,
+     * such as the URL of a Custom UI. Only the scheme, host and port of each URL are used.
+     * A URL is ignored unless its scheme is `https`, or it is `http` with the host `localhost`.
+     *
+     * A listed page can show the passkey sheet in the app, so list only origins you control.
+     */
+    var bridgeAllowedOrigins: List<Uri> = emptyList(),
 ) : UIImplementation {
 
     override fun openAuthorizationURL(
@@ -78,6 +86,7 @@ class WebKitWebViewUIImplementation(
             webViewOptions.actionBarBackgroundColor = this@WebKitWebViewUIImplementation.actionBarBackgroundColor
             webViewOptions.actionBarButtonTintColor = this@WebKitWebViewUIImplementation.actionBarButtonTintColor
             webViewOptions.wechatRedirectURI = this@WebKitWebViewUIImplementation.wechatRedirectURI
+            webViewOptions.bridgeAllowedOrigins = this@WebKitWebViewUIImplementation.bridgeAllowedOrigins
             context.startActivity(
                 WebKitWebViewActivity.createIntent(
                     context,

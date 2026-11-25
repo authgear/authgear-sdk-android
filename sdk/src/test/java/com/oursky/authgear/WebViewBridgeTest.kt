@@ -16,6 +16,28 @@ class WebViewBridgeTest {
     private fun parse(text: String): JsonObject = Json.parseToJsonElement(text).jsonObject
 
     @Test
+    fun bridgeAllowedOriginAllowsHttps() {
+        assertTrue(isBridgeAllowedOrigin("https://ui.example.com"))
+        assertTrue(isBridgeAllowedOrigin("https://ui.example.com:8443/login?x=1"))
+        assertTrue(isBridgeAllowedOrigin("HTTPS://UI.EXAMPLE.COM"))
+    }
+
+    @Test
+    fun bridgeAllowedOriginAllowsHttpOnlyForLocalhost() {
+        assertTrue(isBridgeAllowedOrigin("http://localhost:8300/login"))
+        assertFalse(isBridgeAllowedOrigin("http://ui.example.com"))
+        assertFalse(isBridgeAllowedOrigin("http://127.0.0.1:8300"))
+    }
+
+    @Test
+    fun bridgeAllowedOriginRejectsOtherURLs() {
+        assertFalse(isBridgeAllowedOrigin("myapp://host"))
+        assertFalse(isBridgeAllowedOrigin("ui.example.com"))
+        assertFalse(isBridgeAllowedOrigin("https://"))
+        assertFalse(isBridgeAllowedOrigin("https://bad host"))
+    }
+
+    @Test
     fun allowedOriginRuleWithoutPort() {
         assertEquals("https://auth.example.com", allowedOriginRule(URI("https://auth.example.com")))
     }

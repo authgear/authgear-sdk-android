@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parent domain of it, compared without case. Adds the dependencies
   `androidx.credentials:credentials` and
   `androidx.credentials:credentials-play-services-auth` 1.5.0.
+- `WebKitWebViewUIImplementation.bridgeAllowedOrigins`: URLs whose origins may
+  use the bridge besides the endpoint's, such as a Custom UI's URL. A URL is
+  ignored unless its scheme is `https`, or it is `http` with the host
+  `localhost`. A listed page can show the passkey sheet in the app, so list
+  only origins you control.
 
 ### Changed
 
