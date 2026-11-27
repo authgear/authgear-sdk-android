@@ -316,6 +316,19 @@ internal fun allowedOriginRule(url: URI): String? {
     return rule
 }
 
+// Whether a URL of bridgeAllowedOrigins may be allowed:
+// https, or http with the host localhost, as browsers treat localhost as a secure context.
+internal fun isBridgeAllowedOrigin(url: String): Boolean {
+    val uri = try {
+        URI(url)
+    } catch (e: URISyntaxException) {
+        return false
+    }
+    val scheme = uri.scheme?.lowercase(Locale.ROOT) ?: return false
+    val host = uri.host?.lowercase(Locale.ROOT) ?: return false
+    return scheme == "https" || (scheme == "http" && host == "localhost")
+}
+
 internal fun sameOrigin(a: URI, b: URI): Boolean {
     val schemeA = a.scheme?.lowercase() ?: return false
     val schemeB = b.scheme?.lowercase() ?: return false
